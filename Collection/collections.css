@@ -18,11 +18,16 @@
 }
 
 body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     font-family: 'Montserrat', sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
     line-height: 1.6;
     overflow-x: hidden;
+    min-height: 100vh;
 }
 
 h1, h2, h3 {
