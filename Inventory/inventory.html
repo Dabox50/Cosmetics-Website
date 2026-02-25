@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Management | Shayors Cosmetics</title>
+    <link rel="stylesheet" href="inventory.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">
+            <img src="./Image/Shayor's Logo.png" alt="Logo" width="80px">
+        </div>
+
+        <ul class="nav-links">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../Collection/collections.html">Collections</a></li>
+            <li><a href="../About/about.html">About Us</a></li>
+            <li><a href="./inventory.html" class="active-link">Inventory</a></li>
+            <li><a href="../Contact/contact.html">Contact Us</a></li>
+        </ul>
+
+        <div class="burger">
+            <img src="./Image/menus.png" alt="menu" width="25px">
+        </div>
+    </nav>
+
+    <!-- Brands Bar -->
+    <div class="brands-bar">
+        <span>Inventory Dashboard:</span>
+        <div class="brands-scroll">
+            <span>Stock Tracking</span>
+            <span>Product Details</span>
+            <span>Admin Control</span>
+            <span>Alert System</span>
+        </div>
+    </div>
+
+    <main class="inventory-container">
+        <!-- Dashboard Summary -->
+        <section class="dashboard-summary">
+            <div class="stat-card">
+                <h3>Total Products</h3>
+                <p id="totalProducts">0</p>
+            </div>
+            <div class="stat-card">
+                <h3>Total Stock Value</h3>
+                <p id="totalStockValue">₦0.00</p>
+            </div>
+            <div class="stat-card alert-card" id="lowStockCard">
+                <h3>Low Stock Alerts</h3>
+                <p id="lowStockCount">0</p>
+            </div>
+        </section>
+
+        <!-- Low Stock Alerts Section -->
+        <section id="alertsContainer" class="alerts-section hidden">
+            <div class="alert-box">
+                <strong>Low Stock Warning!</strong> The following products need restocking.
+                <ul id="alertsList"></ul>
+            </div>
+        </section>
+
+        <!-- Recent Activity / Notifications -->
+        <section class="activity-section">
+            <div class="activity-box">
+                <h3>Recent Inventory Activity</h3>
+                <ul id="activityLog">
+                    <li>Dashboard initialized.</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Product Management Controls -->
+        <section class="admin-controls">
+            <h2 class="section-title">Product Management</h2>
+            <div class="action-bar">
+                <button class="btn primary" onclick="toggleForm()">+ Add New Product</button>
+                <input type="text" id="inventorySearch" placeholder="Search by name or brand..." onkeyup="searchInventory()">
+            </div>
+            
+            <form id="productForm" class="product-form hidden">
+                <h3>Add / Update Product</h3>
+                <div class="form-grid">
+                    <input type="text" id="pName" placeholder="Product Name" required>
+                    <input type="text" id="pBrand" placeholder="Brand" required>
+                    <input type="text" id="pShade" placeholder="Shade (if applicable)">
+                    <input type="text" id="pSize" placeholder="Size (e.g., 50ml, 100g)" required>
+                    <input type="number" id="pPrice" placeholder="Price (₦)" step="0.01" required>
+                    <input type="number" id="pStock" placeholder="Initial Stock" required>
+                    <textarea id="pIngredients" placeholder="Ingredients" class="full-width"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn primary">Save Product</button>
+                    <button type="button" class="btn secondary" onclick="toggleForm()">Cancel</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Inventory Table -->
+        <section class="inventory-table-container">
+            <table id="inventoryTable">
+                <thead>
+                    <tr>
+                        <th>Product Info</th>
+                        <th>Details</th>
+                        <th>Price</th>
+                        <th>Stock Level</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="inventoryBody">
+                    <!-- Products will be injected here -->
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content animate-on-scroll">
+            <div class="footer-logo">
+                <h3>Shayors Cosmetics</h3>
+                <p>Shortcuts to beauty success</p>
+            </div>
+            <div class="footer-bottom">
+                <p>Shayors Cosmetics &copy; 2026. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="inventory.js"></script>
+</body>
+</html>
