@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // 1. Data Storage for Products with Categories (Unified with Inventory)
     const defaultProducts = [
-        { id: 1, category: "Skincare", name: "Cerave Hydrating Cleanser", brand: "Cerave", price: 18.00, stock: 24, image: "../Image/WhatsApp1.jpeg" },
+        { id: 1, category: "Skincare", name: "Cerave Hydrating Cleanser", brand: "Cerave", price: 18.00, stock: 24, image: "../Image/WhatsApp2.jpeg"},
         { id: 2, category: "Bath & Body", name: "Halfacast Skin Glow Oil", brand: "Halfacast", price: 35.00, stock: 12, image: "../Image/WhatsApp2.jpeg" },
         { id: 3, category: "Skincare", name: "Cosrx Snail Mucin Essence", brand: "Cosrx", price: 22.00, stock: 3, image: "../Image/WhatsApp3.jpeg" },
         { id: 4, category: "Facecream", name: "Olay Regenerist Cream", brand: "Olay", price: 45.00, stock: 0, image: "../Image/WhatsApp4.jpeg" },
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 10, category: "Humidifiers", name: "Zen Mist Humidifier", brand: "Humidifiers", price: 40.00, stock: 8, image: "../Image/WhatsApp10.jpeg" },
         { id: 11, category: "Diffusers", name: "Aroma Diffuser", brand: "Diffusers", price: 35.00, stock: 5, image: "../Image/WhatsApp11.jpeg" },
         { id: 12, category: "Skincare", name: "Cerave Moisturizing Lotion", brand: "Cerave", price: 20.00, stock: 15, image: "../Image/WhatsApp12.jpeg" },
-        { id: 13, category: "Fragrance", name: "Velvet Oud", brand: "Fragrance", price: 85.00, stock: 4, image: "../Image/WhatsApp13.jpeg" },
+        { id: 13, category: "Fragrance", name: "Velvet Oud", brand: "Fragrance", price: 85.00, stock: 4, image: "../Image/WhatsApp15.jpeg" },
         { id: 14, category: "Bath & Body", name: "Halfacast Brightening Soap", brand: "Halfacast", price: 12.00, stock: 15, image: "../Image/WhatsApp14.jpeg" },
         { id: 15, category: "Spa", name: "Himalayan Salt Scrub", brand: "Spa", price: 48.00, stock: 18, image: "../Image/WhatsApp15.jpeg" },
         { id: 16, category: "Skincare", name: "Cosrx BHA Blackhead Power Liquid", brand: "Cosrx", price: 44.00, stock: 17, image: "../Image/WhatsApp16.jpeg" },

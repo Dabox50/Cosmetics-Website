@@ -18,10 +18,6 @@
 }
 
 body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
     font-family: 'Montserrat', sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
@@ -101,8 +97,8 @@ nav {
 
 .nav-links a:hover, .active-link {
     color: var(--primary-color);
-    font-weight: 600;
 }
+
 .burger {
     display: none;
     flex-direction: column;
@@ -294,19 +290,29 @@ footer {
 }
 
 @media screen and (max-width: 768px) {
+    body{
+        overflow-x: hidden;
+    }
     .nav-links {
         position: absolute;
-        right: 0px;
-        height: 92vh;
-        top: 8vh;
-        background-color: var(--white);
+        right: 20px;
+        height: 50vh;
+        top: 12vh;
+        background-color: rgb(226, 226, 226);
         display: flex;
         flex-direction: column;
         align-items: center;
-        width: 100%;
-        transform: translateX(100%);
-        transition: transform 0.5s ease-in;
+        border-radius: 10px;
+        width: 40%;
+        transform: translateX(10%);
+        transition: transform 0.9s ease-in, visibility 0.5s;
         z-index: 999;
+        visibility: hidden;
+    }
+
+    .nav-links.nav-active {
+        transform: translateX(0%);
+        visibility: visible;
     }
 
     .nav-links li {
@@ -314,6 +320,21 @@ footer {
         width: 100%;
         text-align: center;
         padding: 15px 0;
+    
+    }
+    .nav-links.nav-active li {
+        opacity: 1;
+        animation: navLinkFade 0.9s ease forwards;
+    }
+
+    .nav-links a {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.5rem;
+        font-weight: 400;
+    }
+    
+    .nav-links a:hover, .active-link {
+        color: var(--primary-color) !important;
     }
 
     .burger {
@@ -321,6 +342,19 @@ footer {
         z-index: 1001;
     }
 
+    .brands-bar {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 10px 20px;
+        gap: 10px;
+    }
+
+    .brands-scroll{
+        gap: 20px;
+        font-size: 0.7rem;
+    }
+    
     .search-nav {
         max-width: 200px;
         margin: 0 10px;
@@ -374,4 +408,60 @@ footer {
 }
 .toggle .line3 {
     transform: rotate(45deg) translate(-5px, -6px);
+}
+
+@media screen and (max-width: 500px) {
+    .brands-bar {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 10px 20px;
+        gap: 10px;
+    }
+    .brands-scroll{
+        gap: 20px;
+        font-size: 0.7rem;
+    }
+    .nav-links {
+        right: 30px;
+        top: 12vh;
+        width: 50%;
+    }
+    .nav-links a {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.5rem;
+        font-weight: 400;
+    }
+    .nav-links a:hover, .active-link {
+        color: var(--primary-color) !important;
+    }
+    .collections-header h1 {
+        font-size: 1.8rem;
+    }
+
+    .row-title {
+        padding-left: 20px;
+        font-size: 1.4rem;
+    }
+
+    .slider-wrapper {
+        padding: 10px 20px;
+    }
+
+    .product-card {
+        min-width: 280px;
+        padding: 15px;
+    }
+
+    .search-results {
+        padding: 20px;
+    }
+
+    .product-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .search-nav {
+        max-width: 150px;
+    }
 }
