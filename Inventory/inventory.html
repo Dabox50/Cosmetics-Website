@@ -11,7 +11,7 @@
     <!-- Navigation -->
     <nav>
         <div class="logo">
-            <img src="../Image/Shayor's Logo.png" alt="Logo" width="80px">
+            <img src="../Image/Shayor's_Logo.jpeg" alt="Logo" width="80px">
         </div>
 
         <ul class="nav-links">
@@ -38,86 +38,252 @@
         </div>
     </div>
 
-    <main class="inventory-container">
-        <!-- Dashboard Summary -->
-        <section class="dashboard-summary">
-            <div class="stat-card">
-                <h3>Total Products</h3>
-                <p id="totalProducts">0</p>
+    <div class="app-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h3>Admin Panel</h3>
             </div>
-            <div class="stat-card">
-                <h3>Total Stock Value</h3>
-                <p id="totalStockValue">₦0.00</p>
-            </div>
-            <div class="stat-card alert-card" id="lowStockCard">
-                <h3>Low Stock Alerts</h3>
-                <p id="lowStockCount">0</p>
-            </div>
-        </section>
+            <ul class="sidebar-nav">
+                <li class="active" onclick="showModule('inventory')">📦 Inventory</li>
+                <li onclick="showModule('sales')">💰 Sales & Invoices</li>
+                <li onclick="showModule('expenses')">💸 Expenses</li>
+                <li onclick="showModule('analytics')">📊 Analytics</li>
+                <li onclick="showModule('customers')">👥 Customers</li>
+                <li onclick="showModule('suppliers')">🚛 Suppliers</li>
+                <li onclick="showModule('store')">🏪 Store Management</li>
+            </ul>
+        </aside>
 
-        <!-- Low Stock Alerts Section -->
-        <section id="alertsContainer" class="alerts-section hidden">
-            <div class="alert-box">
-                <strong>Low Stock Warning!</strong> The following products need restocking.
-                <ul id="alertsList"></ul>
-            </div>
-        </section>
-
-        <!-- Recent Activity / Notifications -->
-        <section class="activity-section">
-            <div class="activity-box">
-                <h3>Recent Inventory Activity</h3>
-                <ul id="activityLog">
-                    <li>Dashboard initialized.</li>
-                </ul>
-            </div>
-        </section>
-
-        <!-- Product Management Controls -->
-        <section class="admin-controls">
-            <h2 class="section-title">Product Management</h2>
-            <div class="action-bar">
-                <button class="btn primary" onclick="toggleForm()">+ Add New Product</button>
-                <input type="text" id="inventorySearch" placeholder="Search by name or brand..." onkeyup="searchInventory()">
-            </div>
-            
-            <form id="productForm" class="product-form hidden">
-                <h3>Add / Update Product</h3>
-                <div class="form-grid">
-                    <input type="text" id="pName" placeholder="Product Name" required>
-                    <input type="text" id="pBrand" placeholder="Brand" required>
-                    <input type="text" id="pShade" placeholder="Shade (if applicable)">
-                    <input type="text" id="pSize" placeholder="Size (e.g., 50ml, 100g)" required>
-                    <input type="number" id="pPrice" placeholder="Price (₦)" step="0.01" required>
-                    <input type="number" id="pStock" placeholder="Initial Stock" required>
-                    <textarea id="pIngredients" placeholder="Ingredients" class="full-width"></textarea>
+        <main class="content-area">
+            <!-- Inventory Module -->
+            <section id="inventory-module" class="module active">
+                <div class="module-header">
+                    <h2>Inventory Management</h2>
+                    <div class="action-bar">
+                        <button class="btn primary" onclick="toggleForm()">+ New Product</button>
+                        <input type="text" id="inventorySearch" placeholder="Search..." onkeyup="searchInventory()">
+                    </div>
                 </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn primary">Save Product</button>
-                    <button type="button" class="btn secondary" onclick="toggleForm()">Cancel</button>
-                </div>
-            </form>
-        </section>
 
-        <!-- Inventory Table -->
-        <section class="inventory-table-container">
-            <table id="inventoryTable">
-                <thead>
-                    <tr>
-                        <th>Product Info</th>
-                        <th>Details</th>
-                        <th>Price</th>
-                        <th>Stock Level</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="inventoryBody">
-                    <!-- Products will be injected here -->
-                </tbody>
-            </table>
-        </section>
-    </main>
+                <!-- Dashboard Summary (Small version) -->
+                <div class="dashboard-mini-summary">
+                    <div class="mini-card">
+                        <span>Products:</span> <strong id="totalProducts">0</strong>
+                    </div>
+                    <div class="mini-card">
+                        <span>Value:</span> <strong id="totalStockValue">₦0.00</strong>
+                    </div>
+                    <div class="mini-card alert" id="lowStockCard">
+                        <span>Low Stock:</span> <strong id="lowStockCount">0</strong>
+                    </div>
+                </div>
+
+                <form id="productForm" class="product-form hidden">
+                    <h3>Product Details</h3>
+                    <div class="form-grid">
+                        <input type="hidden" id="pId">
+                        <input type="text" id="pName" placeholder="Product Name" required>
+                        <input type="text" id="pBrand" placeholder="Brand" required>
+                        <select id="pCategory">
+                            <option value="Skincare">Skincare</option>
+                            <option value="Bath & Body">Bath & Body</option>
+                            <option value="Facecream">Facecream</option>
+                            <option value="Spa">Spa</option>
+                            <option value="Perfume">Perfume</option>
+                            <option value="Supplements">Supplements</option>
+                            <option value="Sunscreen">Sunscreen</option>
+                            <option value="Humidifiers">Humidifiers</option>
+                            <option value="Diffusers">Diffusers</option>
+                            <option value="Raw Materials">Raw Materials</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <input type="text" id="pShade" placeholder="Shade">
+                        <input type="text" id="pSize" placeholder="Size" required>
+                        <input type="number" id="pCostPrice" placeholder="Cost Price (₦)" step="0.01" required>
+                        <input type="number" id="pPrice" placeholder="Retail Price (₦)" step="0.01" required>
+                        <input type="number" id="pStock" placeholder="Initial Stock" required>
+                        <input type="number" id="pThreshold" placeholder="Low Stock Threshold" value="5">
+                        <div class="image-upload">
+                            <label for="pImage">Product Image</label>
+                            <input type="file" id="pImage" accept="image/*" onchange="previewImage(event)">
+                            <img id="imagePreview" src="" class="hidden" width="50">
+                        </div>
+                        <textarea id="pIngredients" placeholder="Ingredients" class="full-width"></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn primary">Save</button>
+                        <button type="button" class="btn secondary" onclick="toggleForm()">Cancel</button>
+                    </div>
+                </form>
+
+                <div class="inventory-table-container">
+                    <table id="inventoryTable">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Product Info</th>
+                                <th>Cost/Retail</th>
+                                <th>Stock</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Sales Module -->
+            <section id="sales-module" class="module">
+                <div class="module-header">
+                    <h2>Sales & Record Keeping</h2>
+                    <button class="btn primary" onclick="showNewSaleForm()">+ New Sale / WhatsApp Order</button>
+                </div>
+                
+                <div id="newSaleSection" class="hidden">
+                    <div class="sale-grid">
+                        <div class="sale-form-box">
+                            <h3>Record Sale</h3>
+                            <div class="form-grid">
+                                <select id="saleProduct" onchange="updateSalePrice()"></select>
+                                <input type="number" id="saleQty" value="1" min="1" placeholder="Qty">
+                                <input type="number" id="salePrice" placeholder="Price">
+                                <button class="btn primary" onclick="addToSaleList()">Add to List</button>
+                            </div>
+                            
+                            <div class="customer-info">
+                                <input type="text" id="saleCustomerName" placeholder="Customer Name">
+                                <input type="text" id="saleCustomerPhone" placeholder="Phone Number">
+                                <select id="salePaymentStatus">
+                                    <option value="Paid">Paid (Cash/Transfer)</option>
+                                    <option value="Credit">Credit (Debtor)</option>
+                                </select>
+                                <input type="number" id="saleDiscount" placeholder="Discount (₦)" value="0">
+                                <input type="number" id="saleCharges" placeholder="Charges (₦)" value="0">
+                            </div>
+
+                            <div class="sale-list-container">
+                                <table id="saleListTable">
+                                    <thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th><th>Action</th></tr></thead>
+                                    <tbody id="saleListBody"></tbody>
+                                </table>
+                                <div class="sale-total-display">
+                                    <h4>Total: <span id="currentSaleTotal">₦0.00</span></h4>
+                                </div>
+                                <div class="form-actions">
+                                    <button class="btn primary" onclick="finalizeSale('store')">Complete Sale (Store)</button>
+                                    <button class="btn secondary" onclick="finalizeSale('whatsapp')">WhatsApp Order</button>
+                                    <button class="btn danger" onclick="cancelSale()">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="invoicePreview" class="invoice-box hidden">
+                            <!-- Invoice Generated Here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sales-history">
+                    <h3>Sales History</h3>
+                    <div class="table-container">
+                        <table id="salesHistoryTable">
+                            <thead><tr><th>ID</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Type</th><th>Actions</th></tr></thead>
+                            <tbody id="salesHistoryBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Expenses Module -->
+            <section id="expenses-module" class="module">
+                <div class="module-header">
+                    <h2>Expenses & Cost Analysis</h2>
+                    <button class="btn primary" onclick="showExpenseForm()">+ Record Expense</button>
+                </div>
+                <form id="expenseForm" class="hidden">
+                    <div class="form-grid">
+                        <input type="text" id="expName" placeholder="Description" required>
+                        <select id="expCategory">
+                            <option value="Rent">Rent</option>
+                            <option value="Salaries">Salaries</option>
+                            <option value="Raw Materials">Raw Materials</option>
+                            <option value="Utility">Utility</option>
+                            <option value="Logistics">Logistics</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <input type="number" id="expAmount" placeholder="Amount (₦)" required>
+                        <button class="btn primary" type="submit">Save Expense</button>
+                    </div>
+                </form>
+                <div class="table-container">
+                    <table id="expensesTable">
+                        <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead>
+                        <tbody id="expensesBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Analytics Module -->
+            <section id="analytics-module" class="module">
+                <div class="module-header">
+                    <h2>Inventory Values Calculator / Analytics</h2>
+                </div>
+                <div class="analytics-grid">
+                    <div class="stat-card"><h3>Total Units in Stock</h3><p id="anaTotalStock">0</p></div>
+                    <div class="stat-card"><h3>Total Retail Value</h3><p id="anaRetailValue">₦0.00</p></div>
+                    <div class="stat-card"><h3>Total Inventory Cost</h3><p id="anaInvCost">₦0.00</p></div>
+                    <div class="stat-card"><h3>Total Product Sales</h3><p id="anaTotalSales">₦0.00</p></div>
+                    <div class="stat-card profit"><h3>Expected Profits</h3><p id="anaExpProfit">₦0.00</p></div>
+                    <div class="stat-card alert-card"><h3>Low Stock Items</h3><p id="anaLowStock">0</p></div>
+                    <div class="stat-card"><h3>Credit Sales</h3><p id="anaCreditSales">₦0.00</p></div>
+                    <div class="stat-card"><h3>Debtor Record</h3><p id="anaDebtors">₦0.00</p></div>
+                </div>
+                <div class="charts-row">
+                    <!-- Future: Canvas for charts if needed -->
+                    <div class="chart-placeholder">Top Channel: Store</div>
+                </div>
+            </section>
+
+            <!-- Customers Module -->
+            <section id="customers-module" class="module">
+                <div class="module-header"><h2>Customer & Debtor Database</h2></div>
+                <div class="table-container">
+                    <table id="customersTable">
+                        <thead><tr><th>Name</th><th>Phone</th><th>Total Orders</th><th>Total Spent</th><th>Balance (Debt)</th><th>Action</th></tr></thead>
+                        <tbody id="customersBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Suppliers Module -->
+            <section id="suppliers-module" class="module">
+                <div class="module-header"><h2>Supplier Management</h2></div>
+                <div class="table-container">
+                    <table id="suppliersTable">
+                        <thead><tr><th>Supplier Name</th><th>Contact</th><th>Products Supplied</th></tr></thead>
+                        <tbody id="suppliersBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Store Management Module -->
+            <section id="store-module" class="module">
+                <div class="module-header"><h2>Store Management</h2></div>
+                <div class="store-grid">
+                    <div class="admin-card">
+                        <h3>Staff Management</h3>
+                        <div class="action-bar"><button class="btn secondary" onclick="addStaff()">+ Add Staff</button></div>
+                        <ul id="staffList"></ul>
+                    </div>
+                    <div class="admin-card">
+                        <h3>Store Settings</h3>
+                        <p>Manage multiple stores and printer settings.</p>
+                        <button class="btn secondary" onclick="printTest()">Test Printer</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
 
     <footer>
         <div class="footer-content animate-on-scroll">
