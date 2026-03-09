@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Management | Shayors Cosmetics</title>
     <link rel="stylesheet" href="inventory.css">
-    <link rel="shortcut icon" href="./Image/Shayor's Logo.png" type="image/x-icon">
+    <link rel="shortcut icon" href="../Image/Shayor's Logo.png" type="image/x-icon">
 </head>
 <body>
     <!-- Navigation -->
     <nav>
         <div class="logo">
-            <img src="../Image/Shayor's_Logo.jpeg" alt="Logo" width="80px">
+            <img src="../Image/Shayor's Logo New.png" alt="Logo" width="120px">
         </div>
 
         <ul class="nav-links">
@@ -47,7 +47,9 @@
                 <li class="active" onclick="showModule('inventory')">📦 Inventory</li>
                 <li onclick="showModule('sales')">💰 Sales & Invoices</li>
                 <li onclick="showModule('expenses')">💸 Expenses</li>
-                <li onclick="showModule('analytics')">📊 Analytics</li>
+                <li onclick="showModule('analytics')">📊 Analytics & Alerts</li>
+                <li onclick="showModule('spa')">🧖‍♀️ Spa Services</li>
+                <li onclick="showModule('adjustments')">🔄 Stock Adjustments</li>
                 <li onclick="showModule('customers')">👥 Customers</li>
                 <li onclick="showModule('suppliers')">🚛 Suppliers</li>
                 <li onclick="showModule('store')">🏪 Store Management</li>
@@ -97,18 +99,38 @@
                             <option value="Raw Materials">Raw Materials</option>
                             <option value="Other">Other</option>
                         </select>
-                        <input type="text" id="pShade" placeholder="Shade">
                         <input type="text" id="pSize" placeholder="Size" required>
+                        <input type="text" id="pBarcode" placeholder="Barcode / SKU">
+                        
+                        <div class="unit-setup full-width">
+                            <h4>Unit Setup</h4>
+                            <div class="form-grid">
+                                <select id="pPrimaryUnit">
+                                    <option value="">Primary Unit...</option>
+                                    <option value="Dozen">Dozen</option>
+                                    <option value="Half Dozen">Half Dozen</option>
+                                    <option value="Jar">Jar</option>
+                                    <option value="Cartons">Cartons</option>
+                                    <option value="Bottles">Bottles</option>
+                                    <option value="Pieces">Pieces</option>
+                                </select>
+                                <input type="number" id="pPiecesPerUnit" placeholder="Pieces per unit (e.g. 12)">
+                                <input type="text" id="pSecondaryUnit" placeholder="Secondary Unit (Optional e.g. Pack Size)">
+                            </div>
+                        </div>
+
                         <input type="number" id="pCostPrice" placeholder="Cost Price (₦)" step="0.01" required>
                         <input type="number" id="pPrice" placeholder="Retail Price (₦)" step="0.01" required>
                         <input type="number" id="pStock" placeholder="Initial Stock" required>
-                        <input type="number" id="pThreshold" placeholder="Low Stock Threshold" value="5">
+                        <div class="threshold-input">
+                            <label style="font-size: 0.8rem; display: block; margin-bottom: 5px;">Notify me when stock falls below this level:</label>
+                            <input type="number" id="pThreshold" placeholder="Stock Threshold" value="5">
+                        </div>
                         <div class="image-upload">
                             <label for="pImage">Product Image</label>
                             <input type="file" id="pImage" accept="image/*" onchange="previewImage(event)">
                             <img id="imagePreview" src="" class="hidden" width="50">
                         </div>
-                        <textarea id="pIngredients" placeholder="Ingredients" class="full-width"></textarea>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn primary">Save</button>
@@ -143,9 +165,13 @@
                 <div id="newSaleSection" class="hidden">
                     <div class="sale-grid">
                         <div class="sale-form-box">
-                            <h3>Record Sale</h3>
+                            <h3>Sales Records</h3>
                             <div class="form-grid">
                                 <select id="saleProduct" onchange="updateSalePrice()"></select>
+                                <select id="saleUnitType">
+                                    <option value="Pieces">Pieces</option>
+                                    <option value="Dozen">Dozen</option>
+                                </select>
                                 <input type="number" id="saleQty" value="1" min="1" placeholder="Qty">
                                 <input type="number" id="salePrice" placeholder="Price">
                                 <button class="btn primary" onclick="addToSaleList()">Add to List</button>
@@ -153,13 +179,56 @@
                             
                             <div class="customer-info">
                                 <input type="text" id="saleCustomerName" placeholder="Customer Name">
-                                <input type="text" id="saleCustomerPhone" placeholder="Phone Number">
-                                <select id="salePaymentStatus">
-                                    <option value="Paid">Paid (Cash/Transfer)</option>
-                                    <option value="Credit">Credit (Debtor)</option>
+                                <input type="text" id="saleCustomerContact" placeholder="Phone/Email">
+                                <select id="salePaymentStatus" onchange="togglePaymentFields()">
+                                    <option value="Paid">Paid</option>
+                                    <option value="Not Paid">Not Paid</option>
+                                    <option value="Partly Paid">Partly Paid</option>
                                 </select>
-                                <input type="number" id="saleDiscount" placeholder="Discount (₦)" value="0">
-                                <input type="number" id="saleCharges" placeholder="Charges (₦)" value="0">
+
+                                <div id="paidFields" class="form-grid">
+                                    <select id="salePaymentMethod">
+                                        <option value="">Payment Method...</option>
+                                        <option value="Cash">Cash</option>
+                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="POS">POS</option>
+                                        <option value="Card">Card</option>
+                                        <option value="USSD">USSD</option>
+                                        <option value="Mobile Money">Mobile Money</option>
+                                        <option value="Wallet">Wallet</option>
+                                        <option value="Others">Others</option>
+                                    </select>
+                                </div>
+
+                                <div id="partlyPaidFields" class="hidden">
+                                    <input type="number" id="saleAmountPaid" placeholder="Amount Paid (₦)">
+                                </div>
+
+                                <div class="form-grid">
+                                    <select id="salePlatform">
+                                        <option value="Direct Sales">Direct Sales</option>
+                                        <option value="WhatsApp">WhatsApp</option>
+                                        <option value="Snapchat">Snapchat</option>
+                                        <option value="Facebook">Facebook</option>
+                                        <option value="Instagram">Instagram</option>
+                                        <option value="Other">Add New...</option>
+                                    </select>
+                                    <select id="saleDeliveryStatus">
+                                        <option value="None">No Delivery</option>
+                                        <option value="Pending">Pending</option>
+                                        <option value="Shipped">Shipped</option>
+                                        <option value="Delivered">Delivered</option>
+                                    </select>
+                                </div>
+
+                                <textarea id="saleNote" placeholder="Note/Remarks" class="full-width"></textarea>
+
+                                <div class="adjustment-controls">
+                                    <input type="number" id="saleDiscount" placeholder="Discount (₦)" value="0">
+                                    <input type="number" id="saleCharges" placeholder="Charges (₦)" value="0">
+                                    <button class="btn secondary" onclick="applyCustomPricing()">Custom Pricing</button>
+                                    <button class="btn danger" onclick="clearAllSale()">Clear All</button>
+                                </div>
                             </div>
 
                             <div class="sale-list-container">
@@ -202,22 +271,54 @@
                 </div>
                 <form id="expenseForm" class="hidden">
                     <div class="form-grid">
-                        <input type="text" id="expName" placeholder="Description" required>
-                        <select id="expCategory">
+                        <input type="date" id="expDate" required>
+                        <input type="text" id="expCode" placeholder="Expense Code/Ref">
+                        <select id="expCategory" required>
+                            <option value="">Category...</option>
                             <option value="Rent">Rent</option>
                             <option value="Salaries">Salaries</option>
                             <option value="Raw Materials">Raw Materials</option>
                             <option value="Utility">Utility</option>
                             <option value="Logistics">Logistics</option>
+                            <option value="Advertising">Advertising</option>
+                            <option value="Maintenance">Maintenance</option>
+                            <option value="Tax">Tax</option>
                             <option value="Other">Other</option>
                         </select>
+                        <input type="text" id="expName" placeholder="Description" required>
+                        <input type="text" id="expVendor" placeholder="Vendor / Recipient">
+                        <select id="expPaymentMethod" required>
+                            <option value="">Payment Method...</option>
+                            <option value="Cash">Cash</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="POS">POS</option>
+                            <option value="Card">Card</option>
+                            <option value="USSD">USSD</option>
+                            <option value="Mobile Money">Mobile Money</option>
+                            <option value="Others">Others</option>
+                        </select>
                         <input type="number" id="expAmount" placeholder="Amount (₦)" required>
+                        <select id="expStatus" required>
+                            <option value="Paid">Paid</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Partial">Partial</option>
+                        </select>
                         <button class="btn primary" type="submit">Save Expense</button>
                     </div>
                 </form>
                 <div class="table-container">
                     <table id="expensesTable">
-                        <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Action</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Date/Code</th>
+                                <th>Category</th>
+                                <th>Description/Vendor</th>
+                                <th>Method</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
                         <tbody id="expensesBody"></tbody>
                     </table>
                 </div>
@@ -226,10 +327,11 @@
             <!-- Analytics Module -->
             <section id="analytics-module" class="module">
                 <div class="module-header">
-                    <h2>Inventory Values Calculator / Analytics</h2>
+                    <h2>Analytics & Alert System</h2>
                 </div>
                 <div class="analytics-grid">
-                    <div class="stat-card"><h3>Total Units in Stock</h3><p id="anaTotalStock">0</p></div>
+                    <div class="stat-card"><h3>Total Unique Products</h3><p id="anaTotalItems">0</p></div>
+                    <div class="stat-card"><h3>Total Items (Stock)</h3><p id="anaTotalStock">0</p></div>
                     <div class="stat-card"><h3>Total Retail Value</h3><p id="anaRetailValue">₦0.00</p></div>
                     <div class="stat-card"><h3>Total Inventory Cost</h3><p id="anaInvCost">₦0.00</p></div>
                     <div class="stat-card"><h3>Total Product Sales</h3><p id="anaTotalSales">₦0.00</p></div>
@@ -239,8 +341,7 @@
                     <div class="stat-card"><h3>Debtor Record</h3><p id="anaDebtors">₦0.00</p></div>
                 </div>
                 <div class="charts-row">
-                    <!-- Future: Canvas for charts if needed -->
-                    <div class="chart-placeholder">Top Channel: Store</div>
+                    <div class="chart-placeholder">Top Channel: <span id="anaTopChannel">N/A</span></div>
                 </div>
             </section>
 
@@ -249,7 +350,75 @@
                 <div class="module-header"><h2>Customer & Debtor Database</h2></div>
                 <div class="table-container">
                     <table id="customersTable">
-                        <thead><tr><th>Name</th><th>Phone</th><th>Total Orders</th><th>Total Spent</th><th>Balance (Debt)</th><th>Action</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Invoice No.</th>
+                                <th>Name</th>
+                                <th>Contact No.</th>
+                                <th>Product/Service</th>
+                                <th>Total Amount</th>
+                                <th>Partly Paid</th>
+                                <th>Balance</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Customers & Debtors Module -->
+            <section id="customers-module" class="module">
+                <div class="module-header">
+                    <h2>Customers & Debtors Database</h2>
+                    <div class="action-bar">
+                        <button class="btn primary" onclick="toggleCustomerForm()">+ New Customer</button>
+                        <input type="text" id="customerSearch" placeholder="Search Customer..." onkeyup="searchCustomers()">
+                    </div>
+                </div>
+
+                <form id="customerForm" class="product-form hidden">
+                    <h3>Customer Details</h3>
+                    <div class="form-grid">
+                        <input type="hidden" id="cId">
+                        <input type="date" id="cDate" required>
+                        <input type="text" id="cInvoiceNo" placeholder="Invoice No">
+                        <input type="text" id="cName" placeholder="Customer Name" required>
+                        <input type="text" id="cContact" placeholder="Contact No (Phone/Email)" required>
+                        <input type="text" id="cProduct" placeholder="Product/Service">
+                        <input type="number" id="cTotalAmount" placeholder="Total Amount (₦)" required>
+                        <input type="number" id="cPartlyPaid" placeholder="Partly Paid (₦)" value="0">
+                        <input type="date" id="cDueDate" placeholder="Due Date (If Balance exists)">
+                        <select id="cStatus">
+                            <option value="Paid">Paid</option>
+                            <option value="Not Paid">Not Paid</option>
+                            <option value="Partly Paid">Partly Paid</option>
+                        </select>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn primary">Save Customer</button>
+                        <button type="button" class="btn secondary" onclick="toggleCustomerForm()">Cancel</button>
+                    </div>
+                </form>
+
+                <div class="table-container">
+                    <table id="customersTable">
+                        <thead>
+                            <tr>
+                                <th>Date/Invoice</th>
+                                <th>Name/Contact</th>
+                                <th>Product/Service</th>
+                                <th>Total Amount</th>
+                                <th>Partly Paid</th>
+                                <th>Balance</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
                         <tbody id="customersBody"></tbody>
                     </table>
                 </div>
@@ -257,10 +426,36 @@
 
             <!-- Suppliers Module -->
             <section id="suppliers-module" class="module">
-                <div class="module-header"><h2>Supplier Management</h2></div>
+                <div class="module-header">
+                    <h2>Supplier Management</h2>
+                    <button class="btn primary" onclick="toggleSupplierForm()">+ New Supplier</button>
+                </div>
+
+                <form id="supplierForm" class="product-form hidden">
+                    <h3>Supplier Details</h3>
+                    <div class="form-grid">
+                        <input type="text" id="supName" placeholder="Supplier Name" required>
+                        <input type="text" id="supContact" placeholder="Phone/Contact" required>
+                        <input type="text" id="supAddress" placeholder="Address">
+                        <input type="text" id="supProducts" placeholder="Products Supplied">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn primary">Save Supplier</button>
+                        <button type="button" class="btn secondary" onclick="toggleSupplierForm()">Cancel</button>
+                    </div>
+                </form>
+
                 <div class="table-container">
                     <table id="suppliersTable">
-                        <thead><tr><th>Supplier Name</th><th>Contact</th><th>Products Supplied</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Supplier Name</th>
+                                <th>Contact</th>
+                                <th>Address</th>
+                                <th>Products Supplied</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
                         <tbody id="suppliersBody"></tbody>
                     </table>
                 </div>
@@ -268,18 +463,92 @@
 
             <!-- Store Management Module -->
             <section id="store-module" class="module">
-                <div class="module-header"><h2>Store Management</h2></div>
+                <div class="module-header"><h2>Store & Admin Management</h2></div>
                 <div class="store-grid">
+                    <!-- Roles & Permissions -->
+                    <div class="admin-card">
+                        <h3>Role Management</h3>
+                        <div class="action-bar"><button class="btn secondary" onclick="toggleRoleForm()">+ Create Role</button></div>
+                        <form id="roleForm" class="hidden">
+                            <input type="text" id="roleName" placeholder="Role Name (e.g. Sales Rep)" required>
+                            <div class="permissions-list">
+                                <label><input type="checkbox" value="view_customers"> View Customers</label>
+                                <label><input type="checkbox" value="manage_suppliers"> Manage Suppliers</label>
+                                <label><input type="checkbox" value="receive_sales_alert"> Receive Sales Alert</label>
+                                <label><input type="checkbox" value="invoices_style"> Invoices Style</label>
+                                <label><input type="checkbox" value="view_records"> View Records</label>
+                                <label><input type="checkbox" value="view_weekly_summary"> View Weekly Sales Summary</label>
+                                <label><input type="checkbox" value="set_payment_reminder"> Set Payment Reminder Time</label>
+                                <label><input type="checkbox" value="export_data"> Export Data</label>
+                                <label><input type="checkbox" value="delete_records"> Delete Records</label>
+                            </div>
+                            <button type="submit" class="btn primary">Save Role</button>
+                        </form>
+                        <ul id="rolesList"></ul>
+                    </div>
+
+                    <!-- Staff Management -->
                     <div class="admin-card">
                         <h3>Staff Management</h3>
-                        <div class="action-bar"><button class="btn secondary" onclick="addStaff()">+ Add Staff</button></div>
+                        <div class="action-bar"><button class="btn secondary" onclick="toggleStaffForm()">+ Add Staff</button></div>
+                        <form id="staffForm" class="hidden">
+                            <input type="text" id="staffName" placeholder="Staff Name" required>
+                            <input type="email" id="staffEmail" placeholder="Staff Email" required>
+                            <select id="staffRole" required>
+                                <option value="">Select Role...</option>
+                            </select>
+                            <button type="submit" class="btn primary">Save Staff</button>
+                        </form>
                         <ul id="staffList"></ul>
                     </div>
+
                     <div class="admin-card">
                         <h3>Store Settings</h3>
                         <p>Manage multiple stores and printer settings.</p>
                         <button class="btn secondary" onclick="printTest()">Test Printer</button>
                     </div>
+                </div>
+            </section>
+
+            <!-- Stock Adjustments Module -->
+            <section id="adjustments-module" class="module">
+                <div class="module-header">
+                    <h2>Stock Adjustments (Restocks / Stock Out)</h2>
+                    <button class="btn primary" onclick="toggleAdjustmentForm()">+ New Adjustment</button>
+                </div>
+
+                <form id="adjustmentForm" class="product-form hidden">
+                    <h3>Adjustment Details</h3>
+                    <div class="form-grid">
+                        <select id="adjProduct" required>
+                            <option value="">Select Product...</option>
+                        </select>
+                        <select id="adjType" required>
+                            <option value="Restock">Restock (Stock In)</option>
+                            <option value="Stock Out">Stock Out (Wastage/Loss)</option>
+                        </select>
+                        <input type="number" id="adjQty" placeholder="Quantity" min="1" required>
+                        <input type="text" id="adjReason" placeholder="Reason (e.g. New Shipment, Damage)">
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn primary">Apply Adjustment</button>
+                        <button type="button" class="btn secondary" onclick="toggleAdjustmentForm()">Cancel</button>
+                    </div>
+                </form>
+
+                <div class="table-container">
+                    <table id="adjustmentsTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Product</th>
+                                <th>Type</th>
+                                <th>Qty</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adjustmentsBody"></tbody>
+                    </table>
                 </div>
             </section>
         </main>

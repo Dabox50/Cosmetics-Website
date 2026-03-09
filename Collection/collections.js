@@ -17,8 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Read from unified storage or fallback
     let productData = JSON.parse(localStorage.getItem('shayorsInventory')) || initialProducts;
+    let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
 
-    const categories = ["Skincare", "Bath & Body", "Facecream", "Spa", "Perfume", "Supplements", "Sunscreen", "Humidifiers", "Diffusers", "Raw Materials"];
+    const categories = ["Skincare", "Serum Oil", "Packaging Bottle", "Perfume Oil", "Bar Soap", "Mask", "Sponge", "Patch", "Tube", "Black Soap", "Face & Body Wash", "Facecream", "Spa", "Perfume", "Supplements", "Sunscreen", "Humidifiers", "Diffusers", "Raw Materials"];
 
     // 2. Render Categories and Search in Nav
     const searchNav = document.getElementById('searchNav');
@@ -44,15 +45,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="product-status ${available ? 'status-available' : 'status-unavailable'}">
                     ${available ? 'In Stock' : 'Out of Stock'}
                 </span>
-                <img src="${product.image}" alt="${product.name}">
+                <img src="${product.image || '../Image/placeholder.png'}" alt="${product.name}">
                 <div class="card-content">
-                    <p class="brand">${product.brand}</p>
+                    <p class="brand">${product.brand || 'Shayors'}</p>
                     <h3>${product.name}</h3>
                     <p class="price">₦${parseFloat(product.price).toLocaleString()}</p>
                     <p class="qty">Qty Available: ${product.stock}</p>
-                    <button class="btn primary" ${available ? '' : 'disabled'}>
+                    <button class="btn primary" ${available ? '' : 'disabled'} onclick="openOrderModal(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})">
                         ${available ? 'Order Now' : 'Join Waitlist'}
                     </button>
+                </div>
+            </div>
+        `;
+    }
+
+    function createServiceCard(service) {
+        return `
+            <div class="product-card service-card">
+                <span class="product-status status-available">Service</span>
+                <img src="../Image/spa-service.png" alt="${service.name}" onerror="this.src='../Image/placeholder.png'">
+                <div class="card-content">
+                    <p class="brand">${service.category || 'Spa & Beauty'}</p>
+                    <h3>${service.name}</h3>
+                    <p class="price">₦${parseFloat(service.price).toLocaleString()}</p>
+                    <p class="qty">Unit: ${service.units || service.unit || 'Session'}</p>
+                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
+                        <button class="btn primary" onclick="openBookingModal(${service.id}, '${service.name.replace(/'/g, "\\'")}')">Book Now</button>
+                        <button class="btn secondary" style="background: #555; font-size: 0.6rem; padding: 5px 10px;" onclick="editSpaService(${service.id})">Edit</button>
+                        <button class="btn danger" style="font-size: 0.6rem; padding: 5px 10px;" onclick="deleteSpaService(${service.id})">Del</button>
+                    </div>
                 </div>
             </div>
         `;
@@ -62,29 +83,46 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!productRowsContainer) return;
 
         let filteredProducts = productData;
+        let filteredServices = [];
 
         // Filter by Category
         if (filterCat !== "All") {
             filteredProducts = filteredProducts.filter(p => p.category === filterCat);
+            if (filterCat === "Spa") {
+                filteredServices = spaServices;
+            }
+        } else {
+            // "All" includes all products and all services if searching
+            if (searchTerm) {
+                filteredServices = spaServices;
+            }
         }
 
         // Filter by Search Term
         if (searchTerm) {
+            const lowerSearch = searchTerm.toLowerCase();
             filteredProducts = filteredProducts.filter(p => 
-                p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                p.brand.toLowerCase().includes(searchTerm.toLowerCase())
+                p.name.toLowerCase().includes(lowerSearch) || 
+                (p.brand && p.brand.toLowerCase().includes(lowerSearch))
+            );
+            filteredServices = filteredServices.filter(s => 
+                s.name.toLowerCase().includes(lowerSearch)
             );
         }
+
+        const totalResults = filteredProducts.length + filteredServices.length;
 
         // If filtering/searching is active, show grid
         if (filterCat !== "All" || searchTerm !== "") {
             productRowsContainer.innerHTML = `
                 <div class="search-results">
-                    <h2 class="row-title">${filterCat === 'All' ? 'Search' : filterCat} Results (${filteredProducts.length})</h2>
+                    <h2 class="row-title">
+                        ${filterCat === 'All' ? 'Search' : filterCat} Results (${totalResults})
+                    </h2>
                     <div class="product-grid">
-                        ${filteredProducts.length > 0 ? 
-                            filteredProducts.map(p => createProductCard(p)).join('') : 
-                            '<p class="no-results">No products found matching your search.</p>'}
+                        ${filteredProducts.map(p => createProductCard(p)).join('')}
+                        ${filteredServices.map(s => createServiceCard(s)).join('')}
+                        ${totalResults === 0 ? '<p class="no-results">No results found.</p>' : ''}
                     </div>
                 </div>
             `;
@@ -92,9 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Default: Show Horizontal Rows (Sliders) for all categories with products
             const rowsToShow = categories;
             
-            productRowsContainer.innerHTML = rowsToShow.map((cat, index) => {
+            let html = rowsToShow.map((cat, index) => {
                 const productsInCat = productData.filter(p => p.category === cat);
-                if (productsInCat.length === 0) return '';
+                if (productsInCat.length === 0 || cat === "Spa") return '';
 
                 return `
                     <div class="row-container animate-on-scroll">
@@ -109,6 +147,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
             }).join('');
+
+            // Add dedicated Spa Services Section at the bottom
+            if (spaServices.length > 0 || true) { // Always show if we want "Add" button
+                html += `
+                    <div class="row-container animate-on-scroll spa-services-section" style="margin-top: 50px; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+                            <h2 class="row-title" style="margin: 0; font-size: 2rem;">🧖‍♀️ Our Spa & Beauty Services</h2>
+                            <button class="btn primary" onclick="openModal('spaManagementModal')">+ Add New Service</button>
+                        </div>
+                        <p style="text-align: center; margin-bottom: 40px; color: #777;">Indulge in our professional spa treatments designed for your relaxation and beauty.</p>
+                        <div class="product-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                            ${spaServices.length > 0 ? 
+                                spaServices.map(s => createServiceCard(s)).join('') : 
+                                '<p style="grid-column: 1/-1; text-align: center;">No spa services added yet.</p>'}
+                        </div>
+                    </div>
+                `;
+            }
+
+            productRowsContainer.innerHTML = html;
             setupSliders();
         }
         
@@ -166,4 +224,202 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial Render
     renderProductRows();
+
+    // 5. Spa Service Management & Booking Logic
+    window.openModal = function(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    window.closeModal = function(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('hidden');
+            if (modalId === 'spaManagementModal') {
+                document.getElementById('spaServiceForm').reset();
+                document.getElementById('sId').value = '';
+            }
+        }
+    };
+
+    const spaServiceForm = document.getElementById('spaServiceForm');
+    if (spaServiceForm) {
+        spaServiceForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('sId').value;
+            const serviceData = {
+                id: id ? parseInt(id) : Date.now(),
+                name: document.getElementById('sName').value,
+                category: document.getElementById('sCategory').value,
+                units: document.getElementById('sUnits').value,
+                price: parseFloat(document.getElementById('sPrice').value)
+            };
+
+            if (id) {
+                const index = spaServices.findIndex(s => s.id === parseInt(id));
+                if (index !== -1) spaServices[index] = serviceData;
+            } else {
+                spaServices.push(serviceData);
+            }
+
+            localStorage.setItem('shayorsSpaServices', JSON.stringify(spaServices));
+            closeModal('spaManagementModal');
+            location.reload(); // Refresh to show new data
+        });
+    }
+
+    window.editSpaService = function(id) {
+        const s = spaServices.find(s => s.id === id);
+        if (!s) return;
+        document.getElementById('sId').value = s.id;
+        document.getElementById('sName').value = s.name;
+        document.getElementById('sCategory').value = s.category;
+        document.getElementById('sUnits').value = s.units;
+        document.getElementById('sPrice').value = s.price;
+        openModal('spaManagementModal');
+    };
+
+    window.deleteSpaService = function(id) {
+        if (confirm('Delete this service?')) {
+            spaServices = spaServices.filter(s => s.id !== id);
+            localStorage.setItem('shayorsSpaServices', JSON.stringify(spaServices));
+            location.reload();
+        }
+    };
+
+    // Booking Logic
+    window.openBookingModal = function(id, name) {
+        document.getElementById('bookingServiceId').value = id;
+        document.getElementById('bookingServiceName').innerText = name;
+        openModal('bookingModal');
+    };
+
+    window.openOrderModal = function(id, name, price) {
+        document.getElementById('orderProductId').value = id;
+        document.getElementById('orderProductName').innerText = name;
+        document.getElementById('orderProductPrice').value = price;
+        document.getElementById('orderTotalDisplay').innerText = parseFloat(price).toLocaleString();
+        openModal('orderModal');
+    };
+
+    const orderCustQty = document.getElementById('orderCustQty');
+    if (orderCustQty) {
+        orderCustQty.addEventListener('input', () => {
+            const price = parseFloat(document.getElementById('orderProductPrice').value);
+            const qty = parseInt(orderCustQty.value) || 1;
+            document.getElementById('orderTotalDisplay').innerText = (price * qty).toLocaleString();
+        });
+    }
+
+    const orderForm = document.getElementById('orderForm');
+    if (orderForm) {
+        orderForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const productId = document.getElementById('orderProductId').value;
+            const productName = document.getElementById('orderProductName').innerText;
+            const price = parseFloat(document.getElementById('orderProductPrice').value);
+            const qty = parseInt(document.getElementById('orderCustQty').value);
+            
+            const orderData = {
+                customerName: document.getElementById('orderCustName').value,
+                customerEmail: document.getElementById('orderCustEmail').value,
+                customerPhone: document.getElementById('orderCustPhone').value,
+                shippingAddress: document.getElementById('orderCustAddress').value,
+                items: [{
+                    productId: productId.toString(),
+                    productName: productName,
+                    quantity: qty,
+                    price: price
+                }],
+                totalAmount: price * qty,
+                paymentMethod: 'Cash on Delivery', // Default
+                notes: document.getElementById('orderCustNote').value
+            };
+
+            try {
+                // Change URL to your production backend URL when deployed
+                const response = await fetch('http://localhost:5000/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+
+                if (response.ok) {
+                    const savedOrder = await response.json();
+                    alert('Order placed successfully! We will contact you soon.');
+                    
+                    // Optional: WhatsApp redirect
+                    const waMessage = `New Order from ${orderData.customerName}:\nProduct: ${productName}\nQty: ${qty}\nTotal: ₦${orderData.totalAmount}\nAddress: ${orderData.shippingAddress}`;
+                    window.open(`https://wa.me/2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
+                    
+                    closeModal('orderModal');
+                } else {
+                    const err = await response.json();
+                    alert(`Failed to place order: ${err.message}`);
+                }
+            } catch (error) {
+                console.error('Order error:', error);
+                alert('Server error. Is the backend running?');
+            }
+        });
+    }
+
+    const bookingForm = document.getElementById('bookingForm');
+    if (bookingForm) {
+        bookingForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const serviceId = document.getElementById('bookingServiceId').value;
+            const service = spaServices.find(s => s.id == serviceId);
+            const name = document.getElementById('custName').value;
+            const contact = document.getElementById('custContact').value;
+            const note = document.getElementById('bookingNote').value;
+
+            // Record as Sale in Inventory
+            const sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
+            const newSale = {
+                id: 'SPA' + Date.now(),
+                date: new Date().toISOString(),
+                customer: name,
+                contact: contact,
+                items: [{
+                    name: service.name,
+                    qty: 1,
+                    unitType: service.units || 'Session',
+                    price: service.price,
+                    total: service.price
+                }],
+                total: service.price,
+                status: 'Not Paid', // Default status for new booking
+                platform: 'Website Booking',
+                note: note,
+                type: 'spa'
+            };
+
+            sales.push(newSale);
+            localStorage.setItem('shayorsSales', JSON.stringify(sales));
+
+            // Also record in Customers DB
+            const customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
+            customers.push({
+                id: 'C' + Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                invoiceNo: newSale.id,
+                name: name,
+                contact: contact,
+                product: service.name,
+                totalAmount: service.price,
+                partlyPaid: 0,
+                status: 'Not Paid'
+            });
+            localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
+
+            alert('Booking confirmed! Admin has been notified via dashboard records.');
+            closeModal('bookingModal');
+            
+            // Optional: WhatsApp Notification
+            const msg = `*New Spa Booking*%0AService: ${service.name}%0ACustomer: ${name}%0AContact: ${contact}%0ANote: ${note}`;
+            window.open(`https://wa.me/2348123456789?text=${msg}`);
+        });
+    }
 });

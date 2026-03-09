@@ -122,17 +122,18 @@ nav {
 .hero h1 {
     font-size: 4rem;
     margin-bottom: 1rem;
-    color: var(--secondary-color);
+    color: var(--text-color);
 }
 
 .slogan {
     font-size: 1.5rem;
-    color: var(--primary-color);
+    color: var(--secondary-color);
     margin-bottom: 1.5rem;
     font-weight: 300;
 }
 
 .description {
+    color: #000000;
     max-width: 600px;
     margin: 0 auto 2.5rem auto;
     font-size: 1.1rem;
@@ -428,6 +429,11 @@ footer {
     .nav-links.nav-active {
         transform: translateX(0%);
     }
+    
+    .hero {
+        margin-top: 10px;
+        height: 70vh;
+    }
 
     .hero h1 {
         font-size: 2.5rem;
@@ -495,6 +501,11 @@ footer {
 
     .nav-links a:hover, .active-link {
         color: var(--primary-color);
+    }
+
+    .hero {
+        margin-top: 10px;
+        height: 70vh;
     }
 
     .hero h1 {

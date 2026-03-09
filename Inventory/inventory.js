@@ -32,7 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let expenses = JSON.parse(localStorage.getItem('shayorsExpenses')) || [];
     let customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
     let suppliers = JSON.parse(localStorage.getItem('shayorsSuppliers')) || [];
-    let staff = JSON.parse(localStorage.getItem('shayorsStaff')) || [{id: 1, name: 'Admin', role: 'Manager'}];
+    let staff = JSON.parse(localStorage.getItem('shayorsStaff')) || [{id: 1, name: 'Admin', role: 'Admin', email: 'admin@shayors.com'}];
+    let roles = JSON.parse(localStorage.getItem('shayorsRoles')) || [{name: 'Admin', permissions: ['all']}];
+    let adjustments = JSON.parse(localStorage.getItem('shayorsAdjustments')) || [];
+    let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
 
     let currentSaleItems = [];
 
@@ -49,9 +52,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (moduleId === 'sales') { renderSalesHistory(); updateSaleProductDropdown(); }
         if (moduleId === 'expenses') renderExpenses();
         if (moduleId === 'analytics') renderAnalytics();
+        if (moduleId === 'spa') renderSpaServices();
+        if (moduleId === 'adjustments') { renderAdjustments(); updateAdjustmentProductDropdown(); }
         if (moduleId === 'customers') renderCustomers();
         if (moduleId === 'suppliers') renderSuppliers();
-        if (moduleId === 'store') renderStore();
+        if (moduleId === 'store') { renderStore(); updateStaffRoleDropdown(); }
     };
 
     // 4. Image Handling
@@ -87,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="prod-info-cell">
                     <h4>${p.name}</h4>
                     <p>${p.brand} | ${p.size} ${p.shade && p.shade !== 'N/A' ? '| ' + p.shade : ''}</p>
+                    <p><small>${p.primaryUnit || ''} ${p.secondaryUnit ? '(' + p.secondaryUnit + ')' : ''} | Barcode: ${p.barcode || 'N/A'}</small></p>
                 </td>
                 <td>
                     <small>Cost: ₦${(p.costPrice || 0).toLocaleString()}</small><br>
@@ -134,13 +140,17 @@ document.addEventListener('DOMContentLoaded', () => {
             name: document.getElementById('pName').value,
             brand: document.getElementById('pBrand').value,
             category: document.getElementById('pCategory').value,
-            shade: document.getElementById('pShade').value || 'N/A',
+            shade: document.getElementById('pShade') ? document.getElementById('pShade').value : 'N/A',
             size: document.getElementById('pSize').value,
+            barcode: document.getElementById('pBarcode').value || '',
+            primaryUnit: document.getElementById('pPrimaryUnit').value || '',
+            piecesPerUnit: parseInt(document.getElementById('pPiecesPerUnit').value) || 1,
+            secondaryUnit: document.getElementById('pSecondaryUnit').value || '',
             costPrice: parseFloat(document.getElementById('pCostPrice').value),
             price: parseFloat(document.getElementById('pPrice').value),
             stock: parseInt(document.getElementById('pStock').value),
             threshold: parseInt(document.getElementById('pThreshold').value) || 5,
-            ingredients: document.getElementById('pIngredients').value,
+            ingredients: document.getElementById('pIngredients') ? document.getElementById('pIngredients').value : '',
             image: imgPreview.startsWith('data:') ? imgPreview : (id ? (inventory.find(p=>p.id==id)?.image || '../Image/Shayor\'s Logo.png') : '../Image/Shayor\'s Logo.png')
         };
 
@@ -164,6 +174,10 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('pCategory').value = p.category || 'Other';
         document.getElementById('pShade').value = p.shade || '';
         document.getElementById('pSize').value = p.size;
+        document.getElementById('pBarcode').value = p.barcode || '';
+        document.getElementById('pPrimaryUnit').value = p.primaryUnit || '';
+        document.getElementById('pPiecesPerUnit').value = p.piecesPerUnit || 1;
+        document.getElementById('pSecondaryUnit').value = p.secondaryUnit || '';
         document.getElementById('pCostPrice').value = p.costPrice || 0;
         document.getElementById('pPrice').value = p.price;
         document.getElementById('pStock').value = p.stock;
@@ -218,6 +232,44 @@ document.addEventListener('DOMContentLoaded', () => {
     window.showNewSaleForm = function() {
         document.getElementById('newSaleSection').classList.toggle('hidden');
         updateSaleProductDropdown();
+        togglePaymentFields(); // Initial state
+    };
+
+    window.togglePaymentFields = function() {
+        const status = document.getElementById('salePaymentStatus').value;
+        const paidFields = document.getElementById('paidFields');
+        const partlyPaidFields = document.getElementById('partlyPaidFields');
+
+        if (status === 'Paid') {
+            paidFields.classList.remove('hidden');
+            partlyPaidFields.classList.add('hidden');
+        } else if (status === 'Partly Paid') {
+            paidFields.classList.remove('hidden'); // Still need payment method for partial
+            partlyPaidFields.classList.remove('hidden');
+        } else {
+            paidFields.classList.add('hidden');
+            partlyPaidFields.classList.add('hidden');
+        }
+    };
+
+    window.applyCustomPricing = function() {
+        const newPrice = prompt("Enter Custom Price for current product selection:");
+        if (newPrice && !isNaN(newPrice)) {
+            document.getElementById('salePrice').value = newPrice;
+        }
+    };
+
+    window.clearAllSale = function() {
+        if (confirm("Clear all items and customer info?")) {
+            currentSaleItems = [];
+            renderCurrentSaleList();
+            document.getElementById('saleCustomerName').value = '';
+            document.getElementById('saleCustomerContact').value = '';
+            document.getElementById('saleNote').value = '';
+            document.getElementById('saleDiscount').value = 0;
+            document.getElementById('saleCharges').value = 0;
+            document.getElementById('saleAmountPaid').value = '';
+        }
     };
 
     function updateSaleProductDropdown() {
@@ -239,17 +291,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.addToSaleList = function() {
         const productId = document.getElementById('saleProduct').value;
+        const unitType = document.getElementById('saleUnitType').value;
         const qty = parseInt(document.getElementById('saleQty').value);
         const price = parseFloat(document.getElementById('salePrice').value);
 
         if (!productId) return alert('Select a product');
         const product = inventory.find(p => p.id == productId);
-        if (product.stock < qty) return alert('Insufficient stock');
+        
+        let piecesPerUnit = product.piecesPerUnit || 1;
+        let actualQty = (unitType === 'Dozen' || unitType === product.primaryUnit) ? qty * piecesPerUnit : qty;
+        
+        if (product.stock < actualQty) return alert('Insufficient stock');
 
         currentSaleItems.push({
             productId: product.id,
             name: product.name,
             qty: qty,
+            unitType: unitType,
+            actualQty: actualQty,
             price: price,
             total: qty * price
         });
@@ -266,7 +325,7 @@ document.addEventListener('DOMContentLoaded', () => {
             total += item.total;
             body.innerHTML += `
                 <tr>
-                    <td>${item.name}</td>
+                    <td>${item.name} (${item.unitType})</td>
                     <td>${item.qty}</td>
                     <td>₦${item.price.toLocaleString()}</td>
                     <td>₦${item.total.toLocaleString()}</td>
@@ -286,8 +345,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentSaleItems.length === 0) return alert('Add items to sale');
         
         const customerName = document.getElementById('saleCustomerName').value || 'Walk-in Customer';
-        const phone = document.getElementById('saleCustomerPhone').value || '';
+        const contact = document.getElementById('saleCustomerContact').value || '';
         const paymentStatus = document.getElementById('salePaymentStatus').value;
+        const paymentMethod = document.getElementById('salePaymentMethod').value;
+        const amountPaid = parseFloat(document.getElementById('saleAmountPaid').value) || 0;
+        const platform = document.getElementById('salePlatform').value;
+        const deliveryStatus = document.getElementById('saleDeliveryStatus').value;
+        const note = document.getElementById('saleNote').value;
         const discount = parseFloat(document.getElementById('saleDiscount').value) || 0;
         const charges = parseFloat(document.getElementById('saleCharges').value) || 0;
         
@@ -298,40 +362,48 @@ document.addEventListener('DOMContentLoaded', () => {
             id: 'S' + Date.now(),
             date: new Date().toISOString(),
             customer: customerName,
-            phone: phone,
+            contact: contact,
             items: [...currentSaleItems],
             subtotal: subtotal,
             discount: discount,
             charges: charges,
             total: grandTotal,
-            status: paymentStatus, // 'Paid' or 'Credit'
+            status: paymentStatus, 
+            paymentMethod: paymentMethod,
+            amountPaid: paymentStatus === 'Paid' ? grandTotal : amountPaid,
+            platform: platform,
+            deliveryStatus: deliveryStatus,
+            note: note,
             type: type 
         };
 
         currentSaleItems.forEach(item => {
             const p = inventory.find(p => p.id == item.productId);
-            if (p) p.stock -= item.qty;
+            if (p) p.stock -= item.actualQty;
         });
 
         sales.push(sale);
         localStorage.setItem('shayorsSales', JSON.stringify(sales));
         localStorage.setItem('shayorsInventory', JSON.stringify(inventory));
 
-        if (phone) {
-            let cust = customers.find(c => c.phone === phone);
-            if (!cust) {
-                cust = { name: customerName, phone: phone, orders: 0, spent: 0, balance: 0 };
-                customers.push(cust);
-            }
-            cust.orders++;
-            cust.spent += grandTotal;
-            if (paymentStatus === 'Credit') {
-                cust.balance += grandTotal;
-            }
+        if (contact || customerName !== 'Walk-in Customer') {
+            const debtorRecord = {
+                id: 'C' + Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                invoiceNo: sale.id,
+                name: customerName,
+                contact: contact,
+                product: currentSaleItems.map(i => i.name).join(', '),
+                totalAmount: grandTotal,
+                partlyPaid: sale.amountPaid,
+                dueDate: '', // To be filled later if needed
+                status: paymentStatus
+            };
+            customers.push(debtorRecord);
             localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
         }
 
-        if (type === 'whatsapp') {
+        if (platform === 'WhatsApp' || type === 'whatsapp') {
             sendWhatsAppOrder(sale);
         }
 
@@ -341,7 +413,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCurrentSaleList();
         renderSalesHistory();
         document.getElementById('newSaleSection').classList.add('hidden');
-        alert('Sale Completed!');
+        alert('Sale Recorded Successfully!');
     };
 
     window.returnSale = function(id) {
@@ -355,15 +427,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (p) p.stock += item.qty;
             });
 
-            // Adjust Customer Balance if it was Credit
-            if (sale.phone) {
-                const cust = customers.find(c => c.phone === sale.phone);
-                if (cust) {
-                    cust.orders--;
-                    cust.spent -= sale.total;
-                    if (sale.status === 'Credit') cust.balance -= sale.total;
-                }
+            // Adjust Customer Balance or remove record
+            const custIdx = customers.findIndex(c => c.invoiceNo === sale.id);
+            if (custIdx !== -1) {
+                customers.splice(custIdx, 1);
             }
+            localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
 
             sales.splice(saleIdx, 1);
             localStorage.setItem('shayorsSales', JSON.stringify(sales));
@@ -450,10 +519,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('expenseForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const exp = {
-            date: new Date().toISOString(),
-            description: document.getElementById('expName').value,
+            date: document.getElementById('expDate').value,
+            code: document.getElementById('expCode').value || 'EXP-' + Date.now().toString().slice(-4),
             category: document.getElementById('expCategory').value,
-            amount: parseFloat(document.getElementById('expAmount').value)
+            description: document.getElementById('expName').value,
+            vendor: document.getElementById('expVendor').value,
+            paymentMethod: document.getElementById('expPaymentMethod').value,
+            amount: parseFloat(document.getElementById('expAmount').value),
+            status: document.getElementById('expStatus').value
         };
         expenses.push(exp);
         localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
@@ -468,10 +541,12 @@ document.addEventListener('DOMContentLoaded', () => {
         expenses.slice().reverse().forEach((e, idx) => {
             body.innerHTML += `
                 <tr>
-                    <td>${new Date(e.date).toLocaleDateString()}</td>
+                    <td>${e.date}<br><small>${e.code || ''}</small></td>
                     <td>${e.category}</td>
-                    <td>${e.description}</td>
+                    <td>${e.description}<br><small>Vendor: ${e.vendor || 'N/A'}</small></td>
+                    <td>${e.paymentMethod || 'N/A'}</td>
                     <td>₦${e.amount.toLocaleString()}</td>
+                    <td><span class="badge ${e.status === 'Paid' ? 'badge-in' : (e.status === 'Pending' ? 'badge-out' : 'badge-low')}">${e.status}</span></td>
                     <td><button class="btn danger" onclick="deleteExpense(${idx})">Del</button></td>
                 </tr>
             `;
@@ -499,10 +574,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
-        const creditSales = sales.filter(s => s.status === 'Credit').reduce((sum, s) => sum + s.total, 0);
-        const debtorsTotal = customers.reduce((sum, c) => sum + (c.balance || 0), 0);
+        const creditSales = sales.filter(s => s.status !== 'Paid').reduce((sum, s) => sum + (s.total - (s.amountPaid || 0)), 0);
+        const debtorsTotal = customers.reduce((sum, c) => sum + ((c.totalAmount || 0) - (c.partlyPaid || 0)), 0);
         const expectedProfit = totalRetailVal - totalCostVal;
 
+        document.getElementById('anaTotalItems').innerText = inventory.length;
         document.getElementById('anaTotalStock').innerText = totalStock;
         document.getElementById('anaRetailValue').innerText = `₦${totalRetailVal.toLocaleString()}`;
         document.getElementById('anaInvCost').innerText = `₦${totalCostVal.toLocaleString()}`;
@@ -511,67 +587,262 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('anaLowStock').innerText = lowStockCount;
         document.getElementById('anaCreditSales').innerText = `₦${creditSales.toLocaleString()}`;
         document.getElementById('anaDebtors').innerText = `₦${debtorsTotal.toLocaleString()}`;
+
+        // Top Channel Logic
+        const channelCounts = {};
+        sales.forEach(s => {
+            channelCounts[s.platform] = (channelCounts[s.platform] || 0) + 1;
+        });
+        const topChannel = Object.keys(channelCounts).reduce((a, b) => channelCounts[a] > channelCounts[b] ? a : b, 'N/A');
+        document.getElementById('anaTopChannel').innerText = topChannel;
     }
 
-    // 9. Other Modules
-    function renderCustomers() {
-        const body = document.getElementById('customersBody');
-        if (!body) return;
-        body.innerHTML = '';
-        customers.forEach(c => {
-            body.innerHTML += `
-                <tr>
-                    <td>${c.name}</td>
-                    <td>${c.phone}</td>
-                    <td>${c.orders}</td>
-                    <td>₦${(c.spent || 0).toLocaleString()}</td>
-                    <td style="color: ${c.balance > 0 ? 'red' : 'green'}">₦${(c.balance || 0).toLocaleString()}</td>
-                    <td>
-                        ${c.balance > 0 ? `<button class="btn primary" onclick="markAsPaid('${c.phone}')">Clear Debt</button>` : 'Clear'}
-                    </td>
-                </tr>`;
+    // 9. Customers Module
+    window.toggleCustomerForm = function() {
+        document.getElementById('customerForm').classList.toggle('hidden');
+        if (!document.getElementById('customerForm').classList.contains('hidden')) {
+            document.getElementById('cDate').value = new Date().toISOString().split('T')[0];
+        }
+    };
+
+    const customerForm = document.getElementById('customerForm');
+    if (customerForm) {
+        customerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('cId').value;
+            const custData = {
+                id: id ? id : 'C' + Date.now(),
+                date: document.getElementById('cDate').value,
+                invoiceNo: document.getElementById('cInvoiceNo').value,
+                name: document.getElementById('cName').value,
+                contact: document.getElementById('cContact').value,
+                product: document.getElementById('cProduct').value,
+                totalAmount: parseFloat(document.getElementById('cTotalAmount').value),
+                partlyPaid: parseFloat(document.getElementById('cPartlyPaid').value) || 0,
+                dueDate: document.getElementById('cDueDate').value,
+                status: document.getElementById('cStatus').value
+            };
+
+            if (id) {
+                const idx = customers.findIndex(c => c.id === id);
+                if (idx !== -1) customers[idx] = custData;
+            } else {
+                customers.push(custData);
+            }
+
+            localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
+            renderCustomers();
+            customerForm.reset();
+            toggleCustomerForm();
         });
     }
 
-    window.markAsPaid = function(phone) {
-        const cust = customers.find(c => c.phone === phone);
-        if (cust) {
-            const amount = prompt(`How much did ${cust.name} pay?`, cust.balance);
-            if (amount) {
-                cust.balance -= parseFloat(amount);
-                // Also update sales status if fully paid? (Optional, let's just clear balance)
-                localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
-                renderCustomers();
-                alert('Debt updated.');
-            }
+    function renderCustomers(filterData = customers) {
+        const body = document.getElementById('customersBody');
+        if (!body) return;
+        body.innerHTML = '';
+        
+        filterData.slice().reverse().forEach(c => {
+            const balance = (c.totalAmount || 0) - (c.partlyPaid || 0);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${c.date}<br><small>${c.invoiceNo || 'N/A'}</small></td>
+                <td><strong>${c.name}</strong><br><small>${c.contact}</small></td>
+                <td>${c.product || 'N/A'}</td>
+                <td>₦${(c.totalAmount || 0).toLocaleString()}</td>
+                <td>₦${(c.partlyPaid || 0).toLocaleString()}</td>
+                <td style="color: ${balance > 0 ? 'red' : 'green'}">₦${balance.toLocaleString()}</td>
+                <td>${c.dueDate || 'N/A'}</td>
+                <td><span class="badge ${c.status === 'Paid' ? 'badge-in' : 'badge-out'}">${c.status}</span></td>
+                <td>
+                    <button class="btn secondary" onclick="editCustomer('${c.id}')">Edit</button>
+                    <button class="btn danger" onclick="deleteCustomer('${c.id}')">Del</button>
+                </td>
+            `;
+            body.appendChild(row);
+        });
+    }
+
+    window.editCustomer = function(id) {
+        const c = customers.find(cust => cust.id === id);
+        if (!c) return;
+        document.getElementById('cId').value = c.id;
+        document.getElementById('cDate').value = c.date;
+        document.getElementById('cInvoiceNo').value = c.invoiceNo || '';
+        document.getElementById('cName').value = c.name;
+        document.getElementById('cContact').value = c.contact;
+        document.getElementById('cProduct').value = c.product || '';
+        document.getElementById('cTotalAmount').value = c.totalAmount;
+        document.getElementById('cPartlyPaid').value = c.partlyPaid;
+        document.getElementById('cDueDate').value = c.dueDate || '';
+        document.getElementById('cStatus').value = c.status;
+        document.getElementById('customerForm').classList.remove('hidden');
+    };
+
+    window.deleteCustomer = function(id) {
+        if (confirm('Delete this record?')) {
+            customers = customers.filter(c => c.id !== id);
+            localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
+            renderCustomers();
         }
+    };
+
+    window.searchCustomers = function() {
+        const term = document.getElementById('customerSearch').value.toLowerCase();
+        const filtered = customers.filter(c => 
+            c.name.toLowerCase().includes(term) || 
+            (c.contact && c.contact.toLowerCase().includes(term)) ||
+            (c.invoiceNo && c.invoiceNo.toLowerCase().includes(term))
+        );
+        renderCustomers(filtered);
     };
 
     function renderSuppliers() {
         const body = document.getElementById('suppliersBody');
         if (!body) return;
         body.innerHTML = '';
-        suppliers.forEach(s => {
-            body.innerHTML += `<tr><td>${s.name}</td><td>${s.contact}</td><td>${s.products}</td></tr>`;
+        suppliers.forEach((s, idx) => {
+            body.innerHTML += `
+                <tr>
+                    <td>${s.name}</td>
+                    <td>${s.contact}</td>
+                    <td>${s.address || 'N/A'}</td>
+                    <td>${s.products}</td>
+                    <td><button class="btn danger" onclick="deleteSupplier(${idx})">Del</button></td>
+                </tr>`;
         });
     }
 
+    window.toggleSupplierForm = function() {
+        document.getElementById('supplierForm').classList.toggle('hidden');
+    };
+
+    const supplierForm = document.getElementById('supplierForm');
+    if (supplierForm) {
+        supplierForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const sup = {
+                name: document.getElementById('supName').value,
+                contact: document.getElementById('supContact').value,
+                address: document.getElementById('supAddress').value,
+                products: document.getElementById('supProducts').value
+            };
+            suppliers.push(sup);
+            localStorage.setItem('shayorsSuppliers', JSON.stringify(suppliers));
+            renderSuppliers();
+            supplierForm.reset();
+            toggleSupplierForm();
+        });
+    }
+
+    window.deleteSupplier = function(idx) {
+        if (confirm('Delete this supplier?')) {
+            suppliers.splice(idx, 1);
+            localStorage.setItem('shayorsSuppliers', JSON.stringify(suppliers));
+            renderSuppliers();
+        }
+    };
+
     function renderStore() {
+        renderStaff();
+        renderRoles();
+    }
+
+    function renderStaff() {
         const list = document.getElementById('staffList');
         if (!list) return;
         list.innerHTML = '';
-        staff.forEach(s => {
-            list.innerHTML += `<li>${s.name} - ${s.role}</li>`;
+        staff.forEach((s, idx) => {
+            list.innerHTML += `
+                <li>
+                    <strong>${s.name}</strong> (${s.role})<br>
+                    <small>${s.email}</small>
+                    <button class="btn danger btn-xs" onclick="deleteStaff(${idx})">x</button>
+                </li>`;
         });
     }
 
-    window.addStaff = function() {
-        const name = prompt('Staff Name:');
-        const role = prompt('Role:');
-        if (name && role) {
-            staff.push({id: Date.now(), name, role});
+    function renderRoles() {
+        const list = document.getElementById('rolesList');
+        if (!list) return;
+        list.innerHTML = '';
+        roles.forEach((r, idx) => {
+            list.innerHTML += `
+                <li>
+                    <strong>${r.name}</strong>
+                    <p><small>${r.permissions.join(', ')}</small></p>
+                    ${r.name !== 'Admin' ? `<button class="btn danger btn-xs" onclick="deleteRole(${idx})">x</button>` : ''}
+                </li>`;
+        });
+    }
+
+    window.toggleRoleForm = function() {
+        document.getElementById('roleForm').classList.toggle('hidden');
+    };
+
+    const roleForm = document.getElementById('roleForm');
+    if (roleForm) {
+        roleForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const checked = Array.from(roleForm.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+            const r = {
+                name: document.getElementById('roleName').value,
+                permissions: checked
+            };
+            roles.push(r);
+            localStorage.setItem('shayorsRoles', JSON.stringify(roles));
+            renderRoles();
+            updateStaffRoleDropdown();
+            roleForm.reset();
+            toggleRoleForm();
+        });
+    }
+
+    function updateStaffRoleDropdown() {
+        const select = document.getElementById('staffRole');
+        if (!select) return;
+        select.innerHTML = '<option value="">Select Role...</option>';
+        roles.forEach(r => {
+            select.innerHTML += `<option value="${r.name}">${r.name}</option>`;
+        });
+    }
+
+    window.toggleStaffForm = function() {
+        document.getElementById('staffForm').classList.toggle('hidden');
+    };
+
+    const staffForm = document.getElementById('staffForm');
+    if (staffForm) {
+        staffForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const s = {
+                id: Date.now(),
+                name: document.getElementById('staffName').value,
+                email: document.getElementById('staffEmail').value,
+                role: document.getElementById('staffRole').value
+            };
+            staff.push(s);
             localStorage.setItem('shayorsStaff', JSON.stringify(staff));
-            renderStore();
+            renderStaff();
+            staffForm.reset();
+            toggleStaffForm();
+        });
+    }
+
+    window.deleteStaff = function(idx) {
+        if (confirm('Delete this staff member?')) {
+            staff.splice(idx, 1);
+            localStorage.setItem('shayorsStaff', JSON.stringify(staff));
+            renderStaff();
+        }
+    };
+
+    window.deleteRole = function(idx) {
+        if (confirm('Delete this role?')) {
+            roles.splice(idx, 1);
+            localStorage.setItem('shayorsRoles', JSON.stringify(roles));
+            renderRoles();
+            updateStaffRoleDropdown();
         }
     };
 
@@ -579,6 +850,78 @@ document.addEventListener('DOMContentLoaded', () => {
         alert('Printer test command sent to connected device.');
     };
 
+    // 10. Stock Adjustments logic
+    window.toggleAdjustmentForm = function() {
+        document.getElementById('adjustmentForm').classList.toggle('hidden');
+    };
+
+    function updateAdjustmentProductDropdown() {
+        const select = document.getElementById('adjProduct');
+        if (!select) return;
+        select.innerHTML = '<option value="">Select Product...</option>';
+        inventory.forEach(p => {
+            select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+        });
+    }
+
+    const adjustmentForm = document.getElementById('adjustmentForm');
+    if (adjustmentForm) {
+        adjustmentForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const productId = parseInt(document.getElementById('adjProduct').value);
+            const type = document.getElementById('adjType').value;
+            const qty = parseInt(document.getElementById('adjQty').value);
+            const reason = document.getElementById('adjReason').value;
+
+            const product = inventory.find(p => p.id === productId);
+            if (product) {
+                if (type === 'Restock') {
+                    product.stock += qty;
+                } else {
+                    product.stock = Math.max(0, product.stock - qty);
+                }
+
+                const adj = {
+                    date: new Date().toISOString(),
+                    productName: product.name,
+                    type,
+                    qty,
+                    reason
+                };
+                adjustments.push(adj);
+                localStorage.setItem('shayorsAdjustments', JSON.stringify(adjustments));
+                localStorage.setItem('shayorsInventory', JSON.stringify(inventory));
+                renderAdjustments();
+                renderInventory();
+                adjustmentForm.reset();
+                toggleAdjustmentForm();
+                alert('Stock adjusted successfully.');
+            }
+        });
+    }
+
+    function renderAdjustments() {
+        const body = document.getElementById('adjustmentsBody');
+        if (!body) return;
+        body.innerHTML = '';
+        adjustments.slice().reverse().forEach(a => {
+            body.innerHTML += `
+                <tr>
+                    <td>${new Date(a.date).toLocaleDateString()}</td>
+                    <td>${a.productName}</td>
+                    <td><span class="badge ${a.type === 'Restock' ? 'badge-in' : 'badge-out'}">${a.type}</span></td>
+                    <td>${a.qty}</td>
+                    <td>${a.reason}</td>
+                </tr>`;
+        });
+    }
+
     // Initialize
-    renderInventory();
+    const urlParams = new URLSearchParams(window.location.search);
+    const moduleParam = urlParams.get('module');
+    if (moduleParam) {
+        showModule(moduleParam);
+    } else {
+        renderInventory();
+    }
 });

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Our Collections | Shayors Cosmetics</title>
     <link rel="stylesheet" href="collections.css">
-    <link rel="shortcut icon" href="./Image/Shayor's Logo.png" type="image/x-icon">
+    <link rel="shortcut icon" href="../Image/Shayor's Logo.png" type="image/x-icon">
     
 </head>
 
@@ -13,7 +13,7 @@
     <!-- Navigation -->
     <nav>
         <div class="logo">
-            <img src="../Image/Shayor's_Logo.jpeg" alt="Logo" width="80px">
+            <img src="../Image/Shayor's Logo New.png" alt="Logo" width="120px">
         </div>
 
         <div class="search-nav" id="searchNav">
@@ -59,6 +59,92 @@
             <p>Shayors Cosmetics &copy; 2026. All rights reserved. | <a href="../Inventory/inventory.html" style="color: #555; text-decoration: none; font-size: 0.7rem;">Admin Login</a></p>
         </div>
     </footer>
+
+    <!-- Spa Service Management Form (Admin Only View - but kept here for user request) -->
+    <div id="spaManagementModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Add/Edit Spa Service</h3>
+            <form id="spaServiceForm">
+                <input type="hidden" id="sId">
+                <input type="text" id="sName" placeholder="Service Name (e.g. Facials)" required>
+                <select id="sCategory" required>
+                    <option value="">Select Category...</option>
+                    <option value="Salon & Beauty">Salon & Beauty</option>
+                    <option value="Spa Treatment">Spa Treatment</option>
+                    <option value="Massage">Massage</option>
+                </select>
+                <select id="sUnits" required>
+                    <option value="">Select Billing Units...</option>
+                    <option value="section">Section</option>
+                    <option value="job">Job</option>
+                    <option value="hours">Hours</option>
+                    <option value="session">Session</option>
+                </select>
+                <input type="number" id="sPrice" placeholder="Service Fees (₦)" required>
+                <div class="modal-actions">
+                    <button type="submit" class="btn primary">Save Service</button>
+                    <button type="button" class="btn secondary" onclick="closeModal('spaManagementModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Booking Form Modal -->
+    <div id="bookingModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Book Service: <span id="bookingServiceName"></span></h3>
+            <form id="bookingForm">
+                <input type="hidden" id="bookingServiceId">
+                <input type="text" id="custName" placeholder="Your Name" required>
+                <input type="text" id="custContact" placeholder="Phone/Email" required>
+                <textarea id="bookingNote" placeholder="Special Requests/Notes"></textarea>
+                <div class="modal-actions">
+                    <button type="submit" class="btn primary">Confirm Booking</button>
+                    <button type="button" class="btn secondary" onclick="closeModal('bookingModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Product Order Modal -->
+    <div id="orderModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Order: <span id="orderProductName"></span></h3>
+            <form id="orderForm">
+                <input type="hidden" id="orderProductId">
+                <input type="hidden" id="orderProductPrice">
+                <input type="text" id="orderCustName" placeholder="Your Full Name" required>
+                <input type="email" id="orderCustEmail" placeholder="Email Address" required>
+                <input type="text" id="orderCustPhone" placeholder="Phone Number" required>
+                <input type="text" id="orderCustAddress" placeholder="Shipping Address" required>
+                <input type="number" id="orderCustQty" value="1" min="1" required>
+                <textarea id="orderCustNote" placeholder="Additional Notes (Optional)"></textarea>
+                <p><strong>Total: ₦<span id="orderTotalDisplay">0</span></strong></p>
+                <div class="modal-actions">
+                    <button type="submit" class="btn primary">Place Order</button>
+                    <button type="button" class="btn secondary" onclick="closeModal('orderModal')">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 2000;
+        }
+        .modal-content {
+            background: #fff; padding: 30px; border-radius: 10px; width: 400px;
+        }
+        .modal-content input, .modal-content select, .modal-content textarea {
+            width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd;
+        }
+        .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
+        .hidden { display: none !important; }
+    </style>
 
     <script src="../script.js"></script>
     <script src="collections.js"></script>
