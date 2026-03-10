@@ -7,7 +7,15 @@ const orderRoutes = require('./routes/orderRoutes');
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: [
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "https://dabox50.github.io"
+  ],
+  methods: ["GET", "POST", "PATCH", "DELETE"],
+  credentials: false
+}));
 app.use(express.json());
 
 if (process.env.NODE_ENV === 'development') {
