@@ -13,9 +13,12 @@ app.use(cors({
     "http://localhost:5500",
     "https://dabox50.github.io"
   ],
-  methods: ["GET", "POST", "PATCH", "DELETE"],
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: false
 }));
+
+app.options("*", cors());
 app.use(express.json());
 
 if (process.env.NODE_ENV === 'development') {
