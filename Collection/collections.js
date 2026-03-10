@@ -338,29 +338,34 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             try {
-                // Change URL to your production backend URL when deployed
-                const response = await fetch('https://shayors-cosmetics.onrender.com/api/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(orderData)
-                });
+            const response = await fetch("https://shayors-cosmetics.onrender.com/api/orders", {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json"
+                },
+                body: JSON.stringify(orderData)
+            });
 
-                if (response.ok) {
-                    const savedOrder = await response.json();
-                    alert('Order placed successfully! We will contact you soon.');
-                    
-                    // Optional: WhatsApp redirect
-                    const waMessage = `New Order from ${orderData.customerName}:\nProduct: ${productName}\nQty: ${qty}\nTotal: ₦${orderData.totalAmount}\nAddress: ${orderData.shippingAddress}`;
-                    window.open(`https://wa.me/2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
-                    
-                    closeModal('orderModal');
-                } else {
-                    const err = await response.json();
-                    alert(`Failed to place order: ${err.message}`);
-                }
-            } catch (error) {
-                console.error('Order error:', error);
-                alert('Server error. Is the backend running?');
+            const text = await response.text();
+            console.log("Status:", response.status);
+            console.log("Response text:", text);
+
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                data = { message: text };
+            }
+
+            if (!response.ok) {
+                alert(data.message || `Order failed with status ${response.status}`);
+                return;
+            }
+
+            alert("Order placed successfully! We will contact you soon.");
+            } catch (err) {
+            console.error("Fetch error:", err);
+            alert("Network error. Check backend URL or CORS.");
             }
         });
     }
