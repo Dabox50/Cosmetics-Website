@@ -1,41 +1,54 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Data Storage for Products (Unified with Inventory)
-    // We NO LONGER clear localStorage here.
-    
+    // 1. Data Storage for Products (Static for testing + Dynamic from API)
     const initialProducts = [
-        { id: 1, category: "Skincare", name: "Cerave Hydrating Cleanser", brand: "Cerave", shade: "N/A", size: "236ml", ingredients: "Ceramides, Hyaluronic Acid", costPrice: 12.00, price: 18.00, stock: 24, threshold: 5, image: "../Image/WhatsApp1.jpeg" },
-        { id: 2, category: "Bath & Body", name: "Halfacast Skin Glow Oil", brand: "Halfacast", shade: "N/A", size: "200ml", ingredients: "Natural Oils, Vitamin E", costPrice: 25.00, price: 35.00, stock: 12, threshold: 5, image: "../Image/WhatsApp2.jpeg" },
-        { id: 3, category: "Skincare", name: "Cosrx Snail Mucin Essence", brand: "Cosrx", shade: "N/A", size: "100ml", ingredients: "96% Snail Mucin", costPrice: 15.00, price: 22.00, stock: 3, threshold: 5, image: "../Image/WhatsApp3.jpeg" },
-        { id: 4, category: "Facecream", name: "Olay Regenerist Cream", brand: "Olay", shade: "N/A", size: "50g", ingredients: "Niacinamide, Peptides", costPrice: 30.00, price: 45.00, stock: 0, threshold: 5, image: "../Image/WhatsApp4.jpeg" },
-        { id: 5, category: "Bath & Body", name: "Halfacast Black Soap", brand: "Halfacast", shade: "N/A", size: "500g", ingredients: "African Black Soap, Honey", costPrice: 10.00, price: 15.00, stock: 50, threshold: 5, image: "../Image/WhatsApp5.jpeg" },
-        { id: 6, category: "Spa", name: "Luxury Spa Mist", brand: "Spa", shade: "N/A", size: "150ml", ingredients: "Essential Oils, Eucalyptus", costPrice: 18.00, price: 28.00, stock: 10, threshold: 5, image:"../Image/WhatsApp6.jpeg" },
-        { id: 7, category: "Perfume", name: "Midnight Bloom", brand: "Fragrance", shade: "N/A", size: "100ml", ingredients: "Floral notes, Musk", costPrice: 40.00, price: 60.00, stock: 15, threshold: 5, image: "../Image/WhatsApp7.jpeg" },
-        { id: 8, category: "Supplements", name: "Glow Vitamins", brand: "Supplements", shade: "N/A", size: "60 caps", ingredients: "Biotin, Vitamin C", costPrice: 20.00, price: 30.00, stock: 30, threshold: 5, image: "../Image/WhatsApp8.jpeg" },
-        { id: 9, category: "Sunscreen", name: "Ultra UV Shield", brand: "Sunscreen", shade: "N/A", size: "50ml", ingredients: "Zinc Oxide, SPF 50", costPrice: 15.00, price: 25.00, stock: 20, threshold: 5, image: "../Image/WhatsApp9.jpeg" },
-        { id: 10, category: "Humidifiers", name: "Zen Mist Humidifier", brand: "Humidifiers", shade: "N/A", size: "Large", ingredients: "N/A", costPrice: 28.00, price: 40.00, stock: 8, threshold: 2, image: "../Image/WhatsApp10.jpeg" }
+        { _id: 'test_1', category: "Facesoap", name: "Premium Cleanser", brand: "Shayors", shade: "N/A", size: "200ml", ingredients: "Aloe Vera", price: 15000, stock: 20, image: "../Image/WhatsApp1.jpeg" },
+        { _id: 'test_2', category: "Bar soap", name: "Glow Bar", brand: "Shayors", shade: "N/A", size: "150g", ingredients: "Honey", price: 8000, stock: 50, image: "../Image/WhatsApp2.jpeg" },
+        { _id: 'test_3', category: "Cleanser", name: "Deep Pore Cleanser", brand: "Shayors", shade: "N/A", size: "100ml", ingredients: "Salicylic Acid", price: 20000, stock: 15, image: "../Image/WhatsApp3.jpeg" },
+        { _id: 'test_4', category: "Facecream", name: "Day Glow Cream", brand: "Shayors", shade: "N/A", size: "50g", ingredients: "SPF 30", price: 25000, stock: 30, image: "../Image/WhatsApp4.jpeg" },
+        { _id: 'test_5', category: "Bar soap", name: "Exfoliating Soap", brand: "Shayors", shade: "N/A", size: "150g", ingredients: "Oatmeal", price: 10000, stock: 40, image: "../Image/WhatsApp5.jpeg" },
+        { _id: 'test_6', category: "Cleanser", name: "Luxury Mist", brand: "Shayors", shade: "N/A", size: "150ml", ingredients: "Rose Water", price: 15000, stock: 25, image: "../Image/WhatsApp6.jpeg" },
+        { _id: 'test_7', category: "Perfume oil", name: "Midnight Scent", brand: "Shayors", shade: "N/A", size: "30ml", ingredients: "Oud", price: 35000, stock: 10, image: "../Image/WhatsApp7.jpeg" },
+        { _id: 'test_8', category: "Scrub", name: "Sugar Glow Scrub", brand: "Shayors", shade: "N/A", size: "250g", ingredients: "Sugar", price: 18000, stock: 20, image: "../Image/WhatsApp8.jpeg" },
+        { _id: 'test_9', category: "Lotion", name: "Hydrating Body Milk", brand: "Shayors", shade: "N/A", size: "400ml", ingredients: "Cocoa Butter", price: 22000, stock: 15, image: "../Image/WhatsApp9.jpeg" },
+        { _id: 'test_10', category: "Serum", name: "Vitamin C Serum", brand: "Shayors", shade: "N/A", size: "30ml", ingredients: "Vit C", price: 30000, stock: 12, image: "../Image/WhatsApp10.jpeg" }
     ];
 
-    // Read from unified storage or fallback
-    let productData = JSON.parse(localStorage.getItem('shayorsInventory')) || initialProducts;
+    let productData = [...initialProducts];
     let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
 
-    const categories = ["Skincare", "Serum Oil", "Packaging Bottle", "Perfume Oil", "Bar Soap", "Mask", "Sponge", "Patch", "Tube", "Black Soap", "Face & Body Wash", "Facecream", "Spa", "Perfume", "Supplements", "Sunscreen", "Humidifiers", "Diffusers", "Raw Materials"];
+    // 2. Fetch Data from API (Appends or replaces static data)
+    const fetchProducts = async () => {
+        try {
+            const response = await fetch('https://shayors-cosmetics.onrender.com/api/products');
+            if (response.ok) {
+                const apiData = await response.json();
+                if (apiData.length > 0) {
+                    productData = apiData; // Use live data if available
+                }
+                renderProductRows();
+            } else {
+                renderProductRows(); // Use initialProducts if API fails
+            }
+        } catch (error) {
+            console.error('API unavailable, using test products');
+            renderProductRows();
+        }
+    };
 
-    // 2. Render Categories and Search in Nav
+    // 3. Render Search UI (Categories will be added dynamically after fetch)
     const searchNav = document.getElementById('searchNav');
     if (searchNav) {
         searchNav.innerHTML = `
             <div class="search-container">
                 <select id="catSelect" class="selective-bar">
                     <option value="All">All Categories</option>
-                    ${categories.map(cat => `<option value="${cat}">${cat}</option>`).join('')}
                 </select>
                 <input type="text" placeholder="Search product..." id="navSearch">
             </div>
         `;
     }
 
-    // 3. Render Product Rows (Default View)
+    // 4. Render Product Rows (Default View)
     const productRowsContainer = document.getElementById('productRowsContainer');
 
     function createProductCard(product) {
@@ -51,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3>${product.name}</h3>
                     <p class="price">₦${parseFloat(product.price).toLocaleString()}</p>
                     <p class="qty">Qty Available: ${product.stock}</p>
-                    <button class="btn primary" ${available ? '' : 'disabled'} onclick="openOrderModal(${product.id}, '${product.name.replace(/'/g, "\\'")}', ${product.price})">
+                    <button class="btn primary" ${available ? '' : 'disabled'} onclick="openOrderModal('${product._id}', '${product.name.replace(/'/g, "\\'")}', ${product.price})">
                         ${available ? 'Order Now' : 'Join Waitlist'}
                     </button>
                 </div>
@@ -85,6 +98,21 @@ document.addEventListener('DOMContentLoaded', () => {
         let filteredProducts = productData;
         let filteredServices = [];
 
+        // DYNAMIC CATEGORIES: Extract unique categories from actual product data
+        const dynamicCategories = [...new Set(productData.map(p => p.category))].sort();
+        
+        // Update the category select dropdown in navigation dynamically
+        const catSelect = document.getElementById('catSelect');
+        if (catSelect) { 
+            const currentVal = catSelect.value;
+            catSelect.innerHTML = `<option value="All">All Categories</option>` + 
+                dynamicCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+            // Restore selection if it still exists in the new list
+            if (dynamicCategories.includes(currentVal) || currentVal === "All") {
+                catSelect.value = currentVal;
+            }
+        }
+
         // Filter by Category
         if (filterCat !== "All") {
             filteredProducts = filteredProducts.filter(p => p.category === filterCat);
@@ -92,7 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 filteredServices = spaServices;
             }
         } else {
-            // "All" includes all products and all services if searching
             if (searchTerm) {
                 filteredServices = spaServices;
             }
@@ -112,7 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const totalResults = filteredProducts.length + filteredServices.length;
 
-        // If filtering/searching is active, show grid
         if (filterCat !== "All" || searchTerm !== "") {
             productRowsContainer.innerHTML = `
                 <div class="search-results">
@@ -127,10 +153,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         } else {
-            // Default: Show Horizontal Rows (Sliders) for all categories with products
-            const rowsToShow = categories;
-            
-            let html = rowsToShow.map((cat, index) => {
+            // Default View: Show rows for ALL categories currently in the database
+            let html = dynamicCategories.map((cat, index) => {
                 const productsInCat = productData.filter(p => p.category === cat);
                 if (productsInCat.length === 0 || cat === "Spa") return '';
 
@@ -148,8 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }).join('');
 
-            // Add dedicated Spa Services Section at the bottom
-            if (spaServices.length > 0 || true) { // Always show if we want "Add" button
+            if (spaServices.length > 0 || true) {
                 html += `
                     <div class="row-container animate-on-scroll spa-services-section" style="margin-top: 50px; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
@@ -170,7 +193,6 @@ document.addEventListener('DOMContentLoaded', () => {
             setupSliders();
         }
         
-        // Animations
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) entry.target.classList.add('active');
@@ -208,7 +230,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 4. Event Listeners for Filtering
     if (searchNav) {
         const catSelect = document.getElementById('catSelect');
         const navSearch = document.getElementById('navSearch');
@@ -222,10 +243,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Initial Render
-    renderProductRows();
+    // Initial Fetch
+    fetchProducts();
 
-    // 5. Spa Service Management & Booking Logic
     window.openModal = function(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) modal.classList.remove('hidden');
@@ -264,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             localStorage.setItem('shayorsSpaServices', JSON.stringify(spaServices));
             closeModal('spaManagementModal');
-            location.reload(); // Refresh to show new data
+            location.reload();
         });
     }
 
@@ -287,7 +307,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Booking Logic
     window.openBookingModal = function(id, name) {
         document.getElementById('bookingServiceId').value = id;
         document.getElementById('bookingServiceName').innerText = name;
@@ -327,45 +346,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 customerPhone: document.getElementById('orderCustPhone').value,
                 shippingAddress: document.getElementById('orderCustAddress').value,
                 items: [{
-                    productId: productId.toString(),
+                    productId: productId,
                     productName: productName,
                     quantity: qty,
                     price: price
                 }],
                 totalAmount: price * qty,
-                paymentMethod: 'Cash on Delivery', // Default
+                paymentMethod: 'Cash on Delivery',
                 notes: document.getElementById('orderCustNote').value
             };
 
             try {
-            const response = await fetch("https://shayors-cosmetics.onrender.com/api/orders", {
-                method: "POST",
-                headers: {
-                "Content-Type": "application/json"
-                },
-                body: JSON.stringify(orderData)
-            });
+                const response = await fetch('https://shayors-cosmetics.onrender.com/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
 
-            const text = await response.text();
-            console.log("Status:", response.status);
-            console.log("Response text:", text);
-
-            let data;
-            try {
-                data = JSON.parse(text);
-            } catch {
-                data = { message: text };
-            }
-
-            if (!response.ok) {
-                alert(data.message || `Order failed with status ${response.status}`);
-                return;
-            }
-
-            alert("Order placed successfully! We will contact you soon.");
-            } catch (err) {
-            console.error("Fetch error:", err);
-            alert("Network error. Check backend URL or CORS.");
+                if (response.ok) {
+                    alert('Order placed successfully! We will contact you soon.');
+                    const waMessage = `New Order from ${orderData.customerName}:\nProduct: ${productName}\nQty: ${qty}\nTotal: ₦${orderData.totalAmount}\nAddress: ${orderData.shippingAddress}`;
+                    window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
+                    closeModal('orderModal');
+                } else {
+                    const err = await response.json();
+                    alert(`Failed to place order: ${err.message}`);
+                }
+            } catch (error) {
+                console.error('Order error:', error);
+                alert('Server error. Is the backend running?');
             }
         });
     }
@@ -380,51 +389,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const contact = document.getElementById('custContact').value;
             const note = document.getElementById('bookingNote').value;
 
-            // Record as Sale in Inventory
             const sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
             const newSale = {
                 id: 'SPA' + Date.now(),
-                date: new Date().toISOString(),
+                date: new Date().toLocaleDateString(),
                 customer: name,
-                contact: contact,
-                items: [{
-                    name: service.name,
-                    qty: 1,
-                    unitType: service.units || 'Session',
-                    price: service.price,
-                    total: service.price
-                }],
+                items: `${service.name} (spa)`,
                 total: service.price,
-                status: 'Not Paid', // Default status for new booking
-                platform: 'Website Booking',
-                note: note,
-                type: 'spa'
+                status: 'Paid',
+                method: 'WhatsApp Booking',
+                platform: 'WhatsApp'
             };
-
             sales.push(newSale);
             localStorage.setItem('shayorsSales', JSON.stringify(sales));
 
-            // Also record in Customers DB
-            const customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
-            customers.push({
-                id: 'C' + Date.now(),
-                date: new Date().toISOString().split('T')[0],
-                invoiceNo: newSale.id,
-                name: name,
-                contact: contact,
-                product: service.name,
-                totalAmount: service.price,
-                partlyPaid: 0,
-                status: 'Not Paid'
-            });
-            localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
-
-            alert('Booking confirmed! Admin has been notified via dashboard records.');
+            const waMsg = `Hello Shayors, I want to book a spa service:\nService: ${service.name}\nName: ${name}\nContact: ${contact}\nNote: ${note}`;
+            window.open(`https://wa.me/234XXXXXXXXXX?text=${encodeURIComponent(waMsg)}`, '_blank');
             closeModal('bookingModal');
-            
-            // Optional: WhatsApp Notification
-            const msg = `*New Spa Booking*%0AService: ${service.name}%0ACustomer: ${name}%0AContact: ${contact}%0ANote: ${note}`;
-            window.open(`https://wa.me/2348123456789?text=${msg}`);
+            alert('Booking request sent via WhatsApp!');
         });
     }
 });

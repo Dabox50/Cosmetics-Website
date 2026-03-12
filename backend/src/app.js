@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
@@ -30,6 +31,7 @@ if (process.env.NODE_ENV === 'development') {
 // Routes
 app.use('/api/admin', authRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/products', productRoutes);
 
 // Error Handling Middleware
 app.use(notFound);

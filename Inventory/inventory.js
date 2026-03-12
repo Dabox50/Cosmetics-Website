@@ -1,33 +1,48 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 0. Simple Admin Access Check
-    const adminAuth = sessionStorage.getItem('shayorsAdminAuthenticated');
-    if (!adminAuth) {
-        const password = prompt("Enter Admin Password to access Inventory:");
-        if (password === "Dabox123") {
-            sessionStorage.setItem('shayorsAdminAuthenticated', 'true');
+    const API_BASE = "https://shayors-cosmetics.onrender.com/api";
+
+    // 0. Admin Authentication
+    async function init() {
+        const token = sessionStorage.getItem('shayorsAdminToken');
+        if (!token) {
+            const email = prompt("Enter Admin Email (e.g., admin@shayors.com):");
+            const password = prompt("Enter Admin Password:");
+
+            if (!email || !password) {
+                window.location.href = "../index.html";
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    sessionStorage.setItem('shayorsAdminToken', data.token);
+                    sessionStorage.setItem('shayorsAdminAuthenticated', 'true');
+                    fetchInventory();
+                } else {
+                    alert("Access Denied! Invalid Credentials.");
+                    window.location.href = "../index.html";
+                }
+            } catch (error) {
+                console.error("Login failed:", error);
+                alert("Server error. Redirecting...");
+                window.location.href = "../index.html";
+            }
         } else {
-            alert("Access Denied!");
-            window.location.href = "../index.html";
-            return;
+            fetchInventory();
         }
     }
 
-    // 1. Initial Inventory Data
-    const initialProducts = [
-        { id: 1, category: "Skincare", name: "Cerave Hydrating Cleanser", brand: "Cerave", shade: "N/A", size: "236ml", ingredients: "Ceramides, Hyaluronic Acid", costPrice: 12.00, price: 18.00, stock: 24, threshold: 5, image: "../Image/WhatsApp1.jpeg" },
-        { id: 2, category: "Bath & Body", name: "Halfacast Skin Glow Oil", brand: "Halfacast", shade: "N/A", size: "200ml", ingredients: "Natural Oils, Vitamin E", costPrice: 25.00, price: 35.00, stock: 12, threshold: 5, image: "../Image/WhatsApp2.jpeg" },
-        { id: 3, category: "Skincare", name: "Cosrx Snail Mucin Essence", brand: "Cosrx", shade: "N/A", size: "100ml", ingredients: "96% Snail Mucin", costPrice: 15.00, price: 22.00, stock: 3, threshold: 5, image: "../Image/WhatsApp3.jpeg" },
-        { id: 4, category: "Facecream", name: "Olay Regenerist Cream", brand: "Olay", shade: "N/A", size: "50g", ingredients: "Niacinamide, Peptides", costPrice: 30.00, price: 45.00, stock: 0, threshold: 5, image: "../Image/WhatsApp4.jpeg" },
-        { id: 5, category: "Bath & Body", name: "Halfacast Black Soap", brand: "Halfacast", shade: "N/A", size: "500g", ingredients: "African Black Soap, Honey", costPrice: 10.00, price: 15.00, stock: 50, threshold: 5, image: "../Image/WhatsApp5.jpeg" },
-        { id: 6, category: "Spa", name: "Luxury Spa Mist", brand: "Spa", shade: "N/A", size: "150ml", ingredients: "Essential Oils, Eucalyptus", costPrice: 18.00, price: 28.00, stock: 10, threshold: 5, image:"../Image/WhatsApp6.jpeg" },
-        { id: 7, category: "Perfume", name: "Midnight Bloom", brand: "Fragrance", shade: "N/A", size: "100ml", ingredients: "Floral notes, Musk", costPrice: 40.00, price: 60.00, stock: 15, threshold: 5, image: "../Image/WhatsApp7.jpeg" },
-        { id: 8, category: "Supplements", name: "Glow Vitamins", brand: "Supplements", shade: "N/A", size: "60 caps", ingredients: "Biotin, Vitamin C", costPrice: 20.00, price: 30.00, stock: 30, threshold: 5, image: "../Image/WhatsApp8.jpeg" },
-        { id: 9, category: "Sunscreen", name: "Ultra UV Shield", brand: "Sunscreen", shade: "N/A", size: "50ml", ingredients: "Zinc Oxide, SPF 50", costPrice: 15.00, price: 25.00, stock: 20, threshold: 5, image: "../Image/WhatsApp9.jpeg" },
-        { id: 10, category: "Humidifiers", name: "Zen Mist Humidifier", brand: "Humidifiers", shade: "N/A", size: "Large", ingredients: "N/A", costPrice: 28.00, price: 40.00, stock: 8, threshold: 2, image: "../Image/WhatsApp10.jpeg" }
-    ];
+    init();
 
-    // 2. Core Data Structures
-    let inventory = JSON.parse(localStorage.getItem('shayorsInventory')) || initialProducts;
+    // 1. Core Data Structures
+    let inventory = [];
     let sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
     let expenses = JSON.parse(localStorage.getItem('shayorsExpenses')) || [];
     let customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
@@ -38,6 +53,27 @@ document.addEventListener('DOMContentLoaded', () => {
     let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
 
     let currentSaleItems = [];
+
+    // Fetch Inventory from Backend
+    async function fetchInventory() {
+        try {
+            const response = await fetch(`${API_BASE}/products`);
+            if (response.ok) {
+                inventory = await response.json();
+                renderInventory();
+            } else {
+                console.error("Failed to fetch inventory from server.");
+                inventory = JSON.parse(localStorage.getItem('shayorsInventory')) || [];
+                renderInventory();
+            }
+        } catch (error) {
+            console.error("Error connecting to backend:", error);
+            inventory = JSON.parse(localStorage.getItem('shayorsInventory')) || [];
+            renderInventory();
+        }
+    }
+
+    // Call fetch on start (Removed redundant call, init() handles it)
 
     // 3. Navigation Control
     window.showModule = function(moduleId) {
@@ -100,15 +136,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
                 <td>
                     <div class="stock-control">
-                        <button onclick="updateStock(${p.id}, -1)">-</button>
-                        <input type="number" value="${p.stock}" onchange="setStock(${p.id}, this.value)">
-                        <button onclick="updateStock(${p.id}, 1)">+</button>
+                        <button onclick="updateStock('${p._id}', -1)">-</button>
+                        <input type="number" value="${p.stock}" onchange="setStock('${p._id}', this.value)">
+                        <button onclick="updateStock('${p._id}', 1)">+</button>
                     </div>
                 </td>
                 <td><span class="badge ${badgeClass}">${status}</span></td>
                 <td>
-                    <button class="btn secondary" onclick="editProduct(${p.id})">Edit</button>
-                    <button class="btn danger" onclick="deleteProduct(${p.id})">Del</button>
+                    <button class="btn secondary" onclick="editProduct('${p._id}')">Edit</button>
+                    <button class="btn danger" onclick="deleteProduct('${p._id}')">Del</button>
                 </td>
             `;
             inventoryBody.appendChild(row);
@@ -130,13 +166,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    productForm.addEventListener('submit', (e) => {
+    productForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('pId').value;
         const imgPreview = document.getElementById('imagePreview').src;
 
         const productData = {
-            id: id ? parseInt(id) : Date.now(),
             name: document.getElementById('pName').value,
             brand: document.getElementById('pBrand').value,
             category: document.getElementById('pCategory').value,
@@ -151,24 +186,51 @@ document.addEventListener('DOMContentLoaded', () => {
             stock: parseInt(document.getElementById('pStock').value),
             threshold: parseInt(document.getElementById('pThreshold').value) || 5,
             ingredients: document.getElementById('pIngredients') ? document.getElementById('pIngredients').value : '',
-            image: imgPreview.startsWith('data:') ? imgPreview : (id ? (inventory.find(p=>p.id==id)?.image || '../Image/Shayor\'s Logo.png') : '../Image/Shayor\'s Logo.png')
+            image: imgPreview.startsWith('data:') ? imgPreview : (id ? (inventory.find(p=>p._id==id)?.image || '../Image/Shayor\'s Logo.png') : '../Image/Shayor\'s Logo.png')
         };
 
-        if (id) {
-            const index = inventory.findIndex(p => p.id === parseInt(id));
-            if (index !== -1) inventory[index] = productData;
-        } else {
-            inventory.push(productData);
-        }
+        try {
+            let response;
+            if (id) {
+                // UPDATE existing product
+                response = await fetch(`${API_BASE}/products/${id}`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                    },
+                    body: JSON.stringify(productData)
+                });
+            } else {
+                // CREATE new product
+                response = await fetch(`${API_BASE}/products`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                    },
+                    body: JSON.stringify(productData)
+                });
+            }
 
-        saveAndRender();
-        toggleForm();
+            if (response.ok) {
+                alert(id ? "Product updated successfully!" : "Product added successfully!");
+                fetchInventory(); // Refresh list from backend
+                toggleForm();
+            } else {
+                const err = await response.json();
+                alert(`Error: ${err.message}`);
+            }
+        } catch (error) {
+            console.error("Form submission failed:", error);
+            alert("Server connection failed. Product was not saved to database.");
+        }
     });
 
     window.editProduct = function(id) {
-        const p = inventory.find(p => p.id === id);
+        const p = inventory.find(p => p._id === id);
         if (!p) return;
-        document.getElementById('pId').value = p.id;
+        document.getElementById('pId').value = p._id;
         document.getElementById('pName').value = p.name;
         document.getElementById('pBrand').value = p.brand;
         document.getElementById('pCategory').value = p.category || 'Other';
@@ -191,26 +253,71 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleForm();
     };
 
-    window.deleteProduct = function(id) {
+    window.deleteProduct = async function(id) {
         if (confirm('Delete this product?')) {
-            inventory = inventory.filter(p => p.id !== id);
-            saveAndRender();
+            try {
+                const response = await fetch(`${API_BASE}/products/${id}`, {
+                    method: 'DELETE',
+                    headers: { 
+                        'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                    }
+                });
+                if (response.ok) {
+                    fetchInventory();
+                } else {
+                    const err = await response.json();
+                    alert(`Failed to delete: ${err.message}`);
+                }
+            } catch (error) {
+                console.error("Delete failed:", error);
+                alert("Could not delete product from server.");
+            }
         }
     };
 
-    window.updateStock = function(id, change) {
-        const p = inventory.find(p => p.id === id);
+    window.updateStock = async function(id, change) {
+        const p = inventory.find(p => p._id === id);
         if (p) {
-            p.stock = Math.max(0, p.stock + change);
-            saveAndRender();
+            const newStock = Math.max(0, p.stock + change);
+            try {
+                const response = await fetch(`${API_BASE}/products/${id}`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                    },
+                    body: JSON.stringify({ stock: newStock })
+                });
+                if (response.ok) {
+                    p.stock = newStock;
+                    renderInventory();
+                }
+            } catch (error) {
+                console.error("Stock update failed:", error);
+            }
         }
     };
 
-    window.setStock = function(id, val) {
-        const p = inventory.find(p => p.id === id);
+    window.setStock = async function(id, val) {
+        const p = inventory.find(p => p._id === id);
         if (p) {
-            p.stock = Math.max(0, parseInt(val) || 0);
-            saveAndRender();
+            const newStock = Math.max(0, parseInt(val) || 0);
+            try {
+                const response = await fetch(`${API_BASE}/products/${id}`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                    },
+                    body: JSON.stringify({ stock: newStock })
+                });
+                if (response.ok) {
+                    p.stock = newStock;
+                    renderInventory();
+                }
+            } catch (error) {
+                console.error("Stock set failed:", error);
+            }
         }
     };
 
@@ -277,14 +384,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!select) return;
         select.innerHTML = '<option value="">Select Product...</option>';
         inventory.forEach(p => {
-            select.innerHTML += `<option value="${p.id}">${p.name} (${p.stock} left)</option>`;
+            select.innerHTML += `<option value="${p._id}">${p.name} (${p.stock} left)</option>`;
         });
     }
 
     window.updateSalePrice = function() {
         const id = document.getElementById('saleProduct').value;
         if (id) {
-            const p = inventory.find(p => p.id == id);
+            const p = inventory.find(p => p._id == id);
             document.getElementById('salePrice').value = p.price;
         }
     };
@@ -296,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const price = parseFloat(document.getElementById('salePrice').value);
 
         if (!productId) return alert('Select a product');
-        const product = inventory.find(p => p.id == productId);
+        const product = inventory.find(p => p._id == productId);
         
         let piecesPerUnit = product.piecesPerUnit || 1;
         let actualQty = (unitType === 'Dozen' || unitType === product.primaryUnit) ? qty * piecesPerUnit : qty;
@@ -304,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (product.stock < actualQty) return alert('Insufficient stock');
 
         currentSaleItems.push({
-            productId: product.id,
+            productId: product._id,
             name: product.name,
             qty: qty,
             unitType: unitType,
@@ -377,14 +484,33 @@ document.addEventListener('DOMContentLoaded', () => {
             type: type 
         };
 
-        currentSaleItems.forEach(item => {
-            const p = inventory.find(p => p.id == item.productId);
-            if (p) p.stock -= item.actualQty;
+        const adminToken = sessionStorage.getItem('shayorsAdminToken');
+
+        currentSaleItems.forEach(async (item) => {
+            const p = inventory.find(p => p._id == item.productId);
+            if (p) {
+                const newStock = p.stock - item.actualQty;
+                p.stock = newStock;
+                
+                // Sync stock update to backend
+                try {
+                    await fetch(`${API_BASE}/products/${p._id}`, {
+                        method: 'PATCH',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${adminToken}`
+                        },
+                        body: JSON.stringify({ stock: newStock })
+                    });
+                } catch (error) {
+                    console.error(`Stock sync failed for ${p.name}:`, error);
+                }
+            }
         });
 
         sales.push(sale);
         localStorage.setItem('shayorsSales', JSON.stringify(sales));
-        localStorage.setItem('shayorsInventory', JSON.stringify(inventory));
+        // Removed localStorage inventory sync as we use backend now
 
         if (contact || customerName !== 'Walk-in Customer') {
             const debtorRecord = {
@@ -421,10 +547,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const saleIdx = sales.findIndex(s => s.id === id);
             const sale = sales[saleIdx];
             
+            const adminToken = sessionStorage.getItem('shayorsAdminToken');
+            
             // Restore Stock
-            sale.items.forEach(item => {
-                const p = inventory.find(p => p.id == item.productId);
-                if (p) p.stock += item.qty;
+            sale.items.forEach(async (item) => {
+                const p = inventory.find(p => p._id == item.productId);
+                if (p) {
+                    const newStock = p.stock + item.actualQty;
+                    p.stock = newStock;
+                    
+                    try {
+                        await fetch(`${API_BASE}/products/${p._id}`, {
+                            method: 'PATCH',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${adminToken}`
+                            },
+                            body: JSON.stringify({ stock: newStock })
+                        });
+                    } catch (error) {
+                        console.error(`Stock restore failed for ${p.name}:`, error);
+                    }
+                }
             });
 
             // Adjust Customer Balance or remove record
@@ -436,7 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             sales.splice(saleIdx, 1);
             localStorage.setItem('shayorsSales', JSON.stringify(sales));
-            localStorage.setItem('shayorsInventory', JSON.stringify(inventory));
+            // Removed localStorage inventory sync
             localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
             renderSalesHistory();
             alert('Sale returned and stock restored.');
@@ -860,42 +1004,58 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!select) return;
         select.innerHTML = '<option value="">Select Product...</option>';
         inventory.forEach(p => {
-            select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+            select.innerHTML += `<option value="${p._id}">${p.name}</option>`;
         });
     }
 
     const adjustmentForm = document.getElementById('adjustmentForm');
     if (adjustmentForm) {
-        adjustmentForm.addEventListener('submit', (e) => {
+        adjustmentForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const productId = parseInt(document.getElementById('adjProduct').value);
+            const productId = document.getElementById('adjProduct').value;
             const type = document.getElementById('adjType').value;
             const qty = parseInt(document.getElementById('adjQty').value);
             const reason = document.getElementById('adjReason').value;
 
-            const product = inventory.find(p => p.id === productId);
+            const product = inventory.find(p => p._id === productId);
             if (product) {
-                if (type === 'Restock') {
-                    product.stock += qty;
-                } else {
-                    product.stock = Math.max(0, product.stock - qty);
-                }
+                const newStock = type === 'Restock' ? product.stock + qty : Math.max(0, product.stock - qty);
+                const adminToken = sessionStorage.getItem('shayorsAdminToken');
 
-                const adj = {
-                    date: new Date().toISOString(),
-                    productName: product.name,
-                    type,
-                    qty,
-                    reason
-                };
-                adjustments.push(adj);
-                localStorage.setItem('shayorsAdjustments', JSON.stringify(adjustments));
-                localStorage.setItem('shayorsInventory', JSON.stringify(inventory));
-                renderAdjustments();
-                renderInventory();
-                adjustmentForm.reset();
-                toggleAdjustmentForm();
-                alert('Stock adjusted successfully.');
+                try {
+                    const response = await fetch(`${API_BASE}/products/${productId}`, {
+                        method: 'PATCH',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${adminToken}`
+                        },
+                        body: JSON.stringify({ stock: newStock })
+                    });
+
+                    if (response.ok) {
+                        product.stock = newStock;
+                        const adj = {
+                            date: new Date().toISOString(),
+                            productName: product.name,
+                            type,
+                            qty,
+                            reason
+                        };
+                        adjustments.push(adj);
+                        localStorage.setItem('shayorsAdjustments', JSON.stringify(adjustments));
+                        renderAdjustments();
+                        renderInventory();
+                        adjustmentForm.reset();
+                        toggleAdjustmentForm();
+                        alert('Stock adjusted and synced to backend.');
+                    } else {
+                        const err = await response.json();
+                        alert(`Adjustment failed: ${err.message}`);
+                    }
+                } catch (error) {
+                    console.error("Adjustment sync failed:", error);
+                    alert("Could not connect to server to update stock.");
+                }
             }
         });
     }
