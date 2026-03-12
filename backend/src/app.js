@@ -8,20 +8,15 @@ const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
-// app.use(cors({
-//   origin: [
-//     "http://127.0.0.1:5500",
-//     "http://localhost:5500",
-//     "https://dabox50.github.io"
-//   ],
-//   methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-//   allowedHeaders: ["Content-Type", "Authorization"],
-//   credentials: false
-// }));
+// 1. Configure CORS
+app.use(cors({
+  origin: "*", // Allows all origins, including github.io
+  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
-// app.options("*", cors());
-app.use(cors());
-app.options("*", cors());
+app.options("*", cors()); // Enable preflight for all routes
+
 app.use(express.json());
 
 if (process.env.NODE_ENV === 'development') {
