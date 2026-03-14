@@ -15,8 +15,8 @@ const loginAdmin = async (req, res) => {
   const { error } = validateAdminLogin(req.body);
   if (error) return res.status(400).json({ message: error.details[0].message });
 
-  const { email, password } = req.body;
-  const admin = await Admin.findOne({ email });
+  const { password } = req.body;
+  const admin = await Admin.findOne(); // Find the first admin
 
   if (admin && (await admin.matchPassword(password))) {
     res.json({
@@ -25,7 +25,7 @@ const loginAdmin = async (req, res) => {
       token: generateToken(admin._id),
     });
   } else {
-    res.status(401).json({ message: 'Invalid email or password' });
+    res.status(401).json({ message: 'Invalid password' });
   }
 };
 

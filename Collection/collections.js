@@ -1,19 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Data Storage for Products (Static for testing + Dynamic from API)
-    const initialProducts = [
-        { _id: 'test_1', category: "Facesoap", name: "Premium Cleanser", brand: "Shayors", shade: "N/A", size: "200ml", ingredients: "Aloe Vera", price: 15000, stock: 20, image: "../Image/WhatsApp1.jpeg" },
-        { _id: 'test_2', category: "Bar soap", name: "Glow Bar", brand: "Shayors", shade: "N/A", size: "150g", ingredients: "Honey", price: 8000, stock: 50, image: "../Image/WhatsApp2.jpeg" },
-        { _id: 'test_3', category: "Cleanser", name: "Deep Pore Cleanser", brand: "Shayors", shade: "N/A", size: "100ml", ingredients: "Salicylic Acid", price: 20000, stock: 15, image: "../Image/WhatsApp3.jpeg" },
-        { _id: 'test_4', category: "Facecream", name: "Day Glow Cream", brand: "Shayors", shade: "N/A", size: "50g", ingredients: "SPF 30", price: 25000, stock: 30, image: "../Image/WhatsApp4.jpeg" },
-        { _id: 'test_5', category: "Bar soap", name: "Exfoliating Soap", brand: "Shayors", shade: "N/A", size: "150g", ingredients: "Oatmeal", price: 10000, stock: 40, image: "../Image/WhatsApp5.jpeg" },
-        { _id: 'test_6', category: "Cleanser", name: "Luxury Mist", brand: "Shayors", shade: "N/A", size: "150ml", ingredients: "Rose Water", price: 15000, stock: 25, image: "../Image/WhatsApp6.jpeg" },
-        { _id: 'test_7', category: "Perfume oil", name: "Midnight Scent", brand: "Shayors", shade: "N/A", size: "30ml", ingredients: "Oud", price: 35000, stock: 10, image: "../Image/WhatsApp7.jpeg" },
-        { _id: 'test_8', category: "Scrub", name: "Sugar Glow Scrub", brand: "Shayors", shade: "N/A", size: "250g", ingredients: "Sugar", price: 18000, stock: 20, image: "../Image/WhatsApp8.jpeg" },
-        { _id: 'test_9', category: "Lotion", name: "Hydrating Body Milk", brand: "Shayors", shade: "N/A", size: "400ml", ingredients: "Cocoa Butter", price: 22000, stock: 15, image: "../Image/WhatsApp9.jpeg" },
-        { _id: 'test_10', category: "Serum", name: "Vitamin C Serum", brand: "Shayors", shade: "N/A", size: "30ml", ingredients: "Vit C", price: 30000, stock: 12, image: "../Image/WhatsApp10.jpeg" }
-    ];
-
-    let productData = [...initialProducts];
+    // 1. Data Storage for Products (Dynamic from API)
+    let productData = [];
     let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
 
     // 2. Fetch Data from API (Appends or replaces static data)
@@ -22,15 +9,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('https://shayors-cosmetics.onrender.com/api/products');
             if (response.ok) {
                 const apiData = await response.json();
-                if (apiData.length > 0) {
-                    productData = apiData; // Use live data if available
-                }
+                productData = apiData; // Use live data
                 renderProductRows();
             } else {
-                renderProductRows(); // Use initialProducts if API fails
+                productData = []; // Clear if API fails or returns error
+                renderProductRows();
             }
         } catch (error) {
-            console.error('API unavailable, using test products');
+            console.error('API unavailable');
+            productData = []; // Clear if API unavailable
             renderProductRows();
         }
     };
@@ -356,6 +343,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 notes: document.getElementById('orderCustNote').value
             };
 
+            // Trigger WhatsApp message immediately to avoid browser pop-up blockers
+            const waMessage = `New Order from ${orderData.customerName}:\nProduct: ${productName}\nQty: ${qty}\nTotal: ₦${orderData.totalAmount}\nAddress: ${orderData.shippingAddress}\nPhone: ${orderData.customerPhone}`;
+            window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
+            closeModal('orderModal');
+
             try {
                 const response = await fetch('https://shayors-cosmetics.onrender.com/api/orders', {
                     method: 'POST',
@@ -364,17 +356,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.ok) {
-                    alert('Order placed successfully! We will contact you soon.');
-                    const waMessage = `New Order from ${orderData.customerName}:\nProduct: ${productName}\nQty: ${qty}\nTotal: ₦${orderData.totalAmount}\nAddress: ${orderData.shippingAddress}`;
-                    window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
-                    closeModal('orderModal');
+                    console.log('Order recorded in database');
                 } else {
                     const err = await response.json();
-                    alert(`Failed to place order: ${err.message}`);
+                    console.error('Database order recording failed:', err.message);
                 }
             } catch (error) {
-                console.error('Order error:', error);
-                alert('Server error. Is the backend running?');
+                console.error('Database order connection error:', error);
             }
         });
     }

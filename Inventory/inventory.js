@@ -5,10 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function init() {
         const token = sessionStorage.getItem('shayorsAdminToken');
         if (!token) {
-            const email = prompt("Enter Admin Email (e.g., admin@shayors.com):");
             const password = prompt("Enter Admin Password:");
 
-            if (!email || !password) {
+            if (!password) {
                 window.location.href = "../index.html";
                 return;
             }
@@ -17,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`${API_BASE}/admin/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ password })
                 });
 
                 if (response.ok) {
@@ -900,7 +899,6 @@ document.addEventListener('DOMContentLoaded', () => {
             list.innerHTML += `
                 <li>
                     <strong>${s.name}</strong> (${s.role})<br>
-                    <small>${s.email}</small>
                     <button class="btn danger btn-xs" onclick="deleteStaff(${idx})">x</button>
                 </li>`;
         });
@@ -962,7 +960,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const s = {
                 id: Date.now(),
                 name: document.getElementById('staffName').value,
-                email: document.getElementById('staffEmail').value,
                 role: document.getElementById('staffRole').value
             };
             staff.push(s);
