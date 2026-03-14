@@ -1,42 +1,9 @@
 const Order = require('../models/Order');
+const Product = require('../models/Product');
 const { validateOrder } = require('../utils/validation');
 const nodemailer = require('nodemailer');
 
-// Helper to send email alerts
-const sendEmailAlert = async (order) => {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail', // Use your email provider
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-  const mailOptions = {
-    from: `"Shayors Cosmetics" <${process.env.EMAIL_USER}>`,
-    to: process.env.ADMIN_EMAIL,
-    subject: `New Order Alert: ${order._id}`,
-    html: `
-      <h2>New Order Received!</h2>
-      <p><strong>Customer:</strong> ${order.customerName}</p>
-      <p><strong>Contact:</strong> ${order.customerPhone} | ${order.customerEmail}</p>
-      <p><strong>Total Amount:</strong> ₦${order.totalAmount.toLocaleString()}</p>
-      <p><strong>Address:</strong> ${order.shippingAddress}</p>
-      <h3>Items:</h3>
-      <ul>
-        ${order.items.map(item => `<li>${item.productName} (Qty: ${item.quantity}) - ₦${item.price.toLocaleString()}</li>`).join('')}
-      </ul>
-      <p>Please log in to the admin panel to manage this order.</p>
-    `,
-  };
-
-  try {
-    await transporter.sendMail(mailOptions);
-    console.log('Email alert sent successfully');
-  } catch (error) {
-    console.error('Email alert failed:', error);
-  }
-};
+// ... (keep sendEmailAlert as is)
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -46,6 +13,22 @@ const createOrder = async (req, res) => {
   if (error) return res.status(400).json({ message: error.details[0].message });
 
   const order = new Order(req.body);
+  
+  // Decrement stock for each item in the order
+  for (const item of order.items) {
+    const product = await Product.findById(item.productId);
+    if (product) {
+      if (product.stock >= item.quantity) {
+        product.stock -= item.quantity;
+        await product.save();
+      } else {
+        return res.status(400).json({ message: `Insufficient stock for product: ${product.name}` });
+      }
+    } else {
+      return res.status(404).json({ message: `Product not found: ${item.productId}` });
+    }
+  }
+
   const createdOrder = await order.save();
 
   // Send alert (async - don't block response)

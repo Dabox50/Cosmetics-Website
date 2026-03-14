@@ -1,24 +1,49 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Data Storage for Products (Dynamic from API)
-    let productData = [];
-    let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
+    // 1. Data Storage for Products (Dynamic from API + Fallback)
+    const initialProducts = [
+        { _id: 'sample_1', category: "Facesoap", name: "Premium Cleanser", brand: "Shayors", shade: "N/A", size: "200ml", ingredients: "Aloe Vera", price: 15000, stock: 20, image: "../Image/WhatsApp1.jpeg" },
+        { _id: 'sample_2', category: "Bar soap", name: "Glow Bar", brand: "Shayors", shade: "N/A", size: "150g", ingredients: "Honey", price: 8000, stock: 50, image: "../Image/WhatsApp2.jpeg" },
+        { _id: 'sample_3', category: "Cleanser", name: "Deep Pore Cleanser", brand: "Shayors", shade: "N/A", size: "100ml", ingredients: "Salicylic Acid", price: 20000, stock: 15, image: "../Image/WhatsApp3.jpeg" },
+        { _id: 'sample_4', category: "Facecream", name: "Day Glow Cream", brand: "Shayors", shade: "N/A", size: "50g", ingredients: "SPF 30", price: 25000, stock: 30, image: "../Image/WhatsApp4.jpeg" },
+        { _id: 'sample_5', category: "Bar soap", name: "Exfoliating Soap", brand: "Shayors", shade: "N/A", size: "150g", ingredients: "Oatmeal", price: 10000, stock: 40, image: "../Image/WhatsApp5.jpeg" },
+        { _id: 'sample_6', category: "Cleanser", name: "Luxury Mist", brand: "Shayors", shade: "N/A", size: "150ml", ingredients: "Rose Water", price: 15000, stock: 25, image: "../Image/WhatsApp6.jpeg" },
+        { _id: 'sample_7', category: "Perfume oil", name: "Midnight Scent", brand: "Shayors", shade: "N/A", size: "30ml", ingredients: "Oud", price: 35000, stock: 10, image: "../Image/WhatsApp7.jpeg" },
+        { _id: 'sample_8', category: "Scrub", name: "Sugar Glow Scrub", brand: "Shayors", shade: "N/A", size: "250g", ingredients: "Sugar", price: 18000, stock: 20, image: "../Image/WhatsApp8.jpeg" },
+        { _id: 'sample_9', category: "Lotion", name: "Hydrating Body Milk", brand: "Shayors", shade: "N/A", size: "400ml", ingredients: "Cocoa Butter", price: 22000, stock: 15, image: "../Image/WhatsApp9.jpeg" },
+        { _id: 'sample_10', category: "Serum", name: "Vitamin C Serum", brand: "Shayors", shade: "N/A", size: "30ml", ingredients: "Vit C", price: 30000, stock: 12, image: "../Image/WhatsApp10.jpeg" }
+    ];
+
+    let productData = [...initialProducts];
+    let spaServices = []; // Will be fetched from API
 
     // 2. Fetch Data from API (Appends or replaces static data)
     const fetchProducts = async () => {
+        const productRowsContainer = document.getElementById('productRowsContainer');
+        // If we already have initial products, don't show full-page loader, just a small indicator if desired
+        // But for clarity, we'll keep the loader if the user expects one
+        
         try {
-            const response = await fetch('https://shayors-cosmetics.onrender.com/api/products');
-            if (response.ok) {
-                const apiData = await response.json();
-                productData = apiData; // Use live data
-                renderProductRows();
-            } else {
-                productData = []; // Clear if API fails or returns error
-                renderProductRows();
+            // Fetch Products
+            const prodRes = await fetch('https://shayors-cosmetics.onrender.com/api/products');
+            if (prodRes.ok) {
+                const apiData = await prodRes.json();
+                if (apiData && apiData.length > 0) {
+                    productData = apiData; 
+                } else {
+                    productData = [...initialProducts];
+                }
             }
+
+            // Fetch Services
+            const servRes = await fetch('https://shayors-cosmetics.onrender.com/api/services');
+            if (servRes.ok) {
+                spaServices = await servRes.json();
+            }
+
+            renderProductRows();
         } catch (error) {
             console.error('API unavailable');
-            productData = []; // Clear if API unavailable
-            renderProductRows();
+            renderProductRows(); // Fallback to initialProducts
         }
     };
 
@@ -251,34 +276,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const spaServiceForm = document.getElementById('spaServiceForm');
     if (spaServiceForm) {
-        spaServiceForm.addEventListener('submit', (e) => {
+        spaServiceForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('sId').value;
             const serviceData = {
-                id: id ? parseInt(id) : Date.now(),
                 name: document.getElementById('sName').value,
                 category: document.getElementById('sCategory').value,
                 units: document.getElementById('sUnits').value,
                 price: parseFloat(document.getElementById('sPrice').value)
             };
 
-            if (id) {
-                const index = spaServices.findIndex(s => s.id === parseInt(id));
-                if (index !== -1) spaServices[index] = serviceData;
-            } else {
-                spaServices.push(serviceData);
-            }
+            const token = sessionStorage.getItem('shayorsAdminToken'); // Collection page might not have this, but keeping logic consistent
 
-            localStorage.setItem('shayorsSpaServices', JSON.stringify(spaServices));
-            closeModal('spaManagementModal');
-            location.reload();
+            try {
+                let response;
+                if (id) {
+                    response = await fetch(`https://shayors-cosmetics.onrender.com/api/services/${id}`, {
+                        method: 'PATCH',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(serviceData)
+                    });
+                } else {
+                    response = await fetch('https://shayors-cosmetics.onrender.com/api/services', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(serviceData)
+                    });
+                }
+
+                if (response.ok) {
+                    alert('Service saved successfully!');
+                    closeModal('spaManagementModal');
+                    fetchProducts();
+                } else {
+                    alert('Failed to save service. Are you logged in as admin?');
+                }
+            } catch (error) {
+                console.error('Service sync error:', error);
+            }
         });
     }
 
     window.editSpaService = function(id) {
-        const s = spaServices.find(s => s.id === id);
+        const s = spaServices.find(s => s._id === id || s.id === id);
         if (!s) return;
-        document.getElementById('sId').value = s.id;
+        document.getElementById('sId').value = s._id || s.id;
         document.getElementById('sName').value = s.name;
         document.getElementById('sCategory').value = s.category;
         document.getElementById('sUnits').value = s.units;
@@ -286,11 +334,18 @@ document.addEventListener('DOMContentLoaded', () => {
         openModal('spaManagementModal');
     };
 
-    window.deleteSpaService = function(id) {
+    window.deleteSpaService = async function(id) {
         if (confirm('Delete this service?')) {
-            spaServices = spaServices.filter(s => s.id !== id);
-            localStorage.setItem('shayorsSpaServices', JSON.stringify(spaServices));
-            location.reload();
+            const token = sessionStorage.getItem('shayorsAdminToken');
+            try {
+                const response = await fetch(`https://shayors-cosmetics.onrender.com/api/services/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.ok) {
+                    fetchProducts();
+                }
+            } catch (e) { console.error(e); }
         }
     };
 

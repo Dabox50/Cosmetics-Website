@@ -41,7 +41,21 @@ document.addEventListener('DOMContentLoaded', () => {
     init();
 
     // 1. Core Data Structures
-    let inventory = [];
+    const initialProducts = [
+        { _id: 'sample_1', category: "Facesoap", name: "Premium Cleanser", brand: "Shayors", size: "200ml", price: 15000, stock: 20, image: "../Image/WhatsApp1.jpeg", costPrice: 10000, threshold: 5 },
+        { _id: 'sample_2', category: "Bar soap", name: "Glow Bar", brand: "Shayors", size: "150g", price: 8000, stock: 50, image: "../Image/WhatsApp2.jpeg", costPrice: 5000, threshold: 5 },
+        { _id: 'sample_3', category: "Cleanser", name: "Deep Pore Cleanser", brand: "Shayors", size: "100ml", price: 20000, stock: 15, image: "../Image/WhatsApp3.jpeg", costPrice: 15000, threshold: 5 },
+        { _id: 'sample_4', category: "Facecream", name: "Day Glow Cream", brand: "Shayors", size: "50g", price: 25000, stock: 30, image: "../Image/WhatsApp4.jpeg", costPrice: 18000, threshold: 5 },
+        { _id: 'sample_5', category: "Bar soap", name: "Exfoliating Soap", brand: "Shayors", size: "150g", price: 10000, stock: 40, image: "../Image/WhatsApp5.jpeg", costPrice: 7000, threshold: 5 },
+        { _id: 'sample_6', category: "Cleanser", name: "Luxury Mist", brand: "Shayors", size: "150ml", price: 15000, stock: 25, image: "../Image/WhatsApp6.jpeg", costPrice: 10000, threshold: 5 },
+        { _id: 'sample_7', category: "Perfume oil", name: "Midnight Scent", brand: "Shayors", size: "30ml", price: 35000, stock: 10, image: "../Image/WhatsApp7.jpeg", costPrice: 25000, threshold: 5 },
+        { _id: 'sample_8', category: "Scrub", name: "Sugar Glow Scrub", brand: "Shayors", size: "250g", price: 18000, stock: 20, image: "../Image/WhatsApp8.jpeg", costPrice: 12000, threshold: 5 },
+        { _id: 'sample_9', category: "Lotion", name: "Hydrating Body Milk", brand: "Shayors", size: "400ml", price: 22000, stock: 15, image: "../Image/WhatsApp9.jpeg", costPrice: 15000, threshold: 5 },
+        { _id: 'sample_10', category: "Serum", name: "Vitamin C Serum", brand: "Shayors", size: "30ml", price: 30000, stock: 12, image: "../Image/WhatsApp10.jpeg", costPrice: 20000, threshold: 5 },
+        { _id: 'sample_11', category: "Facecream", name: "Night Repair Cream", brand: "Shayors", size: "50g", price: 35000, stock: 10, image: "../Image/WhatsApp11.jpeg", costPrice: 25000, threshold: 5 }
+    ];
+
+    let inventory = [...initialProducts];
     let sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
     let expenses = JSON.parse(localStorage.getItem('shayorsExpenses')) || [];
     let customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
@@ -58,17 +72,20 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`${API_BASE}/products`);
             if (response.ok) {
-                inventory = await response.json();
+                const apiData = await response.json();
+                if (apiData && apiData.length > 0) {
+                    inventory = apiData; // Use live data
+                } else {
+                    inventory = [...initialProducts]; // Fallback to samples if DB is empty
+                }
                 renderInventory();
             } else {
                 console.error("Failed to fetch inventory from server.");
-                inventory = JSON.parse(localStorage.getItem('shayorsInventory')) || [];
-                renderInventory();
+                renderInventory(); // Use current inventory (samples)
             }
         } catch (error) {
             console.error("Error connecting to backend:", error);
-            inventory = JSON.parse(localStorage.getItem('shayorsInventory')) || [];
-            renderInventory();
+            renderInventory(); // Use current inventory (samples)
         }
     }
 
@@ -332,6 +349,48 @@ document.addEventListener('DOMContentLoaded', () => {
             p.brand.toLowerCase().includes(term)
         );
         renderInventory(filtered);
+    };
+
+    window.importSamples = async function() {
+        const samples = [
+            { category: "Facesoap", name: "Premium Cleanser", brand: "Shayors", size: "200ml", price: 15000, stock: 20, image: "../Image/WhatsApp1.jpeg", costPrice: 10000, threshold: 5 },
+            { category: "Bar soap", name: "Glow Bar", brand: "Shayors", size: "150g", price: 8000, stock: 50, image: "../Image/WhatsApp2.jpeg", costPrice: 5000, threshold: 5 },
+            { category: "Cleanser", name: "Deep Pore Cleanser", brand: "Shayors", size: "100ml", price: 20000, stock: 15, image: "../Image/WhatsApp3.jpeg", costPrice: 15000, threshold: 5 },
+            { category: "Facecream", name: "Day Glow Cream", brand: "Shayors", size: "50g", price: 25000, stock: 30, image: "../Image/WhatsApp4.jpeg", costPrice: 18000, threshold: 5 },
+            { category: "Bar soap", name: "Exfoliating Soap", brand: "Shayors", size: "150g", price: 10000, stock: 40, image: "../Image/WhatsApp5.jpeg", costPrice: 7000, threshold: 5 },
+            { category: "Cleanser", name: "Luxury Mist", brand: "Shayors", size: "150ml", price: 15000, stock: 25, image: "../Image/WhatsApp6.jpeg", costPrice: 10000, threshold: 5 },
+            { category: "Perfume oil", name: "Midnight Scent", brand: "Shayors", size: "30ml", price: 35000, stock: 10, image: "../Image/WhatsApp7.jpeg", costPrice: 25000, threshold: 5 },
+            { category: "Scrub", name: "Sugar Glow Scrub", brand: "Shayors", size: "250g", price: 18000, stock: 20, image: "../Image/WhatsApp8.jpeg", costPrice: 12000, threshold: 5 },
+            { category: "Lotion", name: "Hydrating Body Milk", brand: "Shayors", size: "400ml", price: 22000, stock: 15, image: "../Image/WhatsApp9.jpeg", costPrice: 15000, threshold: 5 },
+            { category: "Serum", name: "Vitamin C Serum", brand: "Shayors", size: "30ml", price: 30000, stock: 12, image: "../Image/WhatsApp10.jpeg", costPrice: 20000, threshold: 5 },
+            { category: "Facecream", name: "Night Repair Cream", brand: "Shayors", size: "50g", price: 35000, stock: 10, image: "../Image/WhatsApp11.jpeg", costPrice: 25000, threshold: 5 }
+        ];
+
+        if (!confirm(`Import all ${samples.length} original products to your database for full sync?`)) return;
+
+        const btn = document.getElementById('importBtn');
+        btn.disabled = true;
+        btn.innerText = "Syncing...";
+
+        let successCount = 0;
+        for (const p of samples) {
+            try {
+                const response = await fetch(`${API_BASE}/products`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                    },
+                    body: JSON.stringify(p)
+                });
+                if (response.ok) successCount++;
+            } catch (e) { console.error("Sync failed for", p.name); }
+        }
+
+        alert(`Sync completed! ${successCount} products added to your database.`);
+        btn.innerText = "Import Samples";
+        btn.disabled = false;
+        fetchInventory();
     };
 
     // 6. Sales Module Functions
@@ -627,31 +686,68 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    function renderSalesHistory() {
+    async function renderSalesHistory() {
         const body = document.getElementById('salesHistoryBody');
         if (!body) return;
-        body.innerHTML = '';
-        sales.slice().reverse().forEach(s => {
-            body.innerHTML += `
-                <tr>
-                    <td>${s.id}</td>
-                    <td>${new Date(s.date).toLocaleDateString()}</td>
-                    <td>${s.customer}</td>
-                    <td>${s.items.length} items</td>
-                    <td>₦${s.total.toLocaleString()}</td>
-                    <td>${s.status} (${s.type})</td>
-                    <td>
-                        <button class="btn secondary" onclick='viewInvoice("${s.id}")'>View</button>
-                        <button class="btn danger" onclick='returnSale("${s.id}")'>Return</button>
-                    </td>
-                </tr>
-            `;
-        });
+        body.innerHTML = '<tr><td colspan="7">Loading orders...</td></tr>';
+        
+        try {
+            const response = await fetch(`${API_BASE}/orders`, {
+                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const orders = data.orders; // backend returns { orders, page, pages }
+                
+                body.innerHTML = '';
+                orders.forEach(o => {
+                    const date = new Date(o.createdAt).toLocaleDateString();
+                    body.innerHTML += `
+                        <tr>
+                            <td>${o._id.slice(-6).toUpperCase()}</td>
+                            <td>${date}</td>
+                            <td>${o.customerName}</td>
+                            <td>${o.items.length} items</td>
+                            <td>₦${o.totalAmount.toLocaleString()}</td>
+                            <td><span class="badge ${o.paymentStatus === 'paid' ? 'badge-in' : 'badge-out'}">${o.orderStatus}</span></td>
+                            <td>
+                                <button class="btn secondary" onclick='viewOrder("${o._id}")'>View</button>
+                                <button class="btn danger" onclick='deleteOrder("${o._id}")'>Del</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                if (orders.length === 0) body.innerHTML = '<tr><td colspan="7">No orders found.</td></tr>';
+            }
+        } catch (error) {
+            console.error("Failed to fetch orders:", error);
+            body.innerHTML = '<tr><td colspan="7">Error loading orders from server.</td></tr>';
+        }
     }
 
-    window.viewInvoice = function(id) {
-        const sale = sales.find(s => s.id === id);
-        if (sale) generateInvoice(sale);
+    window.viewOrder = async function(id) {
+        try {
+            const response = await fetch(`${API_BASE}/orders/${id}`, {
+                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+            });
+            if (response.ok) {
+                const order = await response.json();
+                alert(`Order Details:\nCustomer: ${order.customerName}\nPhone: ${order.customerPhone}\nAddress: ${order.shippingAddress}\nTotal: ₦${order.totalAmount}\nStatus: ${order.orderStatus}`);
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    window.deleteOrder = async function(id) {
+        if (!confirm("Delete this order?")) return;
+        try {
+            const response = await fetch(`${API_BASE}/orders/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+            });
+            if (response.ok) {
+                renderSalesHistory();
+            }
+        } catch (e) { console.error(e); }
     };
 
     // 7. Expenses Module
@@ -1072,6 +1168,129 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>`;
         });
     }
+
+    window.toggleSpaForm = function() {
+        document.getElementById('spaForm').classList.toggle('hidden');
+        if (document.getElementById('spaForm').classList.contains('hidden')) {
+            document.getElementById('spaForm').reset();
+            document.getElementById('spaId').value = '';
+        }
+    };
+
+    async function renderSpaServices() {
+        const spaBody = document.getElementById('spaBody');
+        const bookingsBody = document.getElementById('bookingsBody');
+        if (!spaBody || !bookingsBody) return;
+
+        try {
+            // Fetch Services
+            const sRes = await fetch(`${API_BASE}/services`);
+            if (sRes.ok) {
+                const services = await sRes.json();
+                spaBody.innerHTML = '';
+                services.forEach(s => {
+                    spaBody.innerHTML += `
+                        <tr>
+                            <td>${s.name}</td>
+                            <td>${s.category}</td>
+                            <td>₦${s.price.toLocaleString()}</td>
+                            <td>${s.units}</td>
+                            <td>
+                                <button class="btn secondary" onclick="editSpa('${s._id}')">Edit</button>
+                                <button class="btn danger" onclick="deleteSpa('${s._id}')">Del</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // Fetch Bookings
+            const bRes = await fetch(`${API_BASE}/bookings`, {
+                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+            });
+            if (bRes.ok) {
+                const bookings = await bRes.json();
+                bookingsBody.innerHTML = '';
+                bookings.forEach(b => {
+                    bookingsBody.innerHTML += `
+                        <tr>
+                            <td>${new Date(b.createdAt).toLocaleDateString()}</td>
+                            <td>${b.serviceName}</td>
+                            <td>${b.customerName}</td>
+                            <td>${b.customerContact}</td>
+                            <td>${b.note || ''}</td>
+                            <td><button class="btn danger" onclick="deleteBooking('${b._id}')">Del</button></td>
+                        </tr>
+                    `;
+                });
+            }
+        } catch (e) { console.error(e); }
+    }
+
+    document.getElementById('spaForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('spaId').value;
+        const data = {
+            name: document.getElementById('spaName').value,
+            category: document.getElementById('spaCategory').value,
+            units: document.getElementById('spaUnits').value,
+            price: parseFloat(document.getElementById('spaPrice').value)
+        };
+
+        const token = sessionStorage.getItem('shayorsAdminToken');
+        try {
+            const res = await fetch(`${API_BASE}/services${id ? '/' + id : ''}`, {
+                method: id ? 'PATCH' : 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) {
+                toggleSpaForm();
+                renderSpaServices();
+            }
+        } catch (e) { console.error(e); }
+    });
+
+    window.editSpa = async function(id) {
+        try {
+            const res = await fetch(`${API_BASE}/services`);
+            const services = await res.json();
+            const s = services.find(x => x._id === id);
+            if (s) {
+                document.getElementById('spaId').value = s._id;
+                document.getElementById('spaName').value = s.name;
+                document.getElementById('spaCategory').value = s.category;
+                document.getElementById('spaUnits').value = s.units;
+                document.getElementById('spaPrice').value = s.price;
+                document.getElementById('spaForm').classList.remove('hidden');
+            }
+        } catch (e) { console.error(e); }
+    };
+
+    window.deleteSpa = async function(id) {
+        if (!confirm('Delete this service?')) return;
+        try {
+            await fetch(`${API_BASE}/services/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+            });
+            renderSpaServices();
+        } catch (e) { console.error(e); }
+    };
+
+    window.deleteBooking = async function(id) {
+        if (!confirm('Delete this booking?')) return;
+        try {
+            await fetch(`${API_BASE}/bookings/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+            });
+            renderSpaServices();
+        } catch (e) { console.error(e); }
+    };
 
     // Initialize
     const urlParams = new URLSearchParams(window.location.search);

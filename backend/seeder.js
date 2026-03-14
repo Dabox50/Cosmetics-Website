@@ -27,7 +27,6 @@ const seedData = async () => {
     await Product.deleteMany();
 
     await Admin.create({
-      email: 'Shayorscosmestics@gmail.com',
       password: 'Shayor123',
     });
 
