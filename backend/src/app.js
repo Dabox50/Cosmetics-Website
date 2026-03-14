@@ -7,6 +7,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const productRoutes = require('./routes/productRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/categories', categoryRoutes);
 
 // Error Handling Middleware
 app.use(notFound);

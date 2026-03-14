@@ -64,12 +64,15 @@ document.addEventListener('DOMContentLoaded', () => {
     let roles = JSON.parse(localStorage.getItem('shayorsRoles')) || [{name: 'Admin', permissions: ['all']}];
     let adjustments = JSON.parse(localStorage.getItem('shayorsAdjustments')) || [];
     let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
+    const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
+    let categories = initialCategoriesList.map(name => ({ name }));
 
     let currentSaleItems = [];
 
     // Fetch Inventory from Backend
     async function fetchInventory() {
         try {
+            await fetchCategories(); // Also fetch categories
             const response = await fetch(`${API_BASE}/products`);
             if (response.ok) {
                 const apiData = await response.json();
@@ -108,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (moduleId === 'adjustments') { renderAdjustments(); updateAdjustmentProductDropdown(); }
         if (moduleId === 'customers') renderCustomers();
         if (moduleId === 'suppliers') renderSuppliers();
-        if (moduleId === 'store') { renderStore(); updateStaffRoleDropdown(); }
+        if (moduleId === 'store') { renderStore(); updateStaffRoleDropdown(); fetchCategories(); }
     };
 
     // 4. Image Handling
@@ -201,7 +204,12 @@ document.addEventListener('DOMContentLoaded', () => {
             price: parseFloat(document.getElementById('pPrice').value),
             stock: parseInt(document.getElementById('pStock').value),
             threshold: parseInt(document.getElementById('pThreshold').value) || 5,
-            ingredients: document.getElementById('pIngredients') ? document.getElementById('pIngredients').value : '',
+            ingredients: document.getElementById('pIngredients').value || '',
+            skinTypes: document.getElementById('pSkinTypes').value || '',
+            skinConcern: document.getElementById('pSkinConcern').value || '',
+            description: document.getElementById('pDescription').value || '',
+            howToUse: document.getElementById('pHowToUse').value || '',
+            review: document.getElementById('pReview').value || '',
             image: imgPreview.startsWith('data:') ? imgPreview : (id ? (inventory.find(p=>p._id==id)?.image || '../Image/Shayor\'s Logo.png') : '../Image/Shayor\'s Logo.png')
         };
 
@@ -261,6 +269,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('pStock').value = p.stock;
         document.getElementById('pThreshold').value = p.threshold || 5;
         document.getElementById('pIngredients').value = p.ingredients || '';
+        document.getElementById('pSkinTypes').value = p.skinTypes || '';
+        document.getElementById('pSkinConcern').value = p.skinConcern || '';
+        document.getElementById('pDescription').value = p.description || '';
+        document.getElementById('pHowToUse').value = p.howToUse || '';
+        document.getElementById('pReview').value = p.review || '';
         if (p.image) {
             const preview = document.getElementById('imagePreview');
             preview.src = p.image;
@@ -1290,6 +1303,159 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             renderSpaServices();
         } catch (e) { console.error(e); }
+    };
+
+    // --- REAL-TIME NOTIFICATIONS ---
+    let lastOrderCount = 0;
+    
+    async function checkNewOrders() {
+        try {
+            const response = await fetch(`${API_BASE}/orders`, {
+                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                const orders = data.orders;
+                
+                if (lastOrderCount === 0) {
+                    lastOrderCount = orders.length;
+                } else if (orders.length > lastOrderCount) {
+                    const diff = orders.length - lastOrderCount;
+                    lastOrderCount = orders.length;
+                    showOrderAlert(diff);
+                    if (document.getElementById('sales-module').classList.contains('active')) {
+                        renderSalesHistory();
+                    }
+                }
+            }
+        } catch (e) { console.error("Poll error:", e); }
+    }
+
+    function showOrderAlert(count) {
+        // Create alert overlay
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'order-notification-alert';
+        alertDiv.innerHTML = `
+            <div class="alert-content">
+                <span class="alert-icon">🔔</span>
+                <div class="alert-text">
+                    <strong>New Order Received!</strong>
+                    <p>You have ${count} new order(s) to process.</p>
+                </div>
+                <button onclick="this.parentElement.parentElement.remove(); showModule('sales')">View Now</button>
+            </div>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Play sound if possible (optional)
+        try {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+            audio.play();
+        } catch (e) {}
+
+        // Remove after 10 seconds
+        setTimeout(() => { if (alertDiv.parentElement) alertDiv.remove(); }, 10000);
+    }
+
+    // Start polling every 30 seconds
+    setInterval(checkNewOrders, 30000);
+
+    // Category Management Functions
+    async function fetchCategories() {
+        console.log("Fetching categories...");
+        try {
+            const response = await fetch(`${API_BASE}/categories`);
+            if (response.ok) {
+                const data = await response.json();
+                categories = Array.isArray(data) ? data : [];
+                console.log("Categories loaded:", categories);
+                updateCategoryDropdowns();
+                renderCategoryManager();
+            } else {
+                console.error("Failed to fetch categories:", response.status);
+                // If 404, it means the backend hasn't been updated yet
+                if (response.status === 404) {
+                    console.warn("Backend /api/categories not found. Please ensure backend is redeployed.");
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching categories:", error);
+        }
+    }
+
+    function updateCategoryDropdowns() {
+        const pCategory = document.getElementById('pCategory');
+        if (pCategory) {
+            const currentVal = pCategory.value;
+            pCategory.innerHTML = categories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('') + '<option value="Other">Other</option>';
+            if (currentVal) pCategory.value = currentVal;
+        }
+    }
+
+    function renderCategoryManager() {
+        const container = document.getElementById('categoriesManager');
+        if (!container) return;
+        
+        if (categories.length === 0) {
+            container.innerHTML = '<p style="font-size: 0.8rem; color: #888;">No categories found.</p>';
+            return;
+        }
+
+        container.innerHTML = categories.map(cat => `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid #eee;">
+                <span style="font-size: 0.9rem;">${cat.name}</span>
+                <button onclick="deleteCategory('${cat._id}')" style="background: none; border: none; color: #ff4d4d; cursor: pointer; font-size: 0.8rem;">Delete</button>
+            </div>
+        `).join('');
+    }
+
+    window.addCategory = async function() {
+        const nameInput = document.getElementById('newCatName');
+        const name = nameInput.value.trim();
+        if (!name) return alert("Please enter a category name");
+
+        try {
+            const response = await fetch(`${API_BASE}/categories`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                },
+                body: JSON.stringify({ name })
+            });
+
+            if (response.ok) {
+                nameInput.value = '';
+                fetchCategories();
+            } else {
+                const err = await response.json();
+                alert(`Error: ${err.message}`);
+            }
+        } catch (error) {
+            console.error("Error adding category:", error);
+        }
+    };
+
+    window.deleteCategory = async function(id) {
+        if (!confirm("Are you sure you want to delete this category? Products in this category will NOT be deleted, but they will lose their category assignment.")) return;
+
+        try {
+            const response = await fetch(`${API_BASE}/categories/${id}`, {
+                method: 'DELETE',
+                headers: { 
+                    'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                }
+            });
+
+            if (response.ok) {
+                fetchCategories();
+            } else {
+                const err = await response.json();
+                alert(`Error: ${err.message}`);
+            }
+        } catch (error) {
+            console.error("Error deleting category:", error);
+        }
     };
 
     // Initialize

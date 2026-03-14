@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const Admin = require('./src/models/Admin');
 const Product = require('./src/models/Product');
+const Category = require('./src/models/Category');
 const connectDB = require('./src/config/db');
 
 dotenv.config();
@@ -21,16 +22,26 @@ const initialProducts = [
   { category: "Facecream", name: "Night Repair Cream", brand: "Shayors", shade: "N/A", size: "50g", ingredients: "Retinol", costPrice: 20.00, price: 35.00, stock: 10, threshold: 5, image: "../Image/WhatsApp11.jpeg" }
 ];
 
+const initialCategories = [
+  "Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", 
+  "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", 
+  "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"
+];
+
 const seedData = async () => {
   try {
     await Admin.deleteMany();
     await Product.deleteMany();
+    await Category.deleteMany();
 
     await Admin.create({
       password: 'Shayor123',
     });
 
     await Product.insertMany(initialProducts);
+    
+    const categoryObjects = initialCategories.map(cat => ({ name: cat }));
+    await Category.insertMany(categoryObjects);
 
     console.log('Data Seeded Successfully!');
     process.exit();

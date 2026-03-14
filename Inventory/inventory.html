@@ -88,20 +88,48 @@
                         <input type="text" id="pName" placeholder="Product Name" required>
                         <input type="text" id="pBrand" placeholder="Brand" required>
                         <select id="pCategory">
-                            <option value="Skincare">Skincare</option>
-                            <option value="Bath & Body">Bath & Body</option>
-                            <option value="Facecream">Facecream</option>
-                            <option value="Spa">Spa</option>
-                            <option value="Perfume">Perfume</option>
-                            <option value="Supplements">Supplements</option>
-                            <option value="Sunscreen">Sunscreen</option>
-                            <option value="Humidifiers">Humidifiers</option>
-                            <option value="Diffusers">Diffusers</option>
-                            <option value="Raw Materials">Raw Materials</option>
+                            <option value="Scrub">Scrub</option>
+                            <option value="Black soap">Black soap</option>
+                            <option value="Lotion">Lotion</option>
+                            <option value="Tube">Tube</option>
+                            <option value="Oil">Oil</option>
+                            <option value="Serum">Serum</option>
+                            <option value="Bar soap">Bar soap</option>
+                            <option value="Cleanser">Cleanser</option>
+                            <option value="Toner">Toner</option>
+                            <option value="Perfume oil">Perfume oil</option>
+                            <option value="Airfreshner">Airfreshner</option>
+                            <option value="Gift box">Gift box</option>
+                            <option value="Tea">Tea</option>
+                            <option value="Facesoap">Facesoap</option>
+                            <option value="Body spray">Body spray</option>
+                            <option value="Roll on">Roll on</option>
+                            <option value="Lubricant">Lubricant</option>
+                            <option value="Sponge">Sponge</option>
+                            <option value="Haircare">Haircare</option>
+                            <option value="Aphrodisiacs">Aphrodisiacs</option>
+                            <option value="Cotton pad">Cotton pad</option>
+                            <option value="Wipes">Wipes</option>
                             <option value="Other">Other</option>
                         </select>
                         <input type="text" id="pSize" placeholder="Size" required>
                         <input type="text" id="pBarcode" placeholder="Barcode / SKU">
+                        <input type="text" id="pShade" placeholder="Shade (N/A if none)">
+                        <input type="text" id="pSkinTypes" placeholder="Skin Types (e.g. Oily, Dry, All)">
+                        <input type="text" id="pSkinConcern" placeholder="Skin Concern (e.g. Acne, Aging)">
+                        
+                        <div class="full-width">
+                            <textarea id="pDescription" placeholder="Product Description" rows="3"></textarea>
+                        </div>
+                        <div class="full-width">
+                            <textarea id="pHowToUse" placeholder="How to use" rows="2"></textarea>
+                        </div>
+                        <div class="full-width">
+                            <textarea id="pIngredients" placeholder="Ingredients" rows="2"></textarea>
+                        </div>
+                        <div class="full-width">
+                            <textarea id="pReview" placeholder="Review Description" rows="2"></textarea>
+                        </div>
                         
                         <div class="unit-setup full-width">
                             <h4>Unit Setup</h4>
@@ -346,31 +374,6 @@
                 </div>
             </section>
 
-            <!-- Customers Module -->
-            <section id="customers-module" class="module">
-                <div class="module-header"><h2>Customer & Debtor Database</h2></div>
-                <div class="table-container">
-                    <table id="customersTable">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Invoice No.</th>
-                                <th>Name</th>
-                                <th>Contact No.</th>
-                                <th>Product/Service</th>
-                                <th>Total Amount</th>
-                                <th>Partly Paid</th>
-                                <th>Balance</th>
-                                <th>Due Date</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="customersBody"></tbody>
-                    </table>
-                </div>
-            </section>
-
             <!-- Customers & Debtors Module -->
             <section id="customers-module" class="module">
                 <div class="module-header">
@@ -566,6 +569,19 @@
                             <button type="submit" class="btn primary">Save Staff</button>
                         </form>
                         <ul id="staffList"></ul>
+                    </div>
+
+                    <!-- Category Management -->
+                    <div class="admin-card">
+                        <h3>Category Management</h3>
+                        <div class="action-bar">
+                            <input type="text" id="newCatName" placeholder="New Category Name" style="width: 150px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                            <button class="btn secondary" onclick="addCategory()" style="padding: 5px 10px;">+ Add</button>
+                        </div>
+                        <div id="categoriesManager" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                            <!-- List of categories with delete buttons will be injected here -->
+                            <p style="font-size: 0.8rem; color: #888;">Loading categories...</p>
+                        </div>
                     </div>
 
                     <div class="admin-card">

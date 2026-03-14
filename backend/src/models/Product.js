@@ -11,7 +11,13 @@ const productSchema = mongoose.Schema({
   image: { type: String },
   size: { type: String },
   ingredients: { type: String },
-  shade: { type: String }
+  shade: { type: String },
+  skinTypes: { type: String },
+  review: { type: String },
+  description: { type: String },
+  howToUse: { type: String },
+  skinConcern: { type: String },
+  barcode: { type: String }
 }, {
   timestamps: true
 });

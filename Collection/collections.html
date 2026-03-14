@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Our Collections | Shayors Cosmetics</title>
     <link rel="stylesheet" href="collections.css">
+    <link rel="stylesheet" href="../cart.css">
     <link rel="shortcut icon" href="../Image/Shayor's Logo.png" type="image/x-icon">
     
 </head>
@@ -30,6 +31,12 @@
             <img src="../Image/menus.png" alt="menu" width="20px">
         </div>
     </nav>
+
+    <!-- Floating Cart Icon -->
+    <div id="cartBtn" class="floating-cart" onclick="openCart()">
+        <img src="../Image/bell.png" alt="Cart" width="20px" style="filter: invert(1);">
+        <span id="cartCount">0</span>
+    </div>
 
     <!-- Brands Bar -->
     <div class="brands-bar">
@@ -106,45 +113,45 @@
         </div>
     </div>
 
-    <!-- Product Order Modal -->
-    <div id="orderModal" class="modal hidden">
+    <!-- Cart Modal -->
+    <div id="cartModal" class="modal hidden">
+        <div class="modal-content cart-modal-content">
+            <h3>Your Shopping Cart</h3>
+            <div id="cartItemsContainer">
+                <p>Your cart is empty.</p>
+            </div>
+            <div id="cartFooter" class="hidden">
+                <hr>
+                <p><strong>Total: ₦<span id="cartTotalDisplay">0</span></strong></p>
+                <button class="btn primary full-width" onclick="goToCheckout()">Proceed to Checkout</button>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn secondary" onclick="closeModal('cartModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="checkoutModal" class="modal hidden">
         <div class="modal-content">
-            <h3>Order: <span id="orderProductName"></span></h3>
-            <form id="orderForm">
-                <input type="hidden" id="orderProductId">
-                <input type="hidden" id="orderProductPrice">
-                <input type="text" id="orderCustName" placeholder="Your Full Name" required>
-                <input type="email" id="orderCustEmail" placeholder="Email Address" required>
-                <input type="text" id="orderCustPhone" placeholder="Phone Number" required>
-                <input type="text" id="orderCustAddress" placeholder="Shipping Address" required>
-                <input type="number" id="orderCustQty" value="1" min="1" required>
-                <textarea id="orderCustNote" placeholder="Additional Notes (Optional)"></textarea>
-                <p><strong>Total: ₦<span id="orderTotalDisplay">0</span></strong></p>
+            <h3>Checkout</h3>
+            <form id="checkoutForm">
+                <input type="text" id="checkCustName" placeholder="Your Full Name" required>
+                <input type="email" id="checkCustEmail" placeholder="Email Address" required>
+                <input type="text" id="checkCustPhone" placeholder="Phone Number" required>
+                <input type="text" id="checkCustAddress" placeholder="Shipping Address" required>
+                <select id="checkPaymentMethod">
+                    <option value="Payment on Delivery">Payment on Delivery</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                </select>
+                <textarea id="checkCustNote" placeholder="Additional Notes (Optional)"></textarea>
                 <div class="modal-actions">
-                    <button type="submit" class="btn primary">Place Order</button>
-                    <button type="button" class="btn secondary" onclick="closeModal('orderModal')">Cancel</button>
+                    <button type="submit" class="btn primary">Complete Order</button>
+                    <button type="button" class="btn secondary" onclick="closeModal('checkoutModal')">Back to Cart</button>
                 </div>
             </form>
         </div>
     </div>
-
-    <style>
-        .modal {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 2000;
-        }
-        .modal-content {
-            background: #fff; padding: 30px; border-radius: 10px; width: 400px;
-        }
-        .modal-content input, .modal-content select, .modal-content textarea {
-            width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd;
-        }
-        .modal-actions { display: flex; gap: 10px; margin-top: 15px; }
-        .hidden { display: none !important; }
-    </style>
 
     <script src="../script.js"></script>
     <script src="collections.js"></script>

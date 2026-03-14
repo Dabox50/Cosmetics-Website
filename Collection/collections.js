@@ -15,14 +15,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let productData = [...initialProducts];
     let spaServices = []; // Will be fetched from API
+    let categories = [];
 
     // 2. Fetch Data from API (Appends or replaces static data)
     const fetchProducts = async () => {
         const productRowsContainer = document.getElementById('productRowsContainer');
-        // If we already have initial products, don't show full-page loader, just a small indicator if desired
-        // But for clarity, we'll keep the loader if the user expects one
         
         try {
+            // Fetch Categories
+            const catRes = await fetch('https://shayors-cosmetics.onrender.com/api/categories');
+            if (catRes.ok) {
+                categories = await catRes.json();
+            }
+
             // Fetch Products
             const prodRes = await fetch('https://shayors-cosmetics.onrender.com/api/products');
             if (prodRes.ok) {
@@ -76,13 +81,63 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h3>${product.name}</h3>
                     <p class="price">₦${parseFloat(product.price).toLocaleString()}</p>
                     <p class="qty">Qty Available: ${product.stock}</p>
-                    <button class="btn primary" ${available ? '' : 'disabled'} onclick="openOrderModal('${product._id}', '${product.name.replace(/'/g, "\\'")}', ${product.price})">
-                        ${available ? 'Order Now' : 'Join Waitlist'}
-                    </button>
+                    
+                    <div class="product-details-mini">
+                        ${product.skinTypes ? `<p><strong>Skin Type:</strong> ${product.skinTypes}</p>` : ''}
+                        ${product.skinConcern ? `<p><strong>Concern:</strong> ${product.skinConcern}</p>` : ''}
+                    </div>
+
+                    <div class="card-actions">
+                        <button class="btn primary" ${available ? '' : 'disabled'} onclick="addToCart('${product._id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.image}')">
+                            ${available ? 'Add to Cart' : 'Out of Stock'}
+                        </button>
+                        <button class="btn secondary info-btn" onclick="showProductInfo('${product._id}')">Details</button>
+                    </div>
                 </div>
             </div>
         `;
     }
+
+    window.showProductInfo = function(id) {
+        const product = productData.find(p => p._id === id);
+        if (!product) return;
+
+        const infoHtml = `
+            <div class="product-info-modal">
+                <div class="info-grid">
+                    <img src="${product.image || '../Image/placeholder.png'}" alt="${product.name}">
+                    <div class="info-text">
+                        <h2>${product.name}</h2>
+                        <p class="info-brand">By ${product.brand || 'Shayors'}</p>
+                        <p class="info-price">₦${parseFloat(product.price).toLocaleString()}</p>
+                        <hr>
+                        ${product.description ? `<div class="info-section"><h4>Description</h4><p>${product.description}</p></div>` : ''}
+                        ${product.skinTypes ? `<div class="info-section"><h4>Skin Types</h4><p>${product.skinTypes}</p></div>` : ''}
+                        ${product.skinConcern ? `<div class="info-section"><h4>Skin Concern</h4><p>${product.skinConcern}</p></div>` : ''}
+                        ${product.howToUse ? `<div class="info-section"><h4>How to Use</h4><p>${product.howToUse}</p></div>` : ''}
+                        ${product.ingredients ? `<div class="info-section"><h4>Ingredients</h4><p>${product.ingredients}</p></div>` : ''}
+                        ${product.review ? `<div class="info-section"><h4>Review</h4><p>${product.review}</p></div>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Create a temporary modal for full info
+        const modal = document.createElement('div');
+        modal.id = 'infoModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content info-modal-content">
+                <span class="close-modal" onclick="document.getElementById('infoModal').remove()">&times;</span>
+                ${infoHtml}
+                <div class="modal-actions">
+                    <button class="btn primary" onclick="addToCart('${product._id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.image}'); document.getElementById('infoModal').remove();">Add to Cart</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.classList.remove('hidden');
+    };
 
     function createServiceCard(service) {
         return `
@@ -110,8 +165,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let filteredProducts = productData;
         let filteredServices = [];
 
-        // DYNAMIC CATEGORIES: Extract unique categories from actual product data
-        const dynamicCategories = [...new Set(productData.map(p => p.category))].sort();
+        // DYNAMIC CATEGORIES: Use categories from API or extract unique categories from actual product data
+        let dynamicCategories = [];
+        if (categories && categories.length > 0) {
+            dynamicCategories = categories.map(c => c.name).sort();
+        } else {
+            dynamicCategories = [...new Set(productData.map(p => p.category))].sort();
+        }
         
         // Update the category select dropdown in navigation dynamically
         const catSelect = document.getElementById('catSelect');
@@ -258,22 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial Fetch
     fetchProducts();
 
-    window.openModal = function(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) modal.classList.remove('hidden');
-    };
-
-    window.closeModal = function(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.classList.add('hidden');
-            if (modalId === 'spaManagementModal') {
-                document.getElementById('spaServiceForm').reset();
-                document.getElementById('sId').value = '';
-            }
-        }
-    };
-
     const spaServiceForm = document.getElementById('spaServiceForm');
     if (spaServiceForm) {
         spaServiceForm.addEventListener('submit', async (e) => {
@@ -355,6 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
         openModal('bookingModal');
     };
 
+    /* --- PREVIOUS ORDERING LOGIC (COMMENTED OUT) ---
     window.openOrderModal = function(id, name, price) {
         document.getElementById('orderProductId').value = id;
         document.getElementById('orderProductName').innerText = name;
@@ -421,6 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    */
 
     const bookingForm = document.getElementById('bookingForm');
     if (bookingForm) {

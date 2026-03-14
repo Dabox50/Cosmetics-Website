@@ -72,6 +72,148 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollAnimation();
     smoothScroll();
 
+    // --- GLOBAL MODAL LOGIC ---
+    window.openModal = function(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.remove('hidden');
+    };
+
+    window.closeModal = function(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.add('hidden');
+    };
+
+    // --- GLOBAL SHOPPING CART SYSTEM ---
+    let cart = JSON.parse(localStorage.getItem('shayorsCart')) || [];
+    
+    // Initial UI update
+    setTimeout(updateCartUI, 100); 
+
+    window.addToCart = function(id, name, price, image) {
+        const existing = cart.find(item => item.id === id);
+        if (existing) {
+            existing.qty++;
+        } else {
+            cart.push({ id, name, price, image, qty: 1 });
+        }
+        saveCart();
+        updateCartUI();
+        alert(`${name} added to cart!`);
+    };
+
+    function saveCart() {
+        localStorage.setItem('shayorsCart', JSON.stringify(cart));
+    }
+
+    function updateCartUI() {
+        const count = cart.reduce((sum, item) => sum + item.qty, 0);
+        const cartCountEl = document.getElementById('cartCount');
+        if (cartCountEl) cartCountEl.innerText = count;
+    }
+
+    window.openCart = function() {
+        const container = document.getElementById('cartItemsContainer');
+        const footer = document.getElementById('cartFooter');
+        const totalEl = document.getElementById('cartTotalDisplay');
+        
+        if (!container) return; // Cart HTML might not be on current page yet
+
+        if (cart.length === 0) {
+            container.innerHTML = '<p>Your cart is empty.</p>';
+            if (footer) footer.classList.add('hidden');
+        } else {
+            let total = 0;
+            container.innerHTML = cart.map((item, index) => {
+                total += item.price * item.qty;
+                return `
+                    <div class="cart-item">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <img src="${item.image}" width="40" height="40" style="object-fit:cover; border-radius:4px;">
+                            <div>
+                                <strong>${item.name}</strong><br>
+                                <small>₦${item.price.toLocaleString()} x ${item.qty}</small>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn secondary" style="padding:2px 8px;" onclick="updateCartQty(${index}, -1)">-</button>
+                            <button class="btn secondary" style="padding:2px 8px;" onclick="updateCartQty(${index}, 1)">+</button>
+                            <button class="btn danger" style="padding:2px 8px;" onclick="removeFromCart(${index})">×</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            if (totalEl) totalEl.innerText = total.toLocaleString();
+            if (footer) footer.classList.remove('hidden');
+        }
+        openModal('cartModal');
+    };
+
+    window.updateCartQty = function(index, change) {
+        cart[index].qty += change;
+        if (cart[index].qty < 1) cart.splice(index, 1);
+        saveCart();
+        updateCartUI();
+        openCart(); 
+    };
+
+    window.removeFromCart = function(index) {
+        cart.splice(index, 1);
+        saveCart();
+        updateCartUI();
+        openCart(); 
+    };
+
+    window.goToCheckout = function() {
+        closeModal('cartModal');
+        openModal('checkoutModal');
+    };
+
+    const checkoutForm = document.getElementById('checkoutForm');
+    if (checkoutForm) {
+        checkoutForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            
+            const orderData = {
+                customerName: document.getElementById('checkCustName').value,
+                customerEmail: document.getElementById('checkCustEmail').value,
+                customerPhone: document.getElementById('checkCustPhone').value,
+                shippingAddress: document.getElementById('checkCustAddress').value,
+                paymentMethod: document.getElementById('checkPaymentMethod').value,
+                notes: document.getElementById('checkCustNote').value,
+                items: cart.map(item => ({
+                    productId: item.id,
+                    productName: item.name,
+                    quantity: item.qty,
+                    price: item.price
+                })),
+                totalAmount: total
+            };
+
+            const itemsList = cart.map(item => `${item.name} (x${item.qty})`).join(', ');
+            const waMessage = `New Order from ${orderData.customerName}:\nItems: ${itemsList}\nTotal: ₦${total.toLocaleString()}\nAddress: ${orderData.shippingAddress}`;
+            window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
+
+            try {
+                const response = await fetch('https://shayors-cosmetics.onrender.com/api/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(orderData)
+                });
+
+                if (response.ok) {
+                    alert('Order placed successfully!');
+                    cart = [];
+                    saveCart();
+                    updateCartUI();
+                    closeModal('checkoutModal');
+                }
+            } catch (error) {
+                console.error('Order error:', error);
+            }
+        });
+    }
+
     // Contact Form Submission (if on contact page)
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
