@@ -1,5 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const API_BASE = "https://shayors-cosmetics.onrender.com/api";
+    // const API_BASE = "https://shayors-cosmetics.onrender.com/api";
+    const API_BASE = "http://localhost:5000/api";
 
     // 0. Admin Authentication
     async function init() {
@@ -82,7 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 console.error("Login failed:", error);
-                alert("Server connection error.");
+                alert(`Server connection error: ${error.message}. Please check if the backend is running at ${API_BASE}`);
             }
         });
     }
