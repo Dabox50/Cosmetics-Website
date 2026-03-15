@@ -1,0 +1,32 @@
+# Exported from Render on 2026-03-15T22:58:37Z
+version: "1"
+projects:
+- name: My project
+  environments:
+  - name: Production
+    services:
+    - type: web
+      name: Shayor's Cosmetics
+      runtime: node
+      repo: https://github.com/Dabox50/Cosmetics-Website
+      plan: free
+      envVars:
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: EMAIL_PASS
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: NODE_ENV
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: PORT
+        sync: false
+      region: oregon
+      buildCommand: npm install
+      startCommand: node server.js
+      autoDeployTrigger: "off"
+      rootDir: backend
