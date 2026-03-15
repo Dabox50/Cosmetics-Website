@@ -28,7 +28,7 @@
     </nav>
 
     <!-- Brands Bar -->
-    <div class="brands-bar">
+    <div class="brands-bar auth-hidden" id="adminBrandsBar">
         <span>Inventory Dashboard:</span>
         <div class="brands-scroll">
             <span>Stock Tracking</span>
@@ -38,7 +38,7 @@
         </div>
     </div>
 
-    <div class="app-wrapper">
+    <div class="app-wrapper auth-hidden" id="adminAppWrapper">
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h3>Admin Panel</h3>
@@ -53,6 +53,7 @@
                 <li onclick="showModule('customers')">👥 Customers</li>
                 <li onclick="showModule('suppliers')">🚛 Suppliers</li>
                 <li onclick="showModule('store')">🏪 Store Management</li>
+                <li onclick="logoutAdmin()" style="margin-top: 50px; border-top: 1px solid rgba(255,255,255,0.1); color: #ff4d4d;">🚪 Logout</li>
             </ul>
         </aside>
 
@@ -503,8 +504,8 @@
                                 <th>Service Name</th>
                                 <th>Category</th>
                                 <th>Price</th>
-                                <th>Units</th>
-                                <th>Actions</th>
+                                <th>Duration</th>
+                                <th>Service</th>
                             </tr>
                         </thead>
                         <tbody id="spaBody"></tbody>
@@ -523,7 +524,7 @@
                                 <th>Customer</th>
                                 <th>Contact</th>
                                 <th>Note</th>
-                                <th>Actions</th>
+                                <th>Service</th>
                             </tr>
                         </thead>
                         <tbody id="bookingsBody"></tbody>
@@ -647,6 +648,13 @@
             </div>
         </div>
     </footer>
+
+    <div id="adminStatusContainer" class="admin-status auth-hidden">
+        <span>👨‍💻 Admin Logged In</span>
+        <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
+    </div>
+
+    <div id="loginModalContainer"></div>
 
     <script src="../script.js"></script>
     <script src="inventory.js"></script>

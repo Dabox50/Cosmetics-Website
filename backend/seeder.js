@@ -35,7 +35,8 @@ const seedData = async () => {
     await Category.deleteMany();
 
     await Admin.create({
-      password: 'Shayor123',
+      email: process.env.ADMIN_EMAIL || 'admin@shayors.com',
+      password: process.env.ADMIN_PASSWORD || 'Shayor123',
     });
 
     await Product.insertMany(initialProducts);

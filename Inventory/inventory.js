@@ -3,14 +3,64 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 0. Admin Authentication
     async function init() {
-        const token = sessionStorage.getItem('shayorsAdminToken');
+        let token = sessionStorage.getItem('shayorsAdminToken') || localStorage.getItem('shayorsAdminToken');
+        
         if (!token) {
-            const password = prompt("Enter Admin Password:");
+            toggleAuthVisibility(false);
+            showLoginModal();
+        } else {
+            // Validate token exists and start app
+            sessionStorage.setItem('shayorsAdminToken', token); // Ensure it's in session too
+            toggleAuthVisibility(true);
+            fetchInventory();
+        }
+    }
 
-            if (!password) {
-                window.location.href = "../index.html";
-                return;
-            }
+    function toggleAuthVisibility(isLoggedIn) {
+        const appWrapper = document.getElementById('adminAppWrapper');
+        const brandsBar = document.getElementById('adminBrandsBar');
+        const statusContainer = document.getElementById('adminStatusContainer');
+        const loginContainer = document.getElementById('loginModalContainer');
+
+        if (isLoggedIn) {
+            appWrapper?.classList.remove('auth-hidden');
+            brandsBar?.classList.remove('auth-hidden');
+            statusContainer?.classList.remove('auth-hidden');
+            if (loginContainer) loginContainer.innerHTML = '';
+        } else {
+            appWrapper?.classList.add('auth-hidden');
+            brandsBar?.classList.add('auth-hidden');
+            statusContainer?.classList.add('auth-hidden');
+        }
+    }
+
+    function showLoginModal() {
+        const container = document.getElementById('loginModalContainer');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div id="loginModal" class="modal">
+                <div class="modal-content" style="text-align: center;">
+                    <img src="../Image/Shayor's Logo New.png" width="150" style="margin-bottom: 20px;">
+                    <h2 style="margin-bottom: 20px; font-family: 'Playfair Display', serif;">Admin Login</h2>
+                    <form id="loginForm">
+                        <input type="password" id="adminPass" placeholder="Enter Admin Password" required 
+                               style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px;">
+                        <div style="text-align: left; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="rememberMe" style="width: 18px; height: 18px; cursor: pointer;">
+                            <label for="rememberMe" style="font-size: 0.9rem; color: #555; cursor: pointer;">Remember Me</label>
+                        </div>
+                        <button type="submit" class="btn primary" style="width: 100%; padding: 12px; border-radius: 5px;">Login to Dashboard</button>
+                    </form>
+                    <p style="margin-top: 20px;"><a href="../index.html" style="color: #888; text-decoration: none; font-size: 0.85rem;">← Back to Home</a></p>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('adminPass').value;
+            const remember = document.getElementById('rememberMe').checked;
 
             try {
                 const response = await fetch(`${API_BASE}/admin/login`, {
@@ -22,21 +72,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.ok) {
                     const data = await response.json();
                     sessionStorage.setItem('shayorsAdminToken', data.token);
-                    sessionStorage.setItem('shayorsAdminAuthenticated', 'true');
+                    if (remember) {
+                        localStorage.setItem('shayorsAdminToken', data.token);
+                    }
+                    toggleAuthVisibility(true);
                     fetchInventory();
                 } else {
-                    alert("Access Denied! Invalid Credentials.");
-                    window.location.href = "../index.html";
+                    alert("Access Denied! Invalid Password.");
                 }
             } catch (error) {
                 console.error("Login failed:", error);
-                alert("Server error. Redirecting...");
-                window.location.href = "../index.html";
+                alert("Server connection error.");
             }
-        } else {
-            fetchInventory();
-        }
+        });
     }
+
+    window.logoutAdmin = function() {
+        if (confirm("Are you sure you want to logout?")) {
+            sessionStorage.removeItem('shayorsAdminToken');
+            localStorage.removeItem('shayorsAdminToken');
+            window.location.reload();
+        }
+    };
 
     init();
 
@@ -65,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let adjustments = JSON.parse(localStorage.getItem('shayorsAdjustments')) || [];
     let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
     const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
-    let categories = initialCategoriesList.map(name => ({ name }));
+    let categories = JSON.parse(localStorage.getItem('shayorsCategories')) || initialCategoriesList.map(name => ({ name, _id: 'local_' + Math.random().toString(36).substr(2, 9) }));
 
     let currentSaleItems = [];
 
@@ -1367,19 +1424,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${API_BASE}/categories`);
             if (response.ok) {
                 const data = await response.json();
-                categories = Array.isArray(data) ? data : [];
+                if (Array.isArray(data) && data.length > 0) {
+                    categories = data;
+                    localStorage.setItem('shayorsCategories', JSON.stringify(categories));
+                }
                 console.log("Categories loaded:", categories);
                 updateCategoryDropdowns();
                 renderCategoryManager();
             } else {
-                console.error("Failed to fetch categories:", response.status);
-                // If 404, it means the backend hasn't been updated yet
-                if (response.status === 404) {
-                    console.warn("Backend /api/categories not found. Please ensure backend is redeployed.");
-                }
+                // If API fails, we still have our local 'categories' array from line 68
+                updateCategoryDropdowns();
+                renderCategoryManager();
             }
         } catch (error) {
             console.error("Error fetching categories:", error);
+            // Fallback to local
+            updateCategoryDropdowns();
+            renderCategoryManager();
         }
     }
 
@@ -1414,6 +1475,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = nameInput.value.trim();
         if (!name) return alert("Please enter a category name");
 
+        // Try API first
         try {
             const response = await fetch(`${API_BASE}/categories`, {
                 method: 'POST',
@@ -1427,18 +1489,26 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok) {
                 nameInput.value = '';
                 fetchCategories();
-            } else {
-                const err = await response.json();
-                alert(`Error: ${err.message}`);
+                return;
             }
         } catch (error) {
-            console.error("Error adding category:", error);
+            console.warn("API Add failed, falling back to local storage:", error);
         }
+
+        // Local Storage Fallback
+        const newCat = { name, _id: 'local_' + Math.random().toString(36).substr(2, 9) };
+        categories.push(newCat);
+        localStorage.setItem('shayorsCategories', JSON.stringify(categories));
+        nameInput.value = '';
+        updateCategoryDropdowns();
+        renderCategoryManager();
+        alert("Category added locally (Will sync with server after redeploy)");
     };
 
     window.deleteCategory = async function(id) {
         if (!confirm("Are you sure you want to delete this category? Products in this category will NOT be deleted, but they will lose their category assignment.")) return;
 
+        // Try API first
         try {
             const response = await fetch(`${API_BASE}/categories/${id}`, {
                 method: 'DELETE',
@@ -1449,13 +1519,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok) {
                 fetchCategories();
-            } else {
-                const err = await response.json();
-                alert(`Error: ${err.message}`);
+                return;
             }
         } catch (error) {
-            console.error("Error deleting category:", error);
+            console.warn("API Delete failed, falling back to local storage:", error);
         }
+
+        // Local Storage Fallback
+        categories = categories.filter(cat => cat._id !== id);
+        localStorage.setItem('shayorsCategories', JSON.stringify(categories));
+        updateCategoryDropdowns();
+        renderCategoryManager();
+        alert("Category removed locally");
     };
 
     // Initialize

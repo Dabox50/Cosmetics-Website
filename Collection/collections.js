@@ -15,7 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let productData = [...initialProducts];
     let spaServices = []; // Will be fetched from API
-    let categories = [];
+    const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
+    let categories = JSON.parse(localStorage.getItem('shayorsCategories')) || initialCategoriesList.map(name => ({ name }));
 
     // 2. Fetch Data from API (Appends or replaces static data)
     const fetchProducts = async () => {
@@ -25,7 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // Fetch Categories
             const catRes = await fetch('https://shayors-cosmetics.onrender.com/api/categories');
             if (catRes.ok) {
-                categories = await catRes.json();
+                const data = await catRes.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    categories = data;
+                    localStorage.setItem('shayorsCategories', JSON.stringify(categories));
+                }
             }
 
             // Fetch Products
