@@ -194,8 +194,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const waMessage = `New Order from ${orderData.customerName}:\nItems: ${itemsList}\nTotal: ₦${total.toLocaleString()}\nAddress: ${orderData.shippingAddress}`;
             window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
 
+            const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+                ? "http://localhost:5000/api" 
+                : "https://shayors-cosmetics.onrender.com/api";
+
             try {
-                const response = await fetch('https://shayors-cosmetics.onrender.com/api/orders', {
+                const response = await fetch(`${API_BASE}/orders`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(orderData)

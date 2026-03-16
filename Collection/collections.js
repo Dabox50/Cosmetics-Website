@@ -18,13 +18,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
     let categories = JSON.parse(localStorage.getItem('shayorsCategories')) || initialCategoriesList.map(name => ({ name }));
 
+    const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+        ? "http://localhost:5000/api" 
+        : "https://shayors-cosmetics.onrender.com/api";
+
     // 2. Fetch Data from API (Appends or replaces static data)
     const fetchProducts = async () => {
         const productRowsContainer = document.getElementById('productRowsContainer');
         
         try {
             // Fetch Categories
-            const catRes = await fetch('https://shayors-cosmetics.onrender.com/api/categories');
+            const catRes = await fetch(`${API_BASE}/categories`);
             if (catRes.ok) {
                 const data = await catRes.json();
                 if (Array.isArray(data) && data.length > 0) {
@@ -34,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Fetch Products
-            const prodRes = await fetch('https://shayors-cosmetics.onrender.com/api/products');
+            const prodRes = await fetch(`${API_BASE}/products`);
             if (prodRes.ok) {
                 const apiData = await prodRes.json();
                 if (apiData && apiData.length > 0) {
@@ -45,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Fetch Services
-            const servRes = await fetch('https://shayors-cosmetics.onrender.com/api/services');
+            const servRes = await fetch(`${API_BASE}/services`);
             if (servRes.ok) {
                 spaServices = await servRes.json();
             }
@@ -340,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 let response;
                 if (id) {
-                    response = await fetch(`https://shayors-cosmetics.onrender.com/api/services/${id}`, {
+                    response = await fetch(`${API_BASE}/services/${id}`, {
                         method: 'PATCH',
                         headers: { 
                             'Content-Type': 'application/json',
@@ -349,7 +353,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify(serviceData)
                     });
                 } else {
-                    response = await fetch('https://shayors-cosmetics.onrender.com/api/services', {
+                    response = await fetch(`${API_BASE}/services`, {
                         method: 'POST',
                         headers: { 
                             'Content-Type': 'application/json',
@@ -387,7 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm('Delete this service?')) {
             const token = sessionStorage.getItem('shayorsAdminToken');
             try {
-                const response = await fetch(`https://shayors-cosmetics.onrender.com/api/services/${id}`, {
+                const response = await fetch(`${API_BASE}/services/${id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -454,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeModal('orderModal');
 
             try {
-                const response = await fetch('https://shayors-cosmetics.onrender.com/api/orders', {
+                const response = await fetch(`${API_BASE}/orders`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(orderData)
