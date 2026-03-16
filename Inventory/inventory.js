@@ -5,8 +5,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper to get token safely
     function getAdminToken() {
-        const token = sessionStorage.getItem('shayorsAdminToken') || localStorage.getItem('shayorsAdminToken');
-        if (!token || token === "undefined" || token === "null" || token.length < 20) {
+        // Check for both API token and local bypass token
+        const token = sessionStorage.getItem('shayorsAdminToken') || localStorage.getItem('shayorsAdminToken') || localStorage.getItem('inventoryLoggedIn');
+        if (!token || token === "undefined" || token === "null") {
             return null;
         }
         return token;
@@ -17,14 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let token = getAdminToken();
         
         if (!token) {
-            // Clean up if it was a garbage token
-            sessionStorage.removeItem('shayorsAdminToken');
-            localStorage.removeItem('shayorsAdminToken');
             toggleAuthVisibility(false);
             showLoginModal();
         } else {
-            // Validate token exists and start app
-            sessionStorage.setItem('shayorsAdminToken', token); // Ensure it's in session too
             toggleAuthVisibility(true);
             fetchInventory();
         }
@@ -76,6 +72,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('adminPass').value;
             const remember = document.getElementById('rememberMe').checked;
 
+            // --- FRONTEND-ONLY BYPASS (For testing) ---
+            if (password === "Shayor123") {
+                console.log("Using frontend-only login bypass");
+                localStorage.setItem('inventoryLoggedIn', 'true');
+                if (remember) {
+                    localStorage.setItem('shayorsAdminToken', 'local_bypass_token');
+                }
+                toggleAuthVisibility(true);
+                fetchInventory();
+                return;
+            }
+
             try {
                 const response = await fetch(`${API_BASE}/admin/login`, {
                     method: 'POST',
@@ -107,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm("Are you sure you want to logout?")) {
             sessionStorage.removeItem('shayorsAdminToken');
             localStorage.removeItem('shayorsAdminToken');
+            localStorage.removeItem('inventoryLoggedIn');
             window.location.reload();
         }
     };
