@@ -18,14 +18,21 @@ const allowedOrigins = [
   "http://127.0.0.1:5500"
 ];
 
-app.use(cors({
-  origin: allowedOrigins,
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
-}));
+};
 
-app.options("*", cors()); // Enable preflight for all routes
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // Apply same options to preflight requests
 
 app.use(express.json());
 

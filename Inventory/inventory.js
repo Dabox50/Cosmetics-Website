@@ -91,12 +91,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     toggleAuthVisibility(true);
                     fetchInventory();
+                } else if (response.status === 503) {
+                    alert("Backend server is starting up or temporarily down on Render. Please wait 1-2 minutes and try again.");
                 } else {
                     alert("Access Denied! Invalid Password.");
                 }
             } catch (error) {
                 console.error("Login failed:", error);
-                alert(`Server connection error: ${error.message}. Please check if the backend is running at ${API_BASE}`);
+                alert(`Server connection error: Backend is likely starting up on Render or the URL is incorrect. Please try again in 1 minute. (${API_BASE})`);
             }
         });
     }
