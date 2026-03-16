@@ -12,10 +12,26 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const app = express();
 
 // 1. Configure CORS
+const allowedOrigins = [
+  "https://dabox50.github.io",
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+  "http://localhost:5000"
+];
+
 app.use(cors({
-  origin: "*", // Allows all origins, including github.io
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 }));
 
 app.options("*", cors()); // Enable preflight for all routes

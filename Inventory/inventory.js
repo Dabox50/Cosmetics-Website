@@ -1368,9 +1368,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastOrderCount = 0;
     
     async function checkNewOrders() {
+        const token = sessionStorage.getItem('shayorsAdminToken');
+        if (!token) return;
+
         try {
             const response = await fetch(`${API_BASE}/orders`, {
-                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
                 const data = await response.json();
