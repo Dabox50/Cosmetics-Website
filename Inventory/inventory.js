@@ -3,11 +3,23 @@ document.addEventListener('DOMContentLoaded', () => {
         ? "http://localhost:5000/api" 
         : "https://shayors-cosmetics.onrender.com/api";
 
+    // Helper to get token safely
+    function getAdminToken() {
+        const token = sessionStorage.getItem('shayorsAdminToken') || localStorage.getItem('shayorsAdminToken');
+        if (!token || token === "undefined" || token === "null" || token.length < 20) {
+            return null;
+        }
+        return token;
+    }
+
     // 0. Admin Authentication
     async function init() {
-        let token = sessionStorage.getItem('shayorsAdminToken') || localStorage.getItem('shayorsAdminToken');
+        let token = getAdminToken();
         
         if (!token) {
+            // Clean up if it was a garbage token
+            sessionStorage.removeItem('shayorsAdminToken');
+            localStorage.removeItem('shayorsAdminToken');
             toggleAuthVisibility(false);
             showLoginModal();
         } else {
@@ -280,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'PATCH',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                        'Authorization': `Bearer ${getAdminToken()}`
                     },
                     body: JSON.stringify(productData)
                 });
@@ -290,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                        'Authorization': `Bearer ${getAdminToken()}`
                     },
                     body: JSON.stringify(productData)
                 });
@@ -347,7 +359,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch(`${API_BASE}/products/${id}`, {
                     method: 'DELETE',
                     headers: { 
-                        'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                        'Authorization': `Bearer ${getAdminToken()}`
                     }
                 });
                 if (response.ok) {
@@ -372,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'PATCH',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                        'Authorization': `Bearer ${getAdminToken()}`
                     },
                     body: JSON.stringify({ stock: newStock })
                 });
@@ -395,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'PATCH',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                        'Authorization': `Bearer ${getAdminToken()}`
                     },
                     body: JSON.stringify({ stock: newStock })
                 });
@@ -451,7 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                        'Authorization': `Bearer ${getAdminToken()}`
                     },
                     body: JSON.stringify(p)
                 });
@@ -614,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
             type: type 
         };
 
-        const adminToken = sessionStorage.getItem('shayorsAdminToken');
+        const adminToken = getAdminToken();
 
         currentSaleItems.forEach(async (item) => {
             const p = inventory.find(p => p._id == item.productId);
@@ -677,7 +689,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const saleIdx = sales.findIndex(s => s.id === id);
             const sale = sales[saleIdx];
             
-            const adminToken = sessionStorage.getItem('shayorsAdminToken');
+            const adminToken = getAdminToken();
             
             // Restore Stock
             sale.items.forEach(async (item) => {
@@ -765,7 +777,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         try {
             const response = await fetch(`${API_BASE}/orders`, {
-                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+                headers: { 'Authorization': `Bearer ${getAdminToken()}` }
             });
             if (response.ok) {
                 const data = await response.json();
@@ -800,7 +812,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.viewOrder = async function(id) {
         try {
             const response = await fetch(`${API_BASE}/orders/${id}`, {
-                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+                headers: { 'Authorization': `Bearer ${getAdminToken()}` }
             });
             if (response.ok) {
                 const order = await response.json();
@@ -814,7 +826,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch(`${API_BASE}/orders/${id}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+                headers: { 'Authorization': `Bearer ${getAdminToken()}` }
             });
             if (response.ok) {
                 renderSalesHistory();
@@ -1185,7 +1197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const product = inventory.find(p => p._id === productId);
             if (product) {
                 const newStock = type === 'Restock' ? product.stock + qty : Math.max(0, product.stock - qty);
-                const adminToken = sessionStorage.getItem('shayorsAdminToken');
+                const adminToken = getAdminToken();
 
                 try {
                     const response = await fetch(`${API_BASE}/products/${productId}`, {
@@ -1278,7 +1290,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Fetch Bookings
             const bRes = await fetch(`${API_BASE}/bookings`, {
-                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+                headers: { 'Authorization': `Bearer ${getAdminToken()}` }
             });
             if (bRes.ok) {
                 const bookings = await bRes.json();
@@ -1309,7 +1321,7 @@ document.addEventListener('DOMContentLoaded', () => {
             price: parseFloat(document.getElementById('spaPrice').value)
         };
 
-        const token = sessionStorage.getItem('shayorsAdminToken');
+        const token = getAdminToken();
         try {
             const res = await fetch(`${API_BASE}/services${id ? '/' + id : ''}`, {
                 method: id ? 'PATCH' : 'POST',
@@ -1347,7 +1359,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await fetch(`${API_BASE}/services/${id}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+                headers: { 'Authorization': `Bearer ${getAdminToken()}` }
             });
             renderSpaServices();
         } catch (e) { console.error(e); }
@@ -1358,7 +1370,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await fetch(`${API_BASE}/bookings/${id}`, {
                 method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}` }
+                headers: { 'Authorization': `Bearer ${getAdminToken()}` }
             });
             renderSpaServices();
         } catch (e) { console.error(e); }
@@ -1368,8 +1380,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastOrderCount = 0;
     
     async function checkNewOrders() {
-        const token = sessionStorage.getItem('shayorsAdminToken');
-        if (!token) return;
+        const token = getAdminToken();
+        if (!token || token === "null" || token === "undefined" || token.length < 20) return;
 
         try {
             const response = await fetch(`${API_BASE}/orders`, {
@@ -1486,7 +1498,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                    'Authorization': `Bearer ${getAdminToken()}`
                 },
                 body: JSON.stringify({ name })
             });
@@ -1518,7 +1530,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${API_BASE}/categories/${id}`, {
                 method: 'DELETE',
                 headers: { 
-                    'Authorization': `Bearer ${sessionStorage.getItem('shayorsAdminToken')}`
+                    'Authorization': `Bearer ${getAdminToken()}`
                 }
             });
 

@@ -22,6 +22,15 @@ document.addEventListener('DOMContentLoaded', () => {
         ? "http://localhost:5000/api" 
         : "https://shayors-cosmetics.onrender.com/api";
 
+    // Helper to get token safely
+    function getAdminToken() {
+        const token = sessionStorage.getItem('shayorsAdminToken') || localStorage.getItem('shayorsAdminToken');
+        if (!token || token === "undefined" || token === "null" || token.length < 20) {
+            return null;
+        }
+        return token;
+    }
+
     // 2. Fetch Data from API (Appends or replaces static data)
     const fetchProducts = async () => {
         const productRowsContainer = document.getElementById('productRowsContainer');
@@ -339,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 price: parseFloat(document.getElementById('sPrice').value)
             };
 
-            const token = sessionStorage.getItem('shayorsAdminToken'); // Collection page might not have this, but keeping logic consistent
+            const token = getAdminToken(); // Collection page might not have this, but keeping logic consistent
 
             try {
                 let response;
@@ -389,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.deleteSpaService = async function(id) {
         if (confirm('Delete this service?')) {
-            const token = sessionStorage.getItem('shayorsAdminToken');
+            const token = getAdminToken();
             try {
                 const response = await fetch(`${API_BASE}/services/${id}`, {
                     method: 'DELETE',
