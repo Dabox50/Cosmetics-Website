@@ -12,27 +12,25 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const app = express();
 
 // 1. Configure CORS
-const allowedOrigins = [
-  "https://dabox50.github.io",
-  "http://localhost:5500",
-  "http://127.0.0.1:5500"
-];
+const allowedOrigins = ["https://dabox50.github.io", "http://127.0.0.1:5500", "http://localhost:5500"];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   credentials: true
-};
+}));
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // Apply same options to preflight requests
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header("Access-Control-Allow-Origin", origin);
+  }
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  next();
+});
+
+app.options("*", cors()); // Enable preflight for all routes
 
 app.use(express.json());
 
