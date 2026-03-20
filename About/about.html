@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us | Shayors Cosmetics</title>
+    <link rel="stylesheet" href="about.css">
+    <link rel="stylesheet" href="../cart.css">
+    <link rel="shortcut icon" href="../Image/Shayor's Logo.png" type="image/x-icon">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">
+            <img src="../Image/Shayor's Cosmetics .png" alt="Logo" width="80px">
+        </div>
+        
+        <ul class="nav-links">
+            <li><a href="../index.html">Home</a></li>
+            <li><a href="../Collection/collections.html">Collections</a></li>
+            <li><a href="./about.html" class="active-link">About Us</a></li>
+            <li><a href="../Contact/contact.html">Contact Us</a></li>
+        </ul>
+
+        <div class="burger">
+            <img src="../Image/menus.png" alt="menu" width="20px">
+        </div>
+    </nav>
+
+    <!-- Floating Cart Icon -->
+    <div id="cartBtn" class="floating-cart" onclick="openCart()">
+        <img src="../Image/grocery-store.png" alt="Cart" width="20px" style="filter: invert(1);">
+        <span id="cartCount">0</span>
+    </div>
+    
+    <!-- Brands Bar -->
+    <div class="brands-bar">
+        <span>Top Brands:</span>
+        <div class="brands-scroll">
+            <span>Facesoap</span>
+            <span>Bar Soap</span>
+            <span>Serum</span>
+            <span>Scrub</span>
+        </div>
+    </div>
+
+    <!-- About Hero -->
+    <header class="hero about-hero">
+        <div class="hero-content animate-on-scroll">
+            <h1>About Shayors</h1>
+            <p class="slogan">Shortcuts to beauty success….</p>
+        </div>
+    </header>
+
+    <!-- Brand Story -->
+    <section class="brand-story">
+        <div class="container animate-on-scroll">
+            <p class="intro-text">
+                We redefine beauty through luxury, self-care, and intentional indulgence. What began as a passion for radiant skin and captivating fragrance has evolved into a refined beauty brand offering premium skincare, signature perfumes, supplement, and rejuvenating spa experiences.
+            </p>
+        </div>
+    </section>
+
+    <!-- Core Values -->
+    <section class="core-values">
+        <h2 class="section-title animate-on-scroll">Core Values</h2>
+        <div class="value-divider animate-on-scroll">—————</div>
+        <div class="container animate-on-scroll">
+            <p>We believe beauty is more than appearance — it’s a feeling. Every product and services we offer is thoughtfully designed to help you look radiant, feel relaxed, and express your individuality effortlessly.</p>
+        </div>
+    </section>
+
+    <!-- What Makes Us Different -->
+    <section class="differentiation">
+        <h2 class="section-title animate-on-scroll">What Makes Us Different</h2>
+        <div class="value-divider animate-on-scroll">————————————-</div>
+        <div class="container animate-on-scroll">
+            <p>We don’t just sell skincare products, fragrance and render personal care services, we listen, educate, guide, support your desire goals and tailored products accordingly. Whether you are a newbies or enthusiast, we are here to assist you with any skin related conditions.</p>
+            <p class="highlight-text">Either you’re discovering our skincare, selecting a signature scent, or indulging in a spa treatment.</p>
+        </div>
+    </section>
+
+    <!-- Consultation CTA -->
+    <section id="contact" class="consultation">
+        <div class="container animate-on-scroll">
+            <h2>Contact Us</h2>
+            <p>For skin consultation and fragrance recommendations</p>
+            <p class="signature">Your Glow. Your Scent. Your Signature.</p>
+            <a href="#" class="btn primary">Get Consultation</a>
+        </div>
+    </section>
+
+    <!-- Social Proof -->
+    <section class="social-proof">
+        <div class="container animate-on-scroll">
+            <p>Join thousands of happy shayorsified customers across the country who trust us to care for their skin.</p>
+            <p class="sensory">Where Self-Care Becomes Sensory Luxury</p>
+        </div>
+    </section>
+
+    <!-- Community / Newsletter -->
+    <section class="community">
+        <div class="container animate-on-scroll">
+            <h2>Join Our Community</h2>
+            <div class="social-icons">
+                <a href="https://www.instagram.com/shayorscosmetics?igsh=MTJyM20ycm9iMXJnYg%3D%3D&utm_source=qr">Instagram</a> • <a href="https://www.tiktok.com/@shayorscosmetics?_r=1&_t=ZS-945WjMGy2tD">TikTok</a> 
+                <h3>Sign up to our newsletter</h3>
+                <form class="newsletter-form">
+                    <input type="text" placeholder="Name" required>
+                    <input type="email" placeholder="Email" required>
+                    <button type="submit" class="btn primary">Subscribe</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content animate-on-scroll">
+            <div class="footer-logo">
+                <h3>Shayors Cosmetics</h3>
+                <p>Shortcuts to beauty success</p>
+            </div>
+            <div class="footer-bottom">
+                <p>Shayors Cosmetics &copy; 2026. All rights reserved. | <a href="../Inventory/inventory.html" style="color: #555; text-decoration: none; font-size: 0.7rem;">Admin Login</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Shopping Cart Modal -->
+    <div id="cartModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Your Shopping Cart</h2>
+                <span class="close-btn" onclick="closeModal('cartModal')">&times;</span>
+            </div>
+            <div id="cartItemsContainer" class="cart-items">
+                <!-- Cart items will be loaded here -->
+            </div>
+            <div id="cartFooter" class="modal-footer hidden">
+                <div class="cart-total">
+                    <h3>Total: ₦<span id="cartTotalDisplay">0</span></h3>
+                </div>
+                <button class="btn primary w-100" onclick="goToCheckout()">Proceed to Checkout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Modal -->
+    <div id="checkoutModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Complete Your Order</h2>
+                <span class="close-btn" onclick="closeModal('checkoutModal')">&times;</span>
+            </div>
+            <form id="checkoutForm" class="booking-form">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="checkCustName" required placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="checkCustEmail" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" id="checkCustPhone" required placeholder="Enter your phone number">
+                </div>
+                <div class="form-group">
+                    <label>Shipping Address</label>
+                    <textarea id="checkCustAddress" required placeholder="Enter your full shipping address"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Payment Method</label>
+                    <select id="checkPaymentMethod" class="selective-bar" style="width: 100%; height: 45px;">
+                        <option value="Cash on Delivery">Cash on Delivery</option>
+                        <option value="Bank Transfer">Bank Transfer (WhatsApp for details)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Order Notes (Optional)</label>
+                    <textarea id="checkCustNote" placeholder="Any special instructions?"></textarea>
+                </div>
+                <button type="submit" class="btn primary w-100">Order Now via WhatsApp</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="../script.js"></script>
+</body>
+</html>

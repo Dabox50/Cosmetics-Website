@@ -1,0 +1,142 @@
+/* --- SHARED SHOPPING CART STYLES --- */
+.floating-cart {
+    position: fixed; 
+    bottom: 30px; 
+    right: 30px;
+    background: #006a4e; /* var(--text-color) fallback */
+    background: var(--text-color, #006a4e);
+    color: #fff;
+    width: 60px; 
+    height: 60px; 
+    border-radius: 50%;
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    cursor: pointer; 
+    z-index: 1500; 
+    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+    transition: all 0.4s ease;
+}
+
+.floating-cart:hover {
+    transform: scale(1.1);
+}
+
+#cartCount {
+    position: absolute; 
+    top: 0; 
+    right: 0;
+    background: #d4af37; /* var(--primary-color) fallback */
+    background: var(--primary-color, #d4af37);
+    color: #fff;
+    width: 22px; 
+    height: 22px; 
+    border-radius: 50%;
+    font-size: 0.7rem; 
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    border: 2px solid #fff;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex; 
+    justify-content: center; 
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: #fff; 
+    padding: 30px; 
+    border-radius: 10px; 
+    width: 400px;
+    max-height: 90vh; 
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-content h2, .modal-content h3 {
+    margin-bottom: 20px;
+    font-family: 'Playfair Display', serif;
+}
+
+.modal-content input, 
+.modal-content select, 
+.modal-content textarea {
+    width: 100%; 
+    padding: 12px; 
+    margin: 10px 0; 
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-family: inherit;
+}
+
+.modal-actions { 
+    display: flex; 
+    gap: 10px; 
+    margin-top: 15px; 
+}
+
+.hidden { 
+    display: none !important; 
+}
+
+/* Cart Specific Modal Styles */
+.cart-modal-content { 
+    width: 500px !important; 
+}
+
+.cart-item { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 15px; 
+    padding-bottom: 10px; 
+    border-bottom: 1px solid #eee; 
+}
+
+.cart-total {
+    margin-top: 20px;
+    text-align: right;
+    font-size: 1.2rem;
+}
+
+.w-100 { 
+    width: 100%; 
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.close-btn {
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #777;
+}
+
+.close-btn:hover {
+    color: #000;
+}
+
+.booking-form .form-group {
+    margin-bottom: 15px;
+}
+
+.booking-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
