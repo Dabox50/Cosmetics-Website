@@ -66,19 +66,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!token) return;
 
         try {
-            const [ordersRes, bookingsRes] = await Promise.all([
+            const [ordersRes, bookingsRes, manualSalesRes] = await Promise.all([
                 fetch(`${API_BASE}/orders`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${API_BASE}/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch(`${API_BASE}/bookings`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${API_BASE}/sales`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
+
+            let localSales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
+            let modified = false;
 
             if (ordersRes.ok) {
                 const data = await ordersRes.json();
                 const apiOrders = data.orders || [];
                 
-                // Merge API orders into local sales if not already there
-                let localSales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
-                let modified = false;
-
                 apiOrders.forEach(order => {
                     const exists = localSales.find(s => s.apiId === order._id || s.id === order._id);
                     if (!exists) {
@@ -99,18 +99,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         modified = true;
                     }
                 });
-
-                if (modified) {
-                    sales = localSales;
-                    localStorage.setItem('shayorsSales', JSON.stringify(sales));
-                }
             }
             
             if (bookingsRes.ok) {
                 const apiBookings = await bookingsRes.json();
-                let localSales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
-                let modified = false;
-
                 apiBookings.forEach(booking => {
                     const exists = localSales.find(s => s.apiId === booking._id || s.id === booking._id);
                     if (!exists) {
@@ -120,8 +112,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             date: booking.createdAt,
                             customer: booking.customerName,
                             contact: booking.customerContact,
-                            items: [{ name: booking.serviceName, qty: 1, price: 0, type: 'spa' }], // price might be 0 if not stored in booking
-                            total: 0, // Bookings might not have price in the base object
+                            items: [{ name: booking.serviceName, qty: 1, price: 0, type: 'spa' }],
+                            total: 0,
                             status: 'Paid',
                             platform: 'WhatsApp',
                             type: 'spa'
@@ -129,15 +121,106 @@ document.addEventListener('DOMContentLoaded', () => {
                         modified = true;
                     }
                 });
+            }
 
-                if (modified) {
-                    sales = localSales;
-                    localStorage.setItem('shayorsSales', JSON.stringify(sales));
-                }
+            if (manualSalesRes.ok) {
+                const manualSales = await manualSalesRes.json();
+                manualSales.forEach(sale => {
+                    const exists = localSales.find(s => s.apiId === sale._id || s.id === sale._id || s.id === sale.id);
+                    if (!exists) {
+                        localSales.push({
+                            ...sale,
+                            apiId: sale._id,
+                            id: sale._id
+                        });
+                        modified = true;
+                    }
+                });
+            }
+
+            if (modified) {
+                sales = localSales;
+                localStorage.setItem('shayorsSales', JSON.stringify(sales));
             }
         } catch (error) {
             console.error("Sync Sales Error:", error);
         }
+    }
+
+    async function fetchExpenses() {
+        const token = getAdminToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/expenses`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                expenses = await res.json();
+                localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
+                renderExpenses();
+            }
+        } catch (error) { console.error("Fetch expenses error:", error); }
+    }
+
+    async function fetchCustomers() {
+        const token = getAdminToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/customers`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                customers = await res.json();
+                localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
+                renderCustomers();
+            }
+        } catch (error) { console.error("Fetch customers error:", error); }
+    }
+
+    async function fetchSuppliers() {
+        const token = getAdminToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/suppliers`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                suppliers = await res.json();
+                localStorage.setItem('shayorsSuppliers', JSON.stringify(suppliers));
+                renderSuppliers();
+            }
+        } catch (error) { console.error("Fetch suppliers error:", error); }
+    }
+
+    async function fetchAdjustments() {
+        const token = getAdminToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/adjustments`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                adjustments = await res.json();
+                localStorage.setItem('shayorsAdjustments', JSON.stringify(adjustments));
+                renderAdjustments();
+            }
+        } catch (error) { console.error("Fetch adjustments error:", error); }
+    }
+
+    async function fetchStaff() {
+        const token = getAdminToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/staff`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                staff = await res.json();
+                localStorage.setItem('shayorsStaff', JSON.stringify(staff));
+            }
+        } catch (error) { console.error("Fetch staff error:", error); }
+    }
+
+    async function fetchRoles() {
+        const token = getAdminToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/roles`, { headers: { 'Authorization': `Bearer ${token}` } });
+            if (res.ok) {
+                roles = await res.json();
+                localStorage.setItem('shayorsRoles', JSON.stringify(roles));
+            }
+        } catch (error) { console.error("Fetch roles error:", error); }
     }
 
     // 0. Admin Authentication
@@ -149,9 +232,17 @@ document.addEventListener('DOMContentLoaded', () => {
             showLoginModal();
         } else {
             toggleAuthVisibility(true);
-            await fetchInventory();
-            await fetchSpaCategories();
-            await syncSalesWithAPI();
+            await Promise.all([
+                fetchInventory(),
+                fetchSpaCategories(),
+                syncSalesWithAPI(),
+                fetchExpenses(),
+                fetchCustomers(),
+                fetchSuppliers(),
+                fetchAdjustments(),
+                fetchStaff(),
+                fetchRoles()
+            ]);
             enforcePermissions();
         }
     }
@@ -765,6 +856,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         sales.push(sale);
+        
+        // Sync sale to backend
+        try {
+            await fetch(`${API_BASE}/sales`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${adminToken}`
+                },
+                body: JSON.stringify(sale)
+            });
+        } catch (error) {
+            console.error("Sale sync failed:", error);
+        }
+
         localStorage.setItem('shayorsSales', JSON.stringify(sales));
         // Removed localStorage inventory sync as we use backend now
 
@@ -978,7 +1084,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('expenseForm').classList.toggle('hidden');
     };
 
-    document.getElementById('expenseForm').addEventListener('submit', (e) => {
+    document.getElementById('expenseForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const exp = {
             date: document.getElementById('expDate').value,
@@ -990,10 +1096,31 @@ document.addEventListener('DOMContentLoaded', () => {
             amount: parseFloat(document.getElementById('expAmount').value),
             status: document.getElementById('expStatus').value
         };
-        expenses.push(exp);
-        localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
-        renderExpenses();
-        document.getElementById('expenseForm').reset();
+
+        const token = getAdminToken();
+        try {
+            const res = await fetch(`${API_BASE}/expenses`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(exp)
+            });
+            if (res.ok) {
+                const savedExp = await res.json();
+                expenses.push(savedExp);
+                localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
+                renderExpenses();
+                document.getElementById('expenseForm').reset();
+            }
+        } catch (error) {
+            console.error("Expense sync failed:", error);
+            expenses.push(exp);
+            localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
+            renderExpenses();
+            document.getElementById('expenseForm').reset();
+        }
     });
 
     function renderExpenses() {
@@ -1071,13 +1198,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    const customerForm = document.getElementById('customerForm');
     if (customerForm) {
-        customerForm.addEventListener('submit', (e) => {
+        customerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('cId').value;
             const custData = {
-                id: id ? id : 'C' + Date.now(),
+                id: id,
                 date: document.getElementById('cDate').value,
                 invoiceNo: document.getElementById('cInvoiceNo').value,
                 name: document.getElementById('cName').value,
@@ -1090,17 +1216,45 @@ document.addEventListener('DOMContentLoaded', () => {
                 status: document.getElementById('cStatus').value
             };
 
-            if (id) {
-                const idx = customers.findIndex(c => c.id === id);
-                if (idx !== -1) customers[idx] = custData;
-            } else {
-                customers.push(custData);
+            const token = getAdminToken();
+            try {
+                const res = await fetch(`${API_BASE}/customers`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(custData)
+                });
+                
+                if (res.ok) {
+                    const savedCust = await res.json();
+                    if (id && id.length > 20) {
+                        const idx = customers.findIndex(c => c._id === id || c.id === id);
+                        if (idx !== -1) customers[idx] = savedCust;
+                    } else {
+                        customers.push(savedCust);
+                    }
+                    localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
+                    renderCustomers();
+                    customerForm.reset();
+                    toggleCustomerForm();
+                }
+            } catch (error) {
+                console.error("Customer sync failed:", error);
+                // Fallback to local
+                if (id) {
+                    const idx = customers.findIndex(c => c.id === id);
+                    if (idx !== -1) customers[idx] = custData;
+                } else {
+                    custData.id = 'C' + Date.now();
+                    customers.push(custData);
+                }
+                localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
+                renderCustomers();
+                customerForm.reset();
+                toggleCustomerForm();
             }
-
-            localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
-            renderCustomers();
-            customerForm.reset();
-            toggleCustomerForm();
         });
     }
 

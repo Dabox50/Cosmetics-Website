@@ -8,6 +8,13 @@ const productRoutes = require('./routes/productRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const saleRoutes = require('./routes/saleRoutes');
+const expenseRoutes = require('./routes/expenseRoutes');
+const customerRoutes = require('./routes/customerRoutes');
+const supplierRoutes = require('./routes/supplierRoutes');
+const adjustmentRoutes = require('./routes/adjustmentRoutes');
+const staffRoutes = require('./routes/staffRoutes');
+const roleRoutes = require('./routes/roleRoutes');
 
 const app = express();
 
@@ -58,6 +65,13 @@ app.use('/api/products', productRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/sales', saleRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/suppliers', supplierRoutes);
+app.use('/api/adjustments', adjustmentRoutes);
+app.use('/api/staff', staffRoutes);
+app.use('/api/roles', roleRoutes);
 
 // Error Handling Middleware
 app.use(notFound);
