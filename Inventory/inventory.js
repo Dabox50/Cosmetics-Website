@@ -1,4 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // 1. Core Data Structures (Moved to top)
+    let inventory = [];
+    let sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
+    let expenses = JSON.parse(localStorage.getItem('shayorsExpenses')) || [];
+    let customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
+    let suppliers = JSON.parse(localStorage.getItem('shayorsSuppliers')) || [];
+    let staff = JSON.parse(localStorage.getItem('shayorsStaff')) || [{id: 1, name: 'Admin', role: 'Admin', email: 'admin@shayors.com'}];
+    let roles = JSON.parse(localStorage.getItem('shayorsRoles')) || [{name: 'Admin', permissions: ['all']}];
+    let adjustments = JSON.parse(localStorage.getItem('shayorsAdjustments')) || [];
+    let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
+    const initialSpaCategories = [{ name: "Salon & Beauty", _id: "spa1" }, { name: "Spa Treatment", _id: "spa2" }, { name: "Massage", _id: "spa3" }];
+    let spaCategories = JSON.parse(localStorage.getItem('shayorsSpaCategories')) || initialSpaCategories;
+    const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
+    let categories = JSON.parse(localStorage.getItem('shayorsCategories')) || initialCategoriesList.map(name => ({ name, _id: 'local_' + Math.random().toString(36).substr(2, 9) }));
+    let currentSaleItems = [];
+
     const isLocal = window.location.hostname === "localhost" || 
                     window.location.hostname === "127.0.0.1" || 
                     window.location.hostname.startsWith('192.168.') || 
@@ -329,27 +345,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // 1. Core Data Structures
-    let inventory = [];
-    let sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
-    let expenses = JSON.parse(localStorage.getItem('shayorsExpenses')) || [];
-    let customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
-    let suppliers = JSON.parse(localStorage.getItem('shayorsSuppliers')) || [];
-    let staff = JSON.parse(localStorage.getItem('shayorsStaff')) || [{id: 1, name: 'Admin', role: 'Admin', email: 'admin@shayors.com'}];
-    let roles = JSON.parse(localStorage.getItem('shayorsRoles')) || [{name: 'Admin', permissions: ['all']}];
-    let adjustments = JSON.parse(localStorage.getItem('shayorsAdjustments')) || [];
-    let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
-    const initialSpaCategories = [{ name: "Salon & Beauty", _id: "spa1" }, { name: "Spa Treatment", _id: "spa2" }, { name: "Massage", _id: "spa3" }];
-    let spaCategories = JSON.parse(localStorage.getItem('shayorsSpaCategories')) || initialSpaCategories;
-    const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
-    let categories = JSON.parse(localStorage.getItem('shayorsCategories')) || initialCategoriesList.map(name => ({ name, _id: 'local_' + Math.random().toString(36).substr(2, 9) }));
-
-    let currentSaleItems = [];
-
     // Fetch Inventory from Backend
     async function fetchInventory() {
         try {
-            await fetchCategories(); // Also fetch categories
+            await fetchCategories().catch(() => {}); // Also fetch categories
             const response = await fetch(`${API_BASE}/products`);
             if (response.ok) {
                 const apiData = await response.json();
@@ -1939,7 +1938,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Initialize
-    init();
+    try {
+        init();
+    } catch (e) {
+        console.error("Initialization failed:", e);
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     const moduleParam = urlParams.get('module');
