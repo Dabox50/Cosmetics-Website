@@ -1,20 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Core Data Structures (Moved to top)
-    let inventory = [];
-    let sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
-    let expenses = JSON.parse(localStorage.getItem('shayorsExpenses')) || [];
-    let customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
-    let suppliers = JSON.parse(localStorage.getItem('shayorsSuppliers')) || [];
-    let staff = JSON.parse(localStorage.getItem('shayorsStaff')) || [{id: 1, name: 'Admin', role: 'Admin', email: 'admin@shayors.com'}];
-    let roles = JSON.parse(localStorage.getItem('shayorsRoles')) || [{name: 'Admin', permissions: ['all']}];
-    let adjustments = JSON.parse(localStorage.getItem('shayorsAdjustments')) || [];
-    let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
-    const initialSpaCategories = [{ name: "Salon & Beauty", _id: "spa1" }, { name: "Spa Treatment", _id: "spa2" }, { name: "Massage", _id: "spa3" }];
-    let spaCategories = JSON.parse(localStorage.getItem('shayorsSpaCategories')) || initialSpaCategories;
-    const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
-    let categories = JSON.parse(localStorage.getItem('shayorsCategories')) || initialCategoriesList.map(name => ({ name, _id: 'local_' + Math.random().toString(36).substr(2, 9) }));
-    let currentSaleItems = [];
-
     const isLocal = window.location.hostname === "localhost" || 
                     window.location.hostname === "127.0.0.1" || 
                     window.location.hostname.startsWith('192.168.') || 
@@ -82,19 +66,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!token) return;
 
         try {
-            const [ordersRes, bookingsRes, manualSalesRes] = await Promise.all([
-                fetch(`${API_BASE}/orders`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${API_BASE}/bookings`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${API_BASE}/sales`, { headers: { 'Authorization': `Bearer ${token}` } })
+            const [ordersRes, bookingsRes] = await Promise.all([
+                fetch(`${API_BASE}/orders?limit=1000`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${API_BASE}/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
-
-            let localSales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
-            let modified = false;
 
             if (ordersRes.ok) {
                 const data = await ordersRes.json();
                 const apiOrders = data.orders || [];
                 
+                let localSales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
+                let modified = false;
+
                 apiOrders.forEach(order => {
                     const exists = localSales.find(s => s.apiId === order._id || s.id === order._id);
                     if (!exists) {
@@ -104,21 +87,34 @@ document.addEventListener('DOMContentLoaded', () => {
                             date: order.createdAt,
                             customer: order.customerName,
                             contact: order.customerPhone,
-                            items: order.items,
+                            items: order.items.map(i => ({
+                                name: i.productName,
+                                qty: i.quantity,
+                                price: i.price,
+                                total: i.quantity * i.price
+                            })),
                             total: order.totalAmount,
-                            status: order.paymentStatus === 'paid' ? 'Paid' : 'Unpaid',
+                            status: order.paymentStatus === 'paid' ? 'Paid' : (order.paymentStatus === 'partly paid' ? 'Partly Paid' : 'Unpaid'),
                             paymentMethod: order.paymentMethod,
                             amountPaid: order.paymentStatus === 'paid' ? order.totalAmount : 0,
-                            platform: 'Web Store',
+                            platform: order.platform || 'Web Store',
                             type: 'product'
                         });
                         modified = true;
                     }
                 });
+
+                if (modified) {
+                    sales = localSales;
+                    localStorage.setItem('shayorsSales', JSON.stringify(sales));
+                }
             }
             
             if (bookingsRes.ok) {
                 const apiBookings = await bookingsRes.json();
+                let localSales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
+                let modified = false;
+
                 apiBookings.forEach(booking => {
                     const exists = localSales.find(s => s.apiId === booking._id || s.id === booking._id);
                     if (!exists) {
@@ -128,8 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             date: booking.createdAt,
                             customer: booking.customerName,
                             contact: booking.customerContact,
-                            items: [{ name: booking.serviceName, qty: 1, price: 0, type: 'spa' }],
-                            total: 0,
+                            items: [{ name: booking.serviceName, qty: 1, price: 0, type: 'spa' }], // price might be 0 if not stored in booking
+                            total: 0, // Bookings might not have price in the base object
                             status: 'Paid',
                             platform: 'WhatsApp',
                             type: 'spa'
@@ -137,106 +133,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         modified = true;
                     }
                 });
-            }
 
-            if (manualSalesRes.ok) {
-                const manualSales = await manualSalesRes.json();
-                manualSales.forEach(sale => {
-                    const exists = localSales.find(s => s.apiId === sale._id || s.id === sale._id || s.id === sale.id);
-                    if (!exists) {
-                        localSales.push({
-                            ...sale,
-                            apiId: sale._id,
-                            id: sale._id
-                        });
-                        modified = true;
-                    }
-                });
-            }
-
-            if (modified) {
-                sales = localSales;
-                localStorage.setItem('shayorsSales', JSON.stringify(sales));
+                if (modified) {
+                    sales = localSales;
+                    localStorage.setItem('shayorsSales', JSON.stringify(sales));
+                }
             }
         } catch (error) {
             console.error("Sync Sales Error:", error);
         }
-    }
-
-    async function fetchExpenses() {
-        const token = getAdminToken();
-        if (!token) return;
-        try {
-            const res = await fetch(`${API_BASE}/expenses`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (res.ok) {
-                expenses = await res.json();
-                localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
-                renderExpenses();
-            }
-        } catch (error) { console.error("Fetch expenses error:", error); }
-    }
-
-    async function fetchCustomers() {
-        const token = getAdminToken();
-        if (!token) return;
-        try {
-            const res = await fetch(`${API_BASE}/customers`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (res.ok) {
-                customers = await res.json();
-                localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
-                renderCustomers();
-            }
-        } catch (error) { console.error("Fetch customers error:", error); }
-    }
-
-    async function fetchSuppliers() {
-        const token = getAdminToken();
-        if (!token) return;
-        try {
-            const res = await fetch(`${API_BASE}/suppliers`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (res.ok) {
-                suppliers = await res.json();
-                localStorage.setItem('shayorsSuppliers', JSON.stringify(suppliers));
-                renderSuppliers();
-            }
-        } catch (error) { console.error("Fetch suppliers error:", error); }
-    }
-
-    async function fetchAdjustments() {
-        const token = getAdminToken();
-        if (!token) return;
-        try {
-            const res = await fetch(`${API_BASE}/adjustments`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (res.ok) {
-                adjustments = await res.json();
-                localStorage.setItem('shayorsAdjustments', JSON.stringify(adjustments));
-                renderAdjustments();
-            }
-        } catch (error) { console.error("Fetch adjustments error:", error); }
-    }
-
-    async function fetchStaff() {
-        const token = getAdminToken();
-        if (!token) return;
-        try {
-            const res = await fetch(`${API_BASE}/staff`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (res.ok) {
-                staff = await res.json();
-                localStorage.setItem('shayorsStaff', JSON.stringify(staff));
-            }
-        } catch (error) { console.error("Fetch staff error:", error); }
-    }
-
-    async function fetchRoles() {
-        const token = getAdminToken();
-        if (!token) return;
-        try {
-            const res = await fetch(`${API_BASE}/roles`, { headers: { 'Authorization': `Bearer ${token}` } });
-            if (res.ok) {
-                roles = await res.json();
-                localStorage.setItem('shayorsRoles', JSON.stringify(roles));
-            }
-        } catch (error) { console.error("Fetch roles error:", error); }
     }
 
     // 0. Admin Authentication
@@ -248,17 +153,9 @@ document.addEventListener('DOMContentLoaded', () => {
             showLoginModal();
         } else {
             toggleAuthVisibility(true);
-            await Promise.all([
-                fetchInventory(),
-                fetchSpaCategories(),
-                syncSalesWithAPI(),
-                fetchExpenses(),
-                fetchCustomers(),
-                fetchSuppliers(),
-                fetchAdjustments(),
-                fetchStaff(),
-                fetchRoles()
-            ]);
+            await fetchInventory();
+            await fetchSpaCategories();
+            await syncSalesWithAPI();
             enforcePermissions();
         }
     }
@@ -345,10 +242,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    init();
+
+    // 1. Core Data Structures
+    let inventory = [];
+    let sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
+    let expenses = JSON.parse(localStorage.getItem('shayorsExpenses')) || [];
+    let customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
+    let suppliers = JSON.parse(localStorage.getItem('shayorsSuppliers')) || [];
+    let staff = JSON.parse(localStorage.getItem('shayorsStaff')) || [{id: 1, name: 'Admin', role: 'Admin', email: 'admin@shayors.com'}];
+    let roles = JSON.parse(localStorage.getItem('shayorsRoles')) || [{name: 'Admin', permissions: ['all']}];
+    let adjustments = JSON.parse(localStorage.getItem('shayorsAdjustments')) || [];
+    let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
+    const initialSpaCategories = [{ name: "Salon & Beauty", _id: "spa1" }, { name: "Spa Treatment", _id: "spa2" }, { name: "Massage", _id: "spa3" }];
+    let spaCategories = JSON.parse(localStorage.getItem('shayorsSpaCategories')) || initialSpaCategories;
+    const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
+    let categories = JSON.parse(localStorage.getItem('shayorsCategories')) || initialCategoriesList.map(name => ({ name, _id: 'local_' + Math.random().toString(36).substr(2, 9) }));
+
+    let currentSaleItems = [];
+
     // Fetch Inventory from Backend
     async function fetchInventory() {
         try {
-            await fetchCategories().catch(() => {}); // Also fetch categories
+            await fetchCategories(); // Also fetch categories
             const response = await fetch(`${API_BASE}/products`);
             if (response.ok) {
                 const apiData = await response.json();
@@ -791,7 +707,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderCurrentSaleList();
     };
 
-    window.finalizeSale = function(type) {
+    window.finalizeSale = async function(type) {
         if (currentSaleItems.length === 0) return alert('Add items to sale');
         
         const customerName = document.getElementById('saleCustomerName').value || 'Walk-in Customer';
@@ -809,97 +725,100 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalUnits = currentSaleItems.reduce((sum, item) => sum + (item.qty || 0), 0);
         const grandTotal = subtotal - discount + charges;
 
-        const sale = {
-            id: 'S' + Date.now(),
-            date: new Date().toISOString(),
-            customer: customerName,
-            contact: contact,
-            items: [...currentSaleItems],
-            subtotal: subtotal,
-            discount: discount,
-            charges: charges,
-            total: grandTotal,
-            status: paymentStatus, 
-            paymentMethod: paymentMethod,
-            amountPaid: paymentStatus === 'Paid' ? grandTotal : amountPaid,
-            platform: platform,
-            deliveryStatus: deliveryStatus,
-            note: note,
-            type: type 
+        const orderData = {
+            customerName,
+            customerPhone: contact,
+            customerEmail: '', // Not collected in dashboard
+            shippingAddress: 'In-Store',
+            items: currentSaleItems.map(item => ({
+                productId: item.productId,
+                productName: item.name,
+                quantity: item.actualQty,
+                price: item.price
+            })),
+            totalAmount: grandTotal,
+            paymentMethod,
+            paymentStatus: paymentStatus.toLowerCase() === 'paid' ? 'paid' : (paymentStatus.toLowerCase() === 'partly paid' ? 'partly paid' : 'unpaid'),
+            orderStatus: 'completed',
+            platform: platform || 'In-Store',
+            notes: note
         };
 
-        const adminToken = getAdminToken();
-
-        currentSaleItems.forEach(async (item) => {
-            const p = inventory.find(p => p._id == item.productId);
-            if (p) {
-                const newStock = p.stock - item.actualQty;
-                p.stock = newStock;
-                
-                // Sync stock update to backend
-                try {
-                    await fetch(`${API_BASE}/products/${p._id}`, {
-                        method: 'PATCH',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${adminToken}`
-                        },
-                        body: JSON.stringify({ stock: newStock })
-                    });
-                } catch (error) {
-                    console.error(`Stock sync failed for ${p.name}:`, error);
-                }
-            }
-        });
-
-        sales.push(sale);
-        
-        // Sync sale to backend
         try {
-            await fetch(`${API_BASE}/sales`, {
+            const response = await fetch(`${API_BASE}/orders`, {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${adminToken}`
+                    'Authorization': `Bearer ${getAdminToken()}`
                 },
-                body: JSON.stringify(sale)
+                body: JSON.stringify(orderData)
             });
+
+            if (response.ok) {
+                const createdOrder = await response.json();
+                
+                // Add to local sales history for immediate display
+                const sale = {
+                    id: createdOrder._id,
+                    apiId: createdOrder._id,
+                    date: createdOrder.createdAt,
+                    customer: customerName,
+                    contact: contact,
+                    items: [...currentSaleItems],
+                    subtotal: subtotal,
+                    discount: discount,
+                    charges: charges,
+                    total: grandTotal,
+                    status: paymentStatus, 
+                    paymentMethod: paymentMethod,
+                    amountPaid: paymentStatus === 'Paid' ? grandTotal : amountPaid,
+                    platform: platform,
+                    deliveryStatus: deliveryStatus,
+                    note: note,
+                    type: type 
+                };
+
+                sales.push(sale);
+                localStorage.setItem('shayorsSales', JSON.stringify(sales));
+
+                if (contact || customerName !== 'Walk-in Customer') {
+                    const debtorRecord = {
+                        id: 'C' + Date.now(),
+                        date: new Date().toISOString().split('T')[0],
+                        invoiceNo: sale.id,
+                        name: customerName,
+                        contact: contact,
+                        product: currentSaleItems.map(i => `${i.name} (x${i.qty})`).join(', '),
+                        totalUnits: totalUnits,
+                        totalAmount: grandTotal,
+                        partlyPaid: sale.amountPaid,
+                        dueDate: '',
+                        status: paymentStatus
+                    };
+                    customers.push(debtorRecord);
+                    localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
+                }
+
+                if (platform === 'WhatsApp' || type === 'whatsapp') {
+                    sendWhatsAppOrder(sale);
+                }
+
+                generateInvoice(sale);
+                
+                currentSaleItems = [];
+                renderCurrentSaleList();
+                await fetchInventory(); // Refresh stock levels from server
+                renderSalesHistory();
+                document.getElementById('newSaleSection').classList.add('hidden');
+                alert('Sale Recorded Successfully!');
+            } else {
+                const err = await response.json();
+                alert(`Failed to save sale: ${err.message}`);
+            }
         } catch (error) {
-            console.error("Sale sync failed:", error);
+            console.error("Sale finalization failed:", error);
+            alert("Connection error. Could not save sale to database.");
         }
-
-        localStorage.setItem('shayorsSales', JSON.stringify(sales));
-        // Removed localStorage inventory sync as we use backend now
-
-        if (contact || customerName !== 'Walk-in Customer') {
-            const debtorRecord = {
-                id: 'C' + Date.now(),
-                date: new Date().toISOString().split('T')[0],
-                invoiceNo: sale.id,
-                name: customerName,
-                contact: contact,
-                product: currentSaleItems.map(i => `${i.name} (x${i.qty})`).join(', '),
-                totalUnits: totalUnits,
-                totalAmount: grandTotal,
-                partlyPaid: sale.amountPaid,
-                dueDate: '', // To be filled later if needed
-                status: paymentStatus
-            };
-            customers.push(debtorRecord);
-            localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
-        }
-
-        if (platform === 'WhatsApp' || type === 'whatsapp') {
-            sendWhatsAppOrder(sale);
-        }
-
-        generateInvoice(sale);
-        
-        currentSaleItems = [];
-        renderCurrentSaleList();
-        renderSalesHistory();
-        document.getElementById('newSaleSection').classList.add('hidden');
-        alert('Sale Recorded Successfully!');
     };
 
     window.returnSale = function(id) {
@@ -1081,7 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('expenseForm').classList.toggle('hidden');
     };
 
-    document.getElementById('expenseForm').addEventListener('submit', async (e) => {
+    document.getElementById('expenseForm').addEventListener('submit', (e) => {
         e.preventDefault();
         const exp = {
             date: document.getElementById('expDate').value,
@@ -1093,31 +1012,10 @@ document.addEventListener('DOMContentLoaded', () => {
             amount: parseFloat(document.getElementById('expAmount').value),
             status: document.getElementById('expStatus').value
         };
-
-        const token = getAdminToken();
-        try {
-            const res = await fetch(`${API_BASE}/expenses`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(exp)
-            });
-            if (res.ok) {
-                const savedExp = await res.json();
-                expenses.push(savedExp);
-                localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
-                renderExpenses();
-                document.getElementById('expenseForm').reset();
-            }
-        } catch (error) {
-            console.error("Expense sync failed:", error);
-            expenses.push(exp);
-            localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
-            renderExpenses();
-            document.getElementById('expenseForm').reset();
-        }
+        expenses.push(exp);
+        localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
+        renderExpenses();
+        document.getElementById('expenseForm').reset();
     });
 
     function renderExpenses() {
@@ -1195,12 +1093,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const customerForm = document.getElementById('customerForm');
     if (customerForm) {
-        customerForm.addEventListener('submit', async (e) => {
+        customerForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const id = document.getElementById('cId').value;
             const custData = {
-                id: id,
+                id: id ? id : 'C' + Date.now(),
                 date: document.getElementById('cDate').value,
                 invoiceNo: document.getElementById('cInvoiceNo').value,
                 name: document.getElementById('cName').value,
@@ -1213,45 +1112,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 status: document.getElementById('cStatus').value
             };
 
-            const token = getAdminToken();
-            try {
-                const res = await fetch(`${API_BASE}/customers`, {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(custData)
-                });
-                
-                if (res.ok) {
-                    const savedCust = await res.json();
-                    if (id && id.length > 20) {
-                        const idx = customers.findIndex(c => c._id === id || c.id === id);
-                        if (idx !== -1) customers[idx] = savedCust;
-                    } else {
-                        customers.push(savedCust);
-                    }
-                    localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
-                    renderCustomers();
-                    customerForm.reset();
-                    toggleCustomerForm();
-                }
-            } catch (error) {
-                console.error("Customer sync failed:", error);
-                // Fallback to local
-                if (id) {
-                    const idx = customers.findIndex(c => c.id === id);
-                    if (idx !== -1) customers[idx] = custData;
-                } else {
-                    custData.id = 'C' + Date.now();
-                    customers.push(custData);
-                }
-                localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
-                renderCustomers();
-                customerForm.reset();
-                toggleCustomerForm();
+            if (id) {
+                const idx = customers.findIndex(c => c.id === id);
+                if (idx !== -1) customers[idx] = custData;
+            } else {
+                customers.push(custData);
             }
+
+            localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
+            renderCustomers();
+            customerForm.reset();
+            toggleCustomerForm();
         });
     }
 
@@ -1938,15 +1809,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Initialize
-    try {
-        init();
-    } catch (e) {
-        console.error("Initialization failed:", e);
-    }
-
     const urlParams = new URLSearchParams(window.location.search);
     const moduleParam = urlParams.get('module');
     if (moduleParam) {
         showModule(moduleParam);
+    } else {
+        renderInventory();
     }
 });
