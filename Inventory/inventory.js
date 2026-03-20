@@ -329,8 +329,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    init();
-
     // 1. Core Data Structures
     let inventory = [];
     let sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
@@ -1941,11 +1939,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Initialize
+    init();
+
     const urlParams = new URLSearchParams(window.location.search);
     const moduleParam = urlParams.get('module');
     if (moduleParam) {
         showModule(moduleParam);
-    } else {
-        renderInventory();
     }
 });
