@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. Data Storage for Products (Dynamic from API)
     let productData = [];
     let spaServices = []; // Will be fetched from API
-    const initialSpaCategories = [{ name: "Salon & Beauty" }, { name: "Spa Treatment" }, { name: "Massage" }];
+    const initialSpaCategories = [{ name: "Salon & Beauty" }, { name: "Spa and Wellness" }, { name: "Massage" }];
     let spaCategories = JSON.parse(localStorage.getItem('shayorsSpaCategories')) || initialSpaCategories;
     const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
     let categories = JSON.parse(localStorage.getItem('shayorsCategories')) || initialCategoriesList.map(name => ({ name }));
@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (spaServices.length > 0) {
                     // Group spa services by category
-                    const spaCategoriesList = (spaCategories && spaCategories.length > 0) ? spaCategories.map(c => typeof c === 'string' ? c : c.name) : ["Salon & Beauty", "Spa Treatment", "Massage"];
+                    const spaCategoriesList = (spaCategories && spaCategories.length > 0) ? spaCategories.map(c => typeof c === 'string' ? c : c.name) : ["Salon & Beauty", "Spa and Wellness", "Massage"];
                     const uniqueSpaCats = [...new Set([...spaServices.map(s => s.category), ...spaCategoriesList])].filter(Boolean);
 
                     uniqueSpaCats.forEach(cat => {

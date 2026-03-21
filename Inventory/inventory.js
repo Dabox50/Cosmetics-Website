@@ -254,7 +254,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let roles = JSON.parse(localStorage.getItem('shayorsRoles')) || [{name: 'Admin', permissions: ['all']}];
     let adjustments = JSON.parse(localStorage.getItem('shayorsAdjustments')) || [];
     let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
-    const initialSpaCategories = [{ name: "Salon & Beauty", _id: "spa1" }, { name: "Spa Treatment", _id: "spa2" }, { name: "Massage", _id: "spa3" }];
+    const initialSpaCategories = [{ name: "Salon & Beauty", _id: "spa1" }, { name: "Spa and Wellness", _id: "spa2" }, { name: "Massage", _id: "spa3" }];
     let spaCategories = JSON.parse(localStorage.getItem('shayorsSpaCategories')) || initialSpaCategories;
     const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
     let categories = JSON.parse(localStorage.getItem('shayorsCategories')) || initialCategoriesList.map(name => ({ name, _id: 'local_' + Math.random().toString(36).substr(2, 9) }));
