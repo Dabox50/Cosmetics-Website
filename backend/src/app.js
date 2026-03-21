@@ -17,7 +17,9 @@ const allowedOrigins = [
   "http://127.0.0.1:5500", 
   "http://localhost:5500",
   "https://shayorscosmestics.com",
-  "https://www.shayorscosmestics.com"
+  "https://www.shayorscosmestics.com",
+  "http://shayorscosmestics.com",
+  "http://www.shayorscosmestics.com"
 ];
 
 app.use(cors({
