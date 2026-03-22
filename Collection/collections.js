@@ -371,11 +371,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         html += `
                             <div class="row-container animate-on-scroll spa-services-section" style="margin-top: 50px; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-<<<<<<< HEAD
-                                    <h2 class="row-title" style="display: flex; padding: 0; margin: 10px 0px 10px 0; font-size: 2rem;">🧖‍♀️ ${cat}</h2>
-=======
                                     <h2 class="row-title" style="display: flex; padding: 0; margin: 10px 0px 10px 0; font-size: 2rem;">🧖‍♀️ Spa and Wellness</h2>
->>>>>>> a102e10 (Refresh start with Updated Inventory and Collection page)
                                     <button class="btn primary" onclick="openModal('spaManagementModal')">+ Add New Service</button>
                                 </div>
                                 <p style="color: #000000; font-size: 1rem; margin-bottom: 30px; font-style: italic;">Rejuvenated your body and refresh your natural glow.</p>

@@ -1044,12 +1044,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 8. Analytics Module
-<<<<<<< HEAD
-=======
+
     let salesChartInstance = null;
     let channelChartInstance = null;
 
->>>>>>> a102e10 (Refresh start with Updated Inventory and Collection page)
+
     function renderAnalytics() {
         let totalStock = 0;
         let totalRetailVal = 0;
@@ -1065,11 +1064,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
         const totalUnitsSold = sales.reduce((sum, s) => {
-<<<<<<< HEAD
-            return sum + (s.items || []).reduce((itemSum, item) => itemSum + (item.actualQty || 0), 0);
-=======
             return sum + (s.items || []).reduce((itemSum, item) => itemSum + (item.actualQty || item.qty || 0), 0);
->>>>>>> a102e10 (Refresh start with Updated Inventory and Collection page)
         }, 0);
         const creditSales = sales.filter(s => s.status !== 'Paid').reduce((sum, s) => sum + (s.total - (s.amountPaid || 0)), 0);
         const debtorsTotal = customers.reduce((sum, c) => sum + ((c.totalAmount || 0) - (c.partlyPaid || 0)), 0);
@@ -1091,10 +1086,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sales.forEach(s => {
             channelCounts[s.platform] = (channelCounts[s.platform] || 0) + 1;
         });
-<<<<<<< HEAD
-        const topChannel = Object.keys(channelCounts).reduce((a, b) => channelCounts[a] > channelCounts[b] ? a : b, 'N/A');
-        document.getElementById('anaTopChannel').innerText = topChannel;
-=======
         
         // Render Charts
         renderSalesInventoryChart(totalRetailVal, totalCostVal, totalSales, expectedProfit);
@@ -1164,7 +1155,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         });
->>>>>>> a102e10 (Refresh start with Updated Inventory and Collection page)
     }
 
     // 9. Customers Module
