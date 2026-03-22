@@ -1044,6 +1044,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 8. Analytics Module
+<<<<<<< HEAD
+=======
+    let salesChartInstance = null;
+    let channelChartInstance = null;
+
+>>>>>>> a102e10 (Refresh start with Updated Inventory and Collection page)
     function renderAnalytics() {
         let totalStock = 0;
         let totalRetailVal = 0;
@@ -1059,7 +1065,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
         const totalUnitsSold = sales.reduce((sum, s) => {
+<<<<<<< HEAD
             return sum + (s.items || []).reduce((itemSum, item) => itemSum + (item.actualQty || 0), 0);
+=======
+            return sum + (s.items || []).reduce((itemSum, item) => itemSum + (item.actualQty || item.qty || 0), 0);
+>>>>>>> a102e10 (Refresh start with Updated Inventory and Collection page)
         }, 0);
         const creditSales = sales.filter(s => s.status !== 'Paid').reduce((sum, s) => sum + (s.total - (s.amountPaid || 0)), 0);
         const debtorsTotal = customers.reduce((sum, c) => sum + ((c.totalAmount || 0) - (c.partlyPaid || 0)), 0);
@@ -1081,8 +1091,80 @@ document.addEventListener('DOMContentLoaded', () => {
         sales.forEach(s => {
             channelCounts[s.platform] = (channelCounts[s.platform] || 0) + 1;
         });
+<<<<<<< HEAD
         const topChannel = Object.keys(channelCounts).reduce((a, b) => channelCounts[a] > channelCounts[b] ? a : b, 'N/A');
         document.getElementById('anaTopChannel').innerText = topChannel;
+=======
+        
+        // Render Charts
+        renderSalesInventoryChart(totalRetailVal, totalCostVal, totalSales, expectedProfit);
+        renderChannelChart(channelCounts);
+    }
+
+    function renderSalesInventoryChart(retail, cost, salesVal, profit) {
+        const ctx = document.getElementById('salesInventoryChart').getContext('2d');
+        if (salesChartInstance) salesChartInstance.destroy();
+
+        salesChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Retail Value', 'Inventory Cost', 'Total Sales', 'Expected Profit'],
+                datasets: [{
+                    label: 'Financial Overview (₦)',
+                    data: [retail, cost, salesVal, profit],
+                    backgroundColor: ['#d4af37', '#2c2c2c', '#006a4e', '#2e7d32'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    title: { display: true, text: 'Financial Analytics Summary' }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '₦' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderChannelChart(channelCounts) {
+        const ctx = document.getElementById('channelChart').getContext('2d');
+        if (channelChartInstance) channelChartInstance.destroy();
+
+        const labels = Object.keys(channelCounts);
+        const data = Object.values(channelCounts);
+
+        channelChartInstance = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: [
+                        '#d4af37', '#2c2c2c', '#006a4e', '#2e7d32', '#c62828', '#f57c00', '#1e88e5'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: { display: true, text: 'Sales by Channel (Frequency)' }
+                }
+            }
+        });
+>>>>>>> a102e10 (Refresh start with Updated Inventory and Collection page)
     }
 
     // 9. Customers Module

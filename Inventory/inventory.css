@@ -666,6 +666,7 @@ footer {
     font-size: 0.6rem;
 }
 
+<<<<<<< HEAD
 .chart-placeholder {
     background: var(--white);
     padding: 20px;
@@ -673,6 +674,21 @@ footer {
     margin-top: 20px;
     font-weight: bold;
     color: var(--primary-color);
+=======
+.charts-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.chart-box {
+    background: var(--white);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    min-height: 350px;
+>>>>>>> a102e10 (Refresh start with Updated Inventory and Collection page)
 }
 
 /* Modal and Auth Styles */
