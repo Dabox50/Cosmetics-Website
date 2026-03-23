@@ -2,6 +2,8 @@ app = "cosmetics-website"
 primary_region = "ams"
 
 [build]
+  dockerfile = "backend/Dockerfile"
+  ignorefile = "backend/.dockerignore"
 
 [http_service]
   internal_port = 5000

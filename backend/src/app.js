@@ -26,6 +26,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/services', serviceRoutes);
 
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
