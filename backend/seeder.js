@@ -30,9 +30,13 @@ const initialCategories = [
 
 const seedData = async () => {
   try {
+    console.log('Starting Seeding Process...');
+    
     await Admin.deleteMany();
     await Product.deleteMany();
     await Category.deleteMany();
+
+    console.log('Previous Data Cleared');
 
     await Admin.create({
       email: process.env.ADMIN_EMAIL || 'admin@shayors.com',
@@ -45,9 +49,13 @@ const seedData = async () => {
     await Category.insertMany(categoryObjects);
 
     console.log('Data Seeded Successfully!');
+    await mongoose.connection.close();
     process.exit();
   } catch (error) {
-    console.error(`${error}`);
+    console.error(`Seeding Error: ${error.message}`);
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
+    }
     process.exit(1);
   }
 };
