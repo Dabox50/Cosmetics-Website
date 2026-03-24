@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Management | Shayors Cosmetics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="inventory.css">
     <link rel="shortcut icon" href="../Image/Shayor's Logo.png" type="image/x-icon">
 </head>
@@ -357,26 +360,77 @@
             <!-- Analytics Module -->
             <section id="analytics-module" class="module">
                 <div class="module-header">
-                    <h2>Analytics & Alert System</h2>
+                    <h2>Comparative Analysis Dashboard</h2>
                 </div>
-                <div class="analytics-grid">
-                    <div class="stat-card"><h3>Total unit in stock</h3><p id="anaTotalItems">0</p></div>
-                    <div class="stat-card"><h3>Total product (Stock)</h3><p id="anaTotalStock">0</p></div>
-                    <div class="stat-card"><h3>Total Retail Value</h3><p id="anaRetailValue">₦0.00</p></div>
-                    <div class="stat-card"><h3>Total Inventory Cost</h3><p id="anaInvCost">₦0.00</p></div>
-                    <div class="stat-card"><h3>Total Sales Units</h3><p id="anaTotalUnitsSold">0</p></div>
-                    <div class="stat-card"><h3>Total Sales</h3><p id="anaTotalSales">₦0.00</p></div>
-                    <div class="stat-card profit"><h3>Expected Profits</h3><p id="anaExpProfit">₦0.00</p></div>
-                    <div class="stat-card alert-card"><h3>Low Stock</h3><p id="anaLowStock">0</p></div>
-                    <div class="stat-card"><h3>Credit Sales</h3><p id="anaCreditSales">₦0.00</p></div>
-                    <div class="stat-card"><h3>Debtor Record</h3><p id="anaDebtors">₦0.00</p></div>
-                </div>
-                <div class="charts-row">
-                    <div class="chart-box">
-                        <canvas id="salesInventoryChart"></canvas>
+
+                <!-- Summary Cards Row -->
+                <div class="dashboard-summary-row">
+                    <div class="summary-card card-blue">
+                        <h3 id="cardValCurrentSales">₦0</h3>
+                        <p>Current Year Sales</p>
                     </div>
-                    <div class="chart-box">
-                        <canvas id="channelChart"></canvas>
+                    <div class="summary-card card-teal">
+                        <h3 id="cardValBudgetSales">₦0</h3>
+                        <p>Budget Sales</p>
+                    </div>
+                    <div class="summary-card card-orange">
+                        <h3 id="cardValBudgetVariance">0%</h3>
+                        <p>Budget Variance %</p>
+                    </div>
+                    <div class="summary-card card-green">
+                        <h3 id="cardValPastSales">₦0</h3>
+                        <p>Past Year Sales</p>
+                    </div>
+                    <div class="summary-card card-teal-green">
+                        <h3 id="cardValGrowth">0%</h3>
+                        <p>Sales Growth</p>
+                    </div>
+                </div>
+
+                <div class="dashboard-main-content">
+                    <div class="dashboard-left-column">
+                        <div class="chart-container-box">
+                            <h3>Actual vs Budget Sales</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="actualVsBudgetChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-container-box">
+                            <h3>Current Year vs Past Year Sales</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="currentVsPastChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-container-box">
+                            <h3>Budget vs Actual Sales (by Product)</h3>
+                            <div class="chart-wrapper">
+                                <canvas id="productSalesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-right-column">
+                        <div class="side-control-box">
+                            <h3>Year</h3>
+                            <div class="year-selector" id="yearSelector">
+                                <!-- Year buttons will be injected here -->
+                                <button class="year-btn active">2024</button>
+                                <button class="year-btn">2023</button>
+                                <button class="year-btn">2022</button>
+                            </div>
+                        </div>
+
+                        <div class="side-control-box">
+                            <h3>Budget</h3>
+                            <div class="donut-wrapper">
+                                <canvas id="budgetDonutChart"></canvas>
+                                <div class="donut-center-text">
+                                    <span id="budgetPercentText">0%</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>

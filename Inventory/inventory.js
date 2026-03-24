@@ -1044,118 +1044,208 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 8. Analytics Module
-
-    let salesChartInstance = null;
-    let channelChartInstance = null;
-
+    let actualVsBudgetChartInstance = null;
+    let currentVsPastChartInstance = null;
+    let productSalesChartInstance = null;
+    let budgetDonutChartInstance = null;
 
     function renderAnalytics() {
-        let totalStock = 0;
-        let totalRetailVal = 0;
-        let totalCostVal = 0;
-        let lowStockCount = 0;
+        const activeYearBtn = document.querySelector('.year-btn.active');
+        const currentYear = activeYearBtn ? parseInt(activeYearBtn.innerText) : new Date().getFullYear();
+        const pastYear = currentYear - 1;
 
-        inventory.forEach(p => {
-            totalStock += (p.stock || 0);
-            totalRetailVal += (p.stock || 0) * (p.price || 0);
-            totalCostVal += (p.stock || 0) * (p.costPrice || 0);
-            if ((p.stock || 0) <= (p.threshold || 5)) lowStockCount++;
-        });
+        // Calculate Sales Data
+        const currentYearSales = sales.filter(s => new Date(s.date).getFullYear() === currentYear);
+        const pastYearSales = sales.filter(s => new Date(s.date).getFullYear() === pastYear);
 
-        const totalSales = sales.reduce((sum, s) => sum + s.total, 0);
-        const totalUnitsSold = sales.reduce((sum, s) => {
-            return sum + (s.items || []).reduce((itemSum, item) => itemSum + (item.actualQty || item.qty || 0), 0);
-        }, 0);
-        const creditSales = sales.filter(s => s.status !== 'Paid').reduce((sum, s) => sum + (s.total - (s.amountPaid || 0)), 0);
-        const debtorsTotal = customers.reduce((sum, c) => sum + ((c.totalAmount || 0) - (c.partlyPaid || 0)), 0);
-        const expectedProfit = totalRetailVal - totalCostVal;
+        const totalCurrentYearSales = currentYearSales.reduce((sum, s) => sum + (s.total || 0), 0);
+        const totalPastYearSales = pastYearSales.reduce((sum, s) => sum + (s.total || 0), 0);
 
-        document.getElementById('anaTotalItems').innerText = inventory.length;
-        document.getElementById('anaTotalStock').innerText = totalStock;
-        document.getElementById('anaRetailValue').innerText = `₦${totalRetailVal.toLocaleString()}`;
-        document.getElementById('anaInvCost').innerText = `₦${totalCostVal.toLocaleString()}`;
-        document.getElementById('anaTotalSales').innerText = `₦${totalSales.toLocaleString()}`;
-        document.getElementById('anaTotalUnitsSold').innerText = totalUnitsSold;
-        document.getElementById('anaExpProfit').innerText = `₦${expectedProfit.toLocaleString()}`;
-        document.getElementById('anaLowStock').innerText = lowStockCount;
-        document.getElementById('anaCreditSales').innerText = `₦${creditSales.toLocaleString()}`;
-        document.getElementById('anaDebtors').innerText = `₦${debtorsTotal.toLocaleString()}`;
-
-        // Top Channel Logic
-        const channelCounts = {};
-        sales.forEach(s => {
-            channelCounts[s.platform] = (channelCounts[s.platform] || 0) + 1;
-        });
+        // Budget is simulated (Current Sales * 1.2 or Inventory Value)
+        let totalInventoryValue = 0;
+        inventory.forEach(p => totalInventoryValue += (p.stock || 0) * (p.price || 0));
         
-        // Render Charts
-        renderSalesInventoryChart(totalRetailVal, totalCostVal, totalSales, expectedProfit);
-        renderChannelChart(channelCounts);
+        const budgetSales = Math.max(totalInventoryValue, totalCurrentYearSales * 1.2);
+        const variance = budgetSales > 0 ? ((totalCurrentYearSales - budgetSales) / budgetSales) * 100 : 0;
+        const growth = totalPastYearSales > 0 ? ((totalCurrentYearSales - totalPastYearSales) / totalPastYearSales) * 100 : 0;
+
+        // Update Summary Cards
+        const cardCurrent = document.getElementById('cardValCurrentSales');
+        const cardBudget = document.getElementById('cardValBudgetSales');
+        const cardVar = document.getElementById('cardValBudgetVariance');
+        const cardPast = document.getElementById('cardValPastSales');
+        const cardGrowth = document.getElementById('cardValGrowth');
+
+        if (cardCurrent) cardCurrent.innerText = `₦${totalCurrentYearSales.toLocaleString()}`;
+        if (cardBudget) cardBudget.innerText = `₦${budgetSales.toLocaleString()}`;
+        if (cardVar) cardVar.innerText = `${variance.toFixed(2)}%`;
+        if (cardPast) cardPast.innerText = `₦${totalPastYearSales.toLocaleString()}`;
+        if (cardGrowth) cardGrowth.innerText = `${growth.toFixed(2)}%`;
+
+        // Render All Charts
+        renderActualVsBudgetChart(currentYearSales, budgetSales);
+        renderCurrentVsPastChart(currentYearSales, pastYearSales);
+        renderProductSalesChart(currentYearSales);
+        renderBudgetDonutChart(totalCurrentYearSales, budgetSales);
     }
 
-    function renderSalesInventoryChart(retail, cost, salesVal, profit) {
-        const ctx = document.getElementById('salesInventoryChart').getContext('2d');
-        if (salesChartInstance) salesChartInstance.destroy();
+    // Add event listener for year selector
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('year-btn')) {
+            document.querySelectorAll('.year-btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+            renderAnalytics(); // Re-render with selected year logic if needed
+        }
+    });
 
-        salesChartInstance = new Chart(ctx, {
+    function renderActualVsBudgetChart(currentSales, budgetTotal) {
+        const canvas = document.getElementById('actualVsBudgetChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (actualVsBudgetChartInstance) actualVsBudgetChartInstance.destroy();
+
+        // Monthly breakdown
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const actualData = new Array(12).fill(0);
+        const budgetData = new Array(12).fill(budgetTotal / 12);
+
+        currentSales.forEach(s => {
+            const m = new Date(s.date).getMonth();
+            actualData[m] += (s.total || 0);
+        });
+
+        actualVsBudgetChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [
+                    {
+                        label: 'Actual Sales',
+                        data: actualData,
+                        borderColor: '#3a7afe',
+                        backgroundColor: 'rgba(58, 122, 254, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Budget Sales',
+                        data: budgetData,
+                        borderColor: '#17c7d4',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
+    function renderCurrentVsPastChart(currentSales, pastSales) {
+        const canvas = document.getElementById('currentVsPastChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (currentVsPastChartInstance) currentVsPastChartInstance.destroy();
+
+        const currentYear = new Date().getFullYear();
+        const years = [currentYear - 2, currentYear - 1, currentYear];
+        const currentYearTotal = currentSales.reduce((sum, s) => sum + (s.total || 0), 0);
+        const pastYearTotal = pastSales.reduce((sum, s) => sum + (s.total || 0), 0);
+        const olderYearTotal = pastYearTotal * 0.8; // Simulated
+
+        currentVsPastChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['Retail Value', 'Inventory Cost', 'Total Sales', 'Expected Profit'],
+                labels: years.map(String),
                 datasets: [{
-                    label: 'Financial Overview (₦)',
-                    data: [retail, cost, salesVal, profit],
-                    backgroundColor: ['#d4af37', '#2c2c2c', '#006a4e', '#2e7d32'],
-                    borderWidth: 1
+                    label: 'Annual Sales Performance',
+                    data: [olderYearTotal, pastYearTotal, currentYearTotal],
+                    backgroundColor: ['#f09d38', '#17c7d4', '#3a7afe'],
+                    borderRadius: 5
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    title: { display: true, text: 'Financial Analytics Summary' }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '₦' + value.toLocaleString();
-                            }
-                        }
-                    }
-                }
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
             }
         });
     }
 
-    function renderChannelChart(channelCounts) {
-        const ctx = document.getElementById('channelChart').getContext('2d');
-        if (channelChartInstance) channelChartInstance.destroy();
+    function renderProductSalesChart(currentSales) {
+        const canvas = document.getElementById('productSalesChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (productSalesChartInstance) productSalesChartInstance.destroy();
 
-        const labels = Object.keys(channelCounts);
-        const data = Object.values(channelCounts);
+        const productTotals = {};
+        currentSales.forEach(s => {
+            (s.items || []).forEach(item => {
+                productTotals[item.name] = (productTotals[item.name] || 0) + (item.total || 0);
+            });
+        });
 
-        channelChartInstance = new Chart(ctx, {
-            type: 'pie',
+        const sortedProducts = Object.entries(productTotals)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 6);
+
+        productSalesChartInstance = new Chart(ctx, {
+            type: 'bar',
             data: {
-                labels: labels,
+                labels: sortedProducts.map(p => p[0]),
                 datasets: [{
-                    data: data,
-                    backgroundColor: [
-                        '#d4af37', '#2c2c2c', '#006a4e', '#2e7d32', '#c62828', '#f57c00', '#1e88e5'
-                    ]
+                    label: 'Actual Sales',
+                    data: sortedProducts.map(p => p[1]),
+                    backgroundColor: '#3a7afe',
+                    borderRadius: 5
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'bottom' },
-                    title: { display: true, text: 'Sales by Channel (Frequency)' }
-                }
+                plugins: { legend: { position: 'bottom' } },
+                scales: { y: { beginAtZero: true } }
             }
         });
     }
+
+    function renderBudgetDonutChart(actual, budget) {
+        const canvas = document.getElementById('budgetDonutChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (budgetDonutChartInstance) budgetDonutChartInstance.destroy();
+
+        const percent = budget > 0 ? Math.min((actual / budget) * 100, 100) : 0;
+        const remaining = 100 - percent;
+
+        const budgetText = document.getElementById('budgetPercentText');
+        if (budgetText) budgetText.innerText = `${Math.round(percent)}%`;
+
+        budgetDonutChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Achieved', 'Remaining'],
+                datasets: [{
+                    data: [percent, remaining],
+                    backgroundColor: ['#19b38c', '#eeeeee'],
+                    borderWidth: 0,
+                    cutout: '80%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
 
     // 9. Customers Module
     window.toggleCustomerForm = function() {

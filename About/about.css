@@ -1,7 +1,3 @@
-@font-face {
-    font-family: 'Playfair Display';
-    src: url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
-}
 :root {
     --primary-color: #d4af37; /* Gold */
     --secondary-color: #2c2c2c; /* Charcoal */
@@ -25,7 +21,7 @@ body {
     overflow-x: hidden;
 }
 
-h1, h2, h3 {
+h1, h2, h3, h4, h5, h6 {
     font-family: 'Playfair Display', serif;
 }
 
@@ -265,6 +261,78 @@ footer {
 }
 
 /* Mobile Responsiveness */
+@media screen and (max-width: 980px) {
+    .nav-links {
+        width: 50%;
+    }
+
+    .nav-links {
+        position: absolute;
+        right: 30px;
+        height: 50vh;
+        top: 12vh;
+        background-color: rgb(226, 226, 226);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        border-radius: 10px;
+        width: 30%;
+        transform: translateX(10%);
+        transition: transform 0.9s ease-in, visibility 0.5s;
+        z-index: 999;
+        visibility: hidden;
+    }
+
+    .nav-links.nav-active {
+        transform: translateX(0%);
+        visibility: visible;
+    }
+
+    .nav-links li {
+        opacity: 0;
+        width: 100%;
+        text-align: center;
+        padding: 15px 0;
+    
+    }
+    .nav-links.nav-active li {
+        opacity: 1;
+        animation: navLinkFade 0.9s ease forwards;
+    }
+
+    .nav-links a {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.5rem;
+        font-weight: 400;
+    }
+
+    .nav-links a:hover, .active-link {
+        color: var(--primary-color) !important;
+    }
+    .brands-bar {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        padding: 10px 20px;
+        gap: 20px;
+    }
+    
+    .brands-scroll{
+        gap: 30px;
+        font-size: 0.7rem;
+    }
+
+    .burger {
+        display: flex;
+        z-index: 1001;
+    }
+
+    .nav-links.nav-active {
+        transform: translateX(0%);
+    }
+    
+}
+
 @media screen and (max-width: 768px) {
     .nav-links {
         position: absolute;
