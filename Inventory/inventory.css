@@ -833,7 +833,7 @@ footer {
     .nav-links {
         position: absolute;
         right: 30px;
-        height: 50vh;
+        height: 65vh;
         top: 12vh;
         background-color: rgb(226, 226, 226);
         display: flex;
@@ -907,7 +907,7 @@ footer {
     .nav-links {
         position: absolute;
         right: 20px;
-        height: 50vh;
+        height: 65vh;
         top: 10vh;
         background-color: rgb(226, 226, 226);
         display: flex;
