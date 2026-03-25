@@ -1011,6 +1011,7 @@ footer {
 
     .nav-links {
         right: 30px;
+        height: 65vh;
         top: 12vh;
         width: 50%;
     }
