@@ -1054,7 +1054,44 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentYear = activeYearBtn ? parseInt(activeYearBtn.innerText) : new Date().getFullYear();
         const pastYear = currentYear - 1;
 
-        // Calculate Sales Data
+        let totalStock = 0;
+        let totalRetailVal = 0;
+        let totalCostVal = 0;
+        let lowStockCount = 0;
+
+        inventory.forEach(p => {
+            totalStock += (p.stock || 0);
+            totalRetailVal += (p.stock || 0) * (p.price || 0);
+            totalCostVal += (p.stock || 0) * (p.costPrice || 0);
+            if ((p.stock || 0) <= (p.threshold || 5)) lowStockCount++;
+        });
+
+        const totalOverallSales = sales.reduce((sum, s) => sum + (s.total || 0), 0);
+        const totalUnitsSold = sales.reduce((sum, s) => {
+            return sum + (s.items || []).reduce((itemSum, item) => itemSum + (item.actualQty || item.qty || 0), 0);
+        }, 0);
+        const creditSalesOverall = sales.filter(s => s.status !== 'Paid').reduce((sum, s) => sum + ((s.total || 0) - (s.amountPaid || 0)), 0);
+        const debtorsTotal = customers.reduce((sum, c) => sum + ((c.totalAmount || 0) - (c.partlyPaid || 0)), 0);
+        const expectedProfitOverall = totalRetailVal - totalCostVal;
+
+        // Update Global Cards (restored metrics)
+        const updateText = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+        };
+
+        updateText('anaTotalItems', inventory.length);
+        updateText('anaTotalStock', totalStock);
+        updateText('anaRetailValue', `₦${totalRetailVal.toLocaleString()}`);
+        updateText('anaInvCost', `₦${totalCostVal.toLocaleString()}`);
+        updateText('anaTotalSales', `₦${totalOverallSales.toLocaleString()}`);
+        updateText('anaTotalUnitsSold', totalUnitsSold);
+        updateText('anaExpProfit', `₦${expectedProfitOverall.toLocaleString()}`);
+        updateText('anaLowStock', lowStockCount);
+        updateText('anaCreditSales', `₦${creditSalesOverall.toLocaleString()}`);
+        updateText('anaDebtors', `₦${debtorsTotal.toLocaleString()}`);
+
+        // Calculate Year-Specific Sales Data
         const currentYearSales = sales.filter(s => new Date(s.date).getFullYear() === currentYear);
         const pastYearSales = sales.filter(s => new Date(s.date).getFullYear() === pastYear);
 
@@ -1062,25 +1099,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const totalPastYearSales = pastYearSales.reduce((sum, s) => sum + (s.total || 0), 0);
 
         // Budget is simulated (Current Sales * 1.2 or Inventory Value)
-        let totalInventoryValue = 0;
-        inventory.forEach(p => totalInventoryValue += (p.stock || 0) * (p.price || 0));
-        
-        const budgetSales = Math.max(totalInventoryValue, totalCurrentYearSales * 1.2);
+        const budgetSales = Math.max(totalRetailVal, totalCurrentYearSales * 1.2);
         const variance = budgetSales > 0 ? ((totalCurrentYearSales - budgetSales) / budgetSales) * 100 : 0;
         const growth = totalPastYearSales > 0 ? ((totalCurrentYearSales - totalPastYearSales) / totalPastYearSales) * 100 : 0;
 
-        // Update Summary Cards
-        const cardCurrent = document.getElementById('cardValCurrentSales');
-        const cardBudget = document.getElementById('cardValBudgetSales');
-        const cardVar = document.getElementById('cardValBudgetVariance');
-        const cardPast = document.getElementById('cardValPastSales');
-        const cardGrowth = document.getElementById('cardValGrowth');
-
-        if (cardCurrent) cardCurrent.innerText = `₦${totalCurrentYearSales.toLocaleString()}`;
-        if (cardBudget) cardBudget.innerText = `₦${budgetSales.toLocaleString()}`;
-        if (cardVar) cardVar.innerText = `${variance.toFixed(2)}%`;
-        if (cardPast) cardPast.innerText = `₦${totalPastYearSales.toLocaleString()}`;
-        if (cardGrowth) cardGrowth.innerText = `${growth.toFixed(2)}%`;
+        // Update Comparative Cards (from image)
+        updateText('cardValCurrentSales', `₦${totalCurrentYearSales.toLocaleString()}`);
+        updateText('cardValBudgetSales', `₦${budgetSales.toLocaleString()}`);
+        updateText('cardValBudgetVariance', `${variance.toFixed(2)}%`);
+        updateText('cardValPastSales', `₦${totalPastYearSales.toLocaleString()}`);
+        updateText('cardValGrowth', `${growth.toFixed(2)}%`);
 
         // Render All Charts
         renderActualVsBudgetChart(currentYearSales, budgetSales);
