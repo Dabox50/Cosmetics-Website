@@ -32,9 +32,9 @@ const seedData = async () => {
   try {
     console.log('Starting Seeding Process...');
     
-    await Admin.deleteMany();
-    await Product.deleteMany();
-    await Category.deleteMany();
+    // await Admin.deleteMany();
+    // await Product.deleteMany();
+    // await Category.deleteMany();
 
     console.log('Previous Data Cleared');
 

@@ -330,6 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (p.stock <= threshold) lowStockCount++;
 
             const row = document.createElement('tr');
+            row.id = `product-${p._id}`;
             row.innerHTML = `
                 <td><img src="${p.image || '../Image/Shayor\'s Logo.png'}" class="prod-img-small"></td>
                 <td class="prod-info-cell">
@@ -544,13 +545,70 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.searchInventory = function() {
-        const term = document.getElementById('inventorySearch').value.toLowerCase();
+        const input = document.getElementById('inventorySearch');
+        const term = input.value.toLowerCase().trim();
+        const dropdown = document.getElementById('searchResultsDropdown');
+        
+        if (term.length < 2) {
+            dropdown.classList.add('hidden');
+            dropdown.innerHTML = '';
+            if (term.length === 0) renderInventory();
+            return;
+        }
+
         const filtered = inventory.filter(p => 
             p.name.toLowerCase().includes(term) || 
-            p.brand.toLowerCase().includes(term)
+            p.brand.toLowerCase().includes(term) ||
+            (p.category && p.category.toLowerCase().includes(term))
         );
+
+        if (filtered.length > 0) {
+            dropdown.innerHTML = filtered.slice(0, 10).map(p => `
+                <div class="search-result-item" onclick="scrollToProduct('${p._id}')">
+                    <img src="${p.image || '../Image/Shayor\'s Logo.png'}" alt="${p.name}">
+                    <div class="search-result-info">
+                        <h5>${p.name}</h5>
+                        <p>${p.brand} | ${p.category || 'No Category'}</p>
+                    </div>
+                </div>
+            `).join('');
+            dropdown.classList.remove('hidden');
+        } else {
+            dropdown.innerHTML = '<div class="no-results">No products found</div>';
+            dropdown.classList.remove('hidden');
+        }
+
+        // We still filter the main table for consistency
         renderInventory(filtered);
     };
+
+    window.scrollToProduct = function(id) {
+        const row = document.getElementById(`product-${id}`);
+        const dropdown = document.getElementById('searchResultsDropdown');
+        const input = document.getElementById('inventorySearch');
+        
+        dropdown.classList.add('hidden');
+        input.value = ''; // Clear search after selection
+        renderInventory(); // Show all products so the row exists in DOM
+        
+        setTimeout(() => {
+            const targetRow = document.getElementById(`product-${id}`);
+            if (targetRow) {
+                targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                targetRow.classList.add('highlight-row');
+                setTimeout(() => targetRow.classList.remove('highlight-row'), 3000);
+            }
+        }, 100);
+    };
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const wrapper = document.querySelector('.search-wrapper');
+        const dropdown = document.getElementById('searchResultsDropdown');
+        if (wrapper && !wrapper.contains(e.target) && dropdown) {
+            dropdown.classList.add('hidden');
+        }
+    });
 
     window.importSamples = async function() {
         const samples = [

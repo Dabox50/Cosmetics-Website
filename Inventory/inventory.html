@@ -68,7 +68,10 @@
                     <div class="action-bar">
                         <button class="btn primary" onclick="toggleForm()">+ New Product</button>
                         <button class="btn secondary" onclick="importSamples()" id="importBtn">Import Samples</button>
-                        <input type="text" id="inventorySearch" placeholder="Search..." onkeyup="searchInventory()">
+                        <div class="search-wrapper">
+                            <input type="text" id="inventorySearch" placeholder="Search product or category..." onkeyup="searchInventory()" autocomplete="off">
+                            <div id="searchResultsDropdown" class="search-results-dropdown hidden"></div>
+                        </div>
                     </div>
                 </div>
 
