@@ -1122,35 +1122,42 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.target.classList.contains('year-btn')) {
             document.querySelectorAll('.year-btn').forEach(btn => btn.classList.remove('active'));
             e.target.classList.add('active');
-            renderAnalytics(); // Re-render with selected year logic if needed
+            renderAnalytics(); 
         }
     });
 
-    window.resetAnalyticsData = function() {
-        if (confirm("Are you sure you want to reset all analytics data (Sales, Expenses, Customers, Adjustments)? This will clear your local records to zero for the new year.")) {
-            // Clear localStorage
-            localStorage.removeItem('shayorsSales');
-            localStorage.removeItem('shayorsExpenses');
-            localStorage.removeItem('shayorsCustomers');
-            localStorage.removeItem('shayorsAdjustments');
+    // Reset Analytics Button
+    const resetBtn = document.getElementById('resetAnalyticsBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            if (confirm("Are you sure you want to reset all analytics data? This will clear local records for Sales, Expenses, Customers, and Adjustments.")) {
+                console.log("Resetting analytics data...");
+                
+                // Clear localStorage
+                localStorage.removeItem('shayorsSales');
+                localStorage.removeItem('shayorsExpenses');
+                localStorage.removeItem('shayorsCustomers');
+                localStorage.removeItem('shayorsAdjustments');
 
-            // Reset local variables
-            sales = [];
-            expenses = [];
-            customers = [];
-            adjustments = [];
+                // Reset local variables (these must match the 'let' variables at top of DOMContentLoaded)
+                sales = [];
+                expenses = [];
+                customers = [];
+                adjustments = [];
 
-            // Update UI
-            alert("All analytics records have been reset to zero.");
-            renderAnalytics();
-            
-            // Optionally refresh other views if they are open
-            if (document.getElementById('sales-module').classList.contains('active')) renderSalesHistory();
-            if (document.getElementById('expenses-module').classList.contains('active')) renderExpenses();
-            if (document.getElementById('customers-module').classList.contains('active')) renderCustomers();
-            if (document.getElementById('adjustments-module').classList.contains('active')) renderAdjustments();
-        }
-    };
+                // Re-render
+                renderAnalytics();
+                
+                // Refresh other views if active
+                if (document.getElementById('sales-module')?.classList.contains('active')) renderSalesHistory();
+                if (document.getElementById('expenses-module')?.classList.contains('active')) renderExpenses();
+                if (document.getElementById('customers-module')?.classList.contains('active')) renderCustomers();
+                if (document.getElementById('adjustments-module')?.classList.contains('active')) renderAdjustments();
+
+                alert("Analytics data has been reset successfully.");
+            }
+        });
+    }
 
     function renderActualVsBudgetChart(currentSales, budgetTotal) {
         const canvas = document.getElementById('actualVsBudgetChart');
