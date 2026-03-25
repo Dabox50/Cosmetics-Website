@@ -1126,6 +1126,32 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    window.resetAnalyticsData = function() {
+        if (confirm("Are you sure you want to reset all analytics data (Sales, Expenses, Customers, Adjustments)? This will clear your local records to zero for the new year.")) {
+            // Clear localStorage
+            localStorage.removeItem('shayorsSales');
+            localStorage.removeItem('shayorsExpenses');
+            localStorage.removeItem('shayorsCustomers');
+            localStorage.removeItem('shayorsAdjustments');
+
+            // Reset local variables
+            sales = [];
+            expenses = [];
+            customers = [];
+            adjustments = [];
+
+            // Update UI
+            alert("All analytics records have been reset to zero.");
+            renderAnalytics();
+            
+            // Optionally refresh other views if they are open
+            if (document.getElementById('sales-module').classList.contains('active')) renderSalesHistory();
+            if (document.getElementById('expenses-module').classList.contains('active')) renderExpenses();
+            if (document.getElementById('customers-module').classList.contains('active')) renderCustomers();
+            if (document.getElementById('adjustments-module').classList.contains('active')) renderAdjustments();
+        }
+    };
+
     function renderActualVsBudgetChart(currentSales, budgetTotal) {
         const canvas = document.getElementById('actualVsBudgetChart');
         if (!canvas) return;
