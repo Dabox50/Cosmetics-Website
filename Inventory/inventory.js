@@ -304,13 +304,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 4. Image Handling
     window.previewImage = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
         const reader = new FileReader();
-        reader.onload = function() {
-            const preview = document.getElementById('imagePreview');
-            preview.src = reader.result;
-            preview.classList.remove('hidden');
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const max_size = 1200; // Max width/height
+
+                if (width > height) {
+                    if (width > max_size) {
+                        height *= max_size / width;
+                        width = max_size;
+                    }
+                } else {
+                    if (height > max_size) {
+                        width *= max_size / height;
+                        height = max_size;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Compress to JPEG with 0.7 quality
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                
+                const preview = document.getElementById('imagePreview');
+                preview.src = compressedDataUrl;
+                preview.classList.remove('hidden');
+            };
+            img.src = e.target.result;
         };
-        reader.readAsDataURL(event.target.files[0]);
+        reader.readAsDataURL(file);
     };
 
     // 5. Inventory Module Functions
