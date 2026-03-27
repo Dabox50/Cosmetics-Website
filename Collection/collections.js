@@ -127,7 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="brand">${product.category || 'Product'} | ${product.brand || 'Shayors'}</p>
                     <h3>${product.name}</h3>
                     <p class="price">₦${parseFloat(product.price).toLocaleString()}</p>
-                    <p class="qty">Qty Available: ${product.stock}</p>
                     
                     <div class="product-details-mini">
                         ${product.skinTypes ? `<p><strong>Skin Type:</strong> ${product.skinTypes}</p>` : ''}
@@ -286,7 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="brand">${service.category || 'Spa & Beauty'}</p>
                     <h3>${service.name}</h3>
                     <p class="price">₦${parseFloat(service.price).toLocaleString()}</p>
-                    <p class="qty">Unit: ${service.units || service.unit || 'Session'}</p>
                     <div style="display: flex; gap: 5px; flex-wrap: wrap;">
                         <button class="btn primary" onclick="openBookingModal('${service._id || service.id}', '${service.name.replace(/'/g, "\\'")}')">Book Now</button>
                     </div>
