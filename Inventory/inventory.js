@@ -314,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const canvas = document.createElement('canvas');
                 let width = img.width;
                 let height = img.height;
-                const max_size = 1200; // Max width/height
+                const max_size = 1000; // Reduced from 1200
 
                 if (width > height) {
                     if (width > max_size) {
@@ -333,8 +333,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
-                // Compress to JPEG with 0.7 quality
-                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                // Further reduced quality to 0.6 for better compatibility
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
                 
                 const preview = document.getElementById('imagePreview');
                 preview.src = compressedDataUrl;
