@@ -72,6 +72,83 @@ document.addEventListener('DOMContentLoaded', () => {
     scrollAnimation();
     smoothScroll();
 
+    // --- HOME SEARCH LOGIC ---
+    const initHomeSearch = () => {
+        const homeSearch = document.getElementById('homeSearch');
+        const suggestionsDropdown = document.getElementById('searchSuggestions');
+        if (!homeSearch || !suggestionsDropdown) return;
+
+        let allProducts = [];
+
+        const isLocal = window.location.hostname === "localhost" || 
+                        window.location.hostname === "127.0.0.1" || 
+                        window.location.hostname.startsWith('192.168.') || 
+                        window.location.hostname.startsWith('10.') || 
+                        window.location.hostname.startsWith('172.');
+
+        const API_BASE = isLocal 
+            ? `http://${window.location.hostname}:5000/api` 
+            : "https://cosmetics-website.fly.dev/api";
+
+        // Fetch products for search
+        fetch(`${API_BASE}/products`)
+            .then(res => res.json())
+            .then(data => {
+                allProducts = data;
+            })
+            .catch(err => console.error("Search fetch failed:", err));
+
+        homeSearch.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            if (query.length < 2) {
+                suggestionsDropdown.innerHTML = '';
+                suggestionsDropdown.classList.add('hidden');
+                return;
+            }
+
+            const matches = allProducts.filter(p => 
+                p.name.toLowerCase().includes(query) || 
+                (p.category && p.category.toLowerCase().includes(query)) ||
+                (p.brand && p.brand.toLowerCase().includes(query))
+            ).slice(0, 8); // Limit to 8 suggestions
+
+            if (matches.length > 0) {
+                suggestionsDropdown.innerHTML = matches.map(p => `
+                    <div class="suggestion-item" data-id="${p._id}" data-cat="${p.category || 'All'}" data-name="${p.name}">
+                        <img src="${p.image || './Image/placeholder.png'}" alt="${p.name}">
+                        <div class="suggestion-info">
+                            <h4>${p.name}</h4>
+                            <p>${p.category || 'Product'} | ₦${p.price.toLocaleString()}</p>
+                        </div>
+                    </div>
+                `).join('');
+                suggestionsDropdown.classList.remove('hidden');
+
+                // Add click listeners to suggestions
+                document.querySelectorAll('.suggestion-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const name = item.getAttribute('data-name');
+                        const cat = item.getAttribute('data-cat');
+                        // Redirect to collections page with search parameters
+                        window.location.href = `./Collection/collections.html?search=${encodeURIComponent(name)}&cat=${encodeURIComponent(cat)}`;
+                    });
+                });
+            } else {
+                suggestionsDropdown.innerHTML = '<div class="suggestion-item"><p>No products found</p></div>';
+                suggestionsDropdown.classList.remove('hidden');
+            }
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!homeSearch.contains(e.target) && !suggestionsDropdown.contains(e.target)) {
+                suggestionsDropdown.classList.add('hidden');
+            }
+        });
+    };
+
+    initHomeSearch();
+
     // --- GLOBAL MODAL LOGIC ---
     window.openModal = function(modalId) {
         const modal = document.getElementById(modalId);
@@ -134,8 +211,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <small>₦${item.price.toLocaleString()} x ${item.qty}</small>
                             </div>
                         </div>
-                        <div style="display:flex; gap:5px;">
+                        <div style="display:flex; gap:5px; align-items:center;">
                             <button class="btn secondary" style="padding:2px 8px;" onclick="updateCartQty(${index}, -1)">-</button>
+                            <input type="number" value="${item.qty}" min="1" 
+                                   style="width: 40px; text-align: center; border: 1px solid #ddd; border-radius: 4px; padding: 2px 0;"
+                                   onchange="setCartQty(${index}, this.value)">
                             <button class="btn secondary" style="padding:2px 8px;" onclick="updateCartQty(${index}, 1)">+</button>
                             <button class="btn danger" style="padding:2px 8px;" onclick="removeFromCart(${index})">×</button>
                         </div>
@@ -154,6 +234,18 @@ document.addEventListener('DOMContentLoaded', () => {
         saveCart();
         updateCartUI();
         openCart(); 
+    };
+
+    window.setCartQty = function(index, value) {
+        const qty = parseInt(value);
+        if (isNaN(qty) || qty < 1) {
+            cart.splice(index, 1);
+        } else {
+            cart[index].qty = qty;
+        }
+        saveCart();
+        updateCartUI();
+        openCart();
     };
 
     window.removeFromCart = function(index) {
@@ -191,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             const itemsList = cart.map(item => `${item.name} (x${item.qty})`).join(', ');
-            const waMessage = `New Order from ${orderData.customerName}:\nItems: ${itemsList}\nTotal: ₦${total.toLocaleString()}\nAddress: ${orderData.shippingAddress}`;
+            const waMessage = `New Order from ${orderData.customerName}:\nItems: ${itemsList}\nTotal: ₦${total.toLocaleString()}\nAddress: ${orderData.shippingAddress}\nPhone: ${orderData.customerPhone}\nPayment: ${orderData.paymentMethod}\nNotes: ${orderData.notes || 'None'}`;
             window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
 
             const isLocal = window.location.hostname === "localhost" || 

@@ -72,8 +72,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 spaServices = await servRes.value.json();
             }
 
-            // Final render after data is loaded
-            renderProductRows();
+            // Check for URL parameters from homepage search
+            const urlParams = new URLSearchParams(window.location.search);
+            const searchParam = urlParams.get('search');
+            const catParam = urlParams.get('cat');
+
+            if (searchNav) {
+                if (searchParam) document.getElementById('navSearch').value = searchParam;
+                if (catParam) {
+                    // We'll update the select value after it's populated in renderProductRows
+                    setTimeout(() => {
+                        const catSelect = document.getElementById('catSelect');
+                        if (catSelect) {
+                            catSelect.value = catParam;
+                            renderProductRows(catParam, searchParam || "");
+                        }
+                    }, 100);
+                } else {
+                    renderProductRows("All", searchParam || "");
+                }
+            } else {
+                renderProductRows();
+            }
         } catch (error) {
             console.error('API Error or Timeout:', error);
             renderProductRows(); // Fallback
@@ -104,7 +124,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </span>
                 <img src="${product.image || '../Image/placeholder.png'}" alt="${product.name}">
                 <div class="card-content">
-                    <p class="brand">${product.brand || 'Shayors'}</p>
+                    <p class="brand">${product.category || 'Product'} | ${product.brand || 'Shayors'}</p>
                     <h3>${product.name}</h3>
                     <p class="price">₦${parseFloat(product.price).toLocaleString()}</p>
                     <p class="qty">Qty Available: ${product.stock}</p>
