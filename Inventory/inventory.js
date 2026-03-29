@@ -968,34 +968,120 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open(`https://wa.me/2348189085285?text=${msg}`); 
     }
 
-    function generateInvoice(sale) {
-        const inv = document.getElementById('invoicePreview');
-        if (!inv) return;
-        inv.classList.remove('hidden');
-        inv.innerHTML = `
-            <div class="invoice-header">
-                <h3>SHAYORS COSMETICS</h3>
-                <p>Invoice #${sale.id}</p>
-                <small>${new Date(sale.date).toLocaleString()}</small>
-                <p><strong>Status: ${sale.status}</strong></p>
-            </div>
-            <div class="invoice-body">
-                <p>Customer: ${sale.customer}</p>
-                <hr>
-                ${sale.items.map(item => `
-                    <div class="invoice-item">
-                        <span>${item.name} x${item.qty}</span>
-                        <span>₦${item.total.toLocaleString()}</span>
+    window.downloadInvoice = function(id) {
+        const sale = sales.find(s => s.apiId === id || s.id === id);
+        if (!sale) return;
+
+        const container = document.getElementById('invoiceContainer');
+        const dateStr = new Date(sale.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const invoiceNo = `INV-${(sale.apiId || sale.id).toString().slice(-6).toUpperCase()}`;
+
+        container.innerHTML = `
+            <div id="invoice-template" style="padding: 40px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; background: #fff; width: 800px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
+                    <div>
+                        <img src="../Image/Shayor's Cosmetics .png" style="width: 150px; margin-bottom: 10px;">
+                        <h2 style="margin: 0; color: #1a4a1a; font-family: 'Playfair Display', serif;">SHAYORS Cosmetics</h2>
                     </div>
-                `).join('')}
-                <hr>
-                <div class="invoice-total">
-                    <p>Total: ₦${sale.total.toLocaleString()}</p>
+                    <div style="text-align: right; font-size: 0.9rem; line-height: 1.4;">
+                        <h1 style="margin: 0; color: #4a90e2; font-size: 2.5rem; opacity: 0.8;">INVOICE</h1>
+                        <p style="margin: 10px 0 0;">Shop Yk 059, Floor 1, Adebgite shopping complex, Adebisi street, Itire/ikate</p>
+                        <p style="margin: 0;">Surulere Lagos 101241 Nigeria 08189085285</p>
+                        <p style="margin: 0;">shayorscosmestics@gmail.com</p>
+                        <p style="margin: 0;">www.Shayorscosmetics.com</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; margin-bottom: 30px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 15px 0;">
+                    <div style="flex: 1;">
+                        <table style="font-size: 0.9rem; width: 100%;">
+                            <tr><td style="color: #888; width: 100px;">Invoice#</td><td>: <strong>${invoiceNo}</strong></td></tr>
+                            <tr><td style="color: #888;">Invoice Date</td><td>: ${dateStr}</td></tr>
+                            <tr><td style="color: #888;">Terms</td><td>: Due on Receipt</td></tr>
+                            <tr><td style="color: #888;">Due Date</td><td>: ${dateStr}</td></tr>
+                        </table>
+                    </div>
+                    <div style="flex: 1;"></div>
+                </div>
+
+                <div style="margin-bottom: 30px;">
+                    <h4 style="margin: 0 0 10px; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; color: #555;">Bill To</h4>
+                    <p style="margin: 0; font-size: 1.1rem; font-weight: bold;">${sale.customer || 'Walk-in Customer'}</p>
+                </div>
+
+                <div style="margin-bottom: 30px; font-size: 0.9rem;">
+                    <p style="margin: 0 0 5px; color: #888;">Subject :</p>
+                    <p style="margin: 0;">Make payment into the account details below!</p>
+                    <p style="margin: 10px 0 0;"><strong>Account number:: 0089883643 Bank:: Sterling</strong></p>
+                    <p style="margin: 0;"><strong>Account name:: Shayors Cosmetics</strong></p>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="background: #f8f8f8; border-top: 1px solid #eee; border-bottom: 1px solid #eee;">
+                            <th style="padding: 12px; text-align: left; width: 40px;">#</th>
+                            <th style="padding: 12px; text-align: left;">Item & Description</th>
+                            <th style="padding: 12px; text-align: center; width: 60px;">Qty</th>
+                            <th style="padding: 12px; text-align: right; width: 100px;">Rate</th>
+                            <th style="padding: 12px; text-align: right; width: 120px;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sale.items.map((item, index) => `
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 12px; vertical-align: top;">${index + 1}</td>
+                                <td style="padding: 12px;">
+                                    <div style="font-weight: bold; margin-bottom: 4px;">${item.name}</div>
+                                    <div style="font-size: 0.8rem; color: #666;">${item.description || ''}</div>
+                                </td>
+                                <td style="padding: 12px; text-align: center; vertical-align: top;">${item.qty}</td>
+                                <td style="padding: 12px; text-align: right; vertical-align: top;">₦${(item.price || 0).toLocaleString()}</td>
+                                <td style="padding: 12px; text-align: right; vertical-align: top;">₦${(item.total || 0).toLocaleString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div style="display: flex; justify-content: space-between;">
+                    <div style="width: 50%; font-size: 0.85rem; color: #555; line-height: 1.6;">
+                        <p style="margin: 0 0 10px; font-weight: bold; color: #333;">Notes</p>
+                        <p style="margin: 0;">We are delighted to welcome you to the Shayors Cosmetics & Spa experience. Each formula is crafted with the finest ingredients and timeless care, designed to elevate your skincare ritual into a moment of indulgence. Thank you for allowing us to be part of your pursuit of radiant, lasting beauty.</p>
+                        <p style="margin: 15px 0 0;">With elegance and appreciation, The Shayors Cosmetics Team</p>
+                        
+                        <div style="margin-top: 25px;">
+                            <p style="margin: 0; font-weight: bold; color: #333;">Terms & Conditions</p>
+                            <p style="margin: 0;">Returns Policy ————————</p>
+                            <p style="margin: 0;">For hygiene and safety reasons, we cannot accept returns of opened items. If your order arrives damaged, incorrect, or you wish to return an unopened product, please contact us within 24 hrs of delivery. Replacements will be arranged in line with our policy.</p>
+                        </div>
+                    </div>
+                    <div style="width: 40%;">
+                        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
+                            <span style="font-weight: bold;">Sub Total</span>
+                            <span>₦${(sale.total || 0).toLocaleString()}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 15px 0; background: #fdfdfd;">
+                            <span style="font-weight: bold; color: #1a4a1a;">Total</span>
+                            <span style="font-weight: bold;">₦${(sale.total || 0).toLocaleString()}</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 2px solid #eee; margin-top: 10px;">
+                            <span style="font-weight: bold; color: #1a4a1a;">Balance Due</span>
+                            <span style="font-weight: bold; color: #1a4a1a; font-size: 1.2rem;">₦${(sale.total || 0).toLocaleString()}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <button class="btn secondary" onclick="window.print()">Print Receipt</button>
         `;
-    }
+
+        const opt = {
+            margin: 0,
+            filename: `${invoiceNo}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        html2pdf().from(container.children[0]).set(opt).save();
+    };
 
     async function renderSalesHistory() {
         const body = document.getElementById('salesHistoryBody');
@@ -1020,6 +1106,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td><span class="badge ${badgeClass}">${s.status || 'Paid'}</span></td>
                     <td>
                         <button class="btn secondary" onclick='viewOrder("${s.apiId || s.id}")'>View</button>
+                        <button class="btn primary" onclick='downloadInvoice("${s.apiId || s.id}")'>Inv</button>
                         <button class="btn danger" onclick='deleteOrder("${s.apiId || s.id}")'>Del</button>
                     </td>
                 </tr>
@@ -1753,13 +1840,44 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.previewSpaImage = function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
         const reader = new FileReader();
-        reader.onload = function() {
-            const preview = document.getElementById('spaImagePreview');
-            preview.src = reader.result;
-            preview.classList.remove('hidden');
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const max_size = 1000;
+
+                if (width > height) {
+                    if (width > max_size) {
+                        height *= max_size / width;
+                        width = max_size;
+                    }
+                } else {
+                    if (height > max_size) {
+                        width *= max_size / height;
+                        height = max_size;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                
+                const preview = document.getElementById('spaImagePreview');
+                preview.src = compressedDataUrl;
+                preview.classList.remove('hidden');
+            };
+            img.src = e.target.result;
         };
-        reader.readAsDataURL(event.target.files[0]);
+        reader.readAsDataURL(file);
     };
 
     async function renderSpaServices() {

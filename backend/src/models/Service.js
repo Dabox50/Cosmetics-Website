@@ -4,7 +4,8 @@ const serviceSchema = mongoose.Schema({
   name: { type: String, required: true },
   category: { type: String, required: true },
   units: { type: String, required: true },
-  price: { type: Number, required: true }
+  price: { type: Number, required: true },
+  image: { type: String }
 }, {
   timestamps: true
 });

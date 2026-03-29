@@ -12,8 +12,8 @@ const getServices = async (req, res) => {
 // @route   POST /api/services
 // @access  Private/Admin
 const createService = async (req, res) => {
-  const { name, category, units, price } = req.body;
-  const service = new Service({ name, category, units, price });
+  const { name, category, units, price, image } = req.body;
+  const service = new Service({ name, category, units, price, image });
   const createdService = await service.save();
   res.status(201).json(createdService);
 };
@@ -22,7 +22,7 @@ const createService = async (req, res) => {
 // @route   PATCH /api/services/:id
 // @access  Private/Admin
 const updateService = async (req, res) => {
-  const { name, category, units, price } = req.body;
+  const { name, category, units, price, image } = req.body;
   const service = await Service.findById(req.params.id);
 
   if (service) {
@@ -30,6 +30,7 @@ const updateService = async (req, res) => {
     if (category) service.category = category;
     if (units) service.units = units;
     if (price) service.price = price;
+    if (image) service.image = image;
 
     const updatedService = await service.save();
     res.json(updatedService);
