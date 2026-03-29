@@ -10,6 +10,7 @@ const validateOrder = (order) => {
       Joi.object({
         productId: Joi.string().required(),
         productName: Joi.string().required(),
+        description: Joi.string().allow('').optional(),
         quantity: Joi.number().min(1).required(),
         price: Joi.number().min(0).required()
       })

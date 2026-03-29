@@ -89,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             contact: order.customerPhone,
                             items: order.items.map(i => ({
                                 name: i.productName,
+                                description: i.description || '',
                                 qty: i.quantity,
                                 price: i.price,
                                 total: i.quantity * i.price
@@ -762,6 +763,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSaleItems.push({
             productId: product._id,
             name: product.name,
+            description: product.description || `${product.brand || ''} ${product.size || ''}`,
             qty: qty,
             unitType: unitType,
             actualQty: actualQty,
@@ -823,6 +825,7 @@ document.addEventListener('DOMContentLoaded', () => {
             items: currentSaleItems.map(item => ({
                 productId: item.productId,
                 productName: item.name,
+                description: item.description,
                 quantity: item.actualQty,
                 price: item.price
             })),
@@ -893,7 +896,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     sendWhatsAppOrder(sale);
                 }
 
-                generateInvoice(sale);
+                downloadInvoice(sale.id);
                 
                 currentSaleItems = [];
                 renderCurrentSaleList();
@@ -977,95 +980,103 @@ document.addEventListener('DOMContentLoaded', () => {
         const invoiceNo = `INV-${(sale.apiId || sale.id).toString().slice(-6).toUpperCase()}`;
 
         container.innerHTML = `
-            <div id="invoice-template" style="padding: 40px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; background: #fff; width: 800px;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px;">
-                    <div>
-                        <img src="../Image/Shayor's Cosmetics .png" style="width: 150px; margin-bottom: 10px;">
-                        <h2 style="margin: 0; color: #1a4a1a; font-family: 'Playfair Display', serif;">SHAYORS Cosmetics</h2>
+            <div id="invoice-template" style="padding: 20px; font-family: Arial, sans-serif; color: #333; background: #fff; width: 750px; line-height: 1.2;">
+                <!-- Header -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center;">
+                        <img src="../Image/Shayor's Cosmetics .png" style="width: 80px; margin-right: 15px;">
+                        <div>
+                            <h1 style="margin: 0; font-size: 20px; color: #000;">SHAYORS COSMETICS</h1>
+                            <p style="margin: 2px 0; font-size: 11px; color: #555;">
+                                Shop Yk 059, Floor 1, Adebgite shopping complex, Adebisi street, Itire/ikate<br>
+                                Surulere Lagos 101241 Nigeria 08189085285<br>
+                                shayorscosmestics@gmail.com | www.Shayorscosmetics.com
+                            </p>
+                        </div>
                     </div>
-                    <div style="text-align: right; font-size: 0.9rem; line-height: 1.4;">
-                        <h1 style="margin: 0; color: #4a90e2; font-size: 2.5rem; opacity: 0.8;">INVOICE</h1>
-                        <p style="margin: 10px 0 0;">Shop Yk 059, Floor 1, Adebgite shopping complex, Adebisi street, Itire/ikate</p>
-                        <p style="margin: 0;">Surulere Lagos 101241 Nigeria 08189085285</p>
-                        <p style="margin: 0;">shayorscosmestics@gmail.com</p>
-                        <p style="margin: 0;">www.Shayorscosmetics.com</p>
+                    <div style="text-align: right;">
+                        <h2 style="margin: 0; color: #76a9a4; font-size: 30px; font-weight: normal; letter-spacing: 2px;">INVOICE</h2>
                     </div>
                 </div>
 
-                <div style="display: flex; margin-bottom: 30px; border-top: 1px solid #eee; border-bottom: 1px solid #eee; padding: 15px 0;">
-                    <div style="flex: 1;">
-                        <table style="font-size: 0.9rem; width: 100%;">
-                            <tr><td style="color: #888; width: 100px;">Invoice#</td><td>: <strong>${invoiceNo}</strong></td></tr>
-                            <tr><td style="color: #888;">Invoice Date</td><td>: ${dateStr}</td></tr>
-                            <tr><td style="color: #888;">Terms</td><td>: Due on Receipt</td></tr>
-                            <tr><td style="color: #888;">Due Date</td><td>: ${dateStr}</td></tr>
+                <!-- Invoice Details Info -->
+                <div style="display: flex; margin-bottom: 20px; border: 1px solid #ddd;">
+                    <div style="width: 50%; border-right: 1px solid #ddd; padding: 10px;">
+                        <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+                            <tr><td style="color: #666; width: 100px; padding: 2px 0;">Invoice#</td><td>: <strong>${invoiceNo}</strong></td></tr>
+                            <tr><td style="color: #666; padding: 2px 0;">Invoice Date</td><td>: ${dateStr}</td></tr>
+                            <tr><td style="color: #666; padding: 2px 0;">Terms</td><td>: Due on Receipt</td></tr>
+                            <tr><td style="color: #666; padding: 2px 0;">Due Date</td><td>: ${dateStr}</td></tr>
                         </table>
                     </div>
-                    <div style="flex: 1;"></div>
+                    <div style="width: 50%; padding: 10px;"></div>
                 </div>
 
-                <div style="margin-bottom: 30px;">
-                    <h4 style="margin: 0 0 10px; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; color: #555;">Bill To</h4>
-                    <p style="margin: 0; font-size: 1.1rem; font-weight: bold;">${sale.customer || 'Walk-in Customer'}</p>
+                <!-- Bill To & Subject -->
+                <div style="margin-bottom: 20px;">
+                    <div style="background: #f4f4f4; padding: 5px 12px; font-weight: bold; border-bottom: 1px solid #ddd; font-size: 13px;">Bill To</div>
+                    <div style="padding: 10px 12px; font-size: 14px; font-weight: bold;">${sale.customer || 'Walk-in Customer'}</div>
                 </div>
 
-                <div style="margin-bottom: 30px; font-size: 0.9rem;">
-                    <p style="margin: 0 0 5px; color: #888;">Subject :</p>
-                    <p style="margin: 0;">Make payment into the account details below!</p>
-                    <p style="margin: 10px 0 0;"><strong>Account number:: 0089883643 Bank:: Sterling</strong></p>
+                <div style="margin-bottom: 20px; font-size: 12px; padding: 0 12px;">
+                    <p style="margin: 0 0 4px; color: #666;">Subject :</p>
+                    <p style="margin: 0 0 10px;">Make payment into the account details below!</p>
+                    <p style="margin: 3px 0;"><strong>Account number:: 0089883643 Bank:: Sterling</strong></p>
                     <p style="margin: 0;"><strong>Account name:: Shayors Cosmetics</strong></p>
                 </div>
 
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 0.9rem;">
+                <!-- Items Table -->
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #ddd;">
                     <thead>
-                        <tr style="background: #f8f8f8; border-top: 1px solid #eee; border-bottom: 1px solid #eee;">
-                            <th style="padding: 12px; text-align: left; width: 40px;">#</th>
-                            <th style="padding: 12px; text-align: left;">Item & Description</th>
-                            <th style="padding: 12px; text-align: center; width: 60px;">Qty</th>
-                            <th style="padding: 12px; text-align: right; width: 100px;">Rate</th>
-                            <th style="padding: 12px; text-align: right; width: 120px;">Amount</th>
+                        <tr style="background: #f9f9f9;">
+                            <th style="padding: 8px; text-align: left; width: 30px; border: 1px solid #ddd; font-size: 12px;">#</th>
+                            <th style="padding: 8px; text-align: left; border: 1px solid #ddd; font-size: 12px;">Item & Description</th>
+                            <th style="padding: 8px; text-align: center; width: 60px; border: 1px solid #ddd; font-size: 12px;">Qty</th>
+                            <th style="padding: 8px; text-align: right; width: 100px; border: 1px solid #ddd; font-size: 12px;">Rate</th>
+                            <th style="padding: 8px; text-align: right; width: 110px; border: 1px solid #ddd; font-size: 12px;">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${sale.items.map((item, index) => `
-                            <tr style="border-bottom: 1px solid #eee;">
-                                <td style="padding: 12px; vertical-align: top;">${index + 1}</td>
-                                <td style="padding: 12px;">
-                                    <div style="font-weight: bold; margin-bottom: 4px;">${item.name}</div>
-                                    <div style="font-size: 0.8rem; color: #666;">${item.description || ''}</div>
+                            <tr>
+                                <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-size: 12px; vertical-align: top;">${index + 1}</td>
+                                <td style="padding: 8px; border: 1px solid #ddd; font-size: 12px; vertical-align: top;">
+                                    <div style="font-weight: bold;">${item.name}</div>
+                                    <div style="font-size: 10px; color: #666; margin-top: 3px;">${item.description || ''}</div>
                                 </td>
-                                <td style="padding: 12px; text-align: center; vertical-align: top;">${item.qty}</td>
-                                <td style="padding: 12px; text-align: right; vertical-align: top;">₦${(item.price || 0).toLocaleString()}</td>
-                                <td style="padding: 12px; text-align: right; vertical-align: top;">₦${(item.total || 0).toLocaleString()}</td>
+                                <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-size: 12px; vertical-align: top;">${item.qty}.00</td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #ddd; font-size: 12px; vertical-align: top;">${(item.price || 0).toLocaleString()}.00</td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #ddd; font-size: 12px; vertical-align: top;">${(item.total || 0).toLocaleString()}.00</td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
 
-                <div style="display: flex; justify-content: space-between;">
-                    <div style="width: 50%; font-size: 0.85rem; color: #555; line-height: 1.6;">
-                        <p style="margin: 0 0 10px; font-weight: bold; color: #333;">Notes</p>
-                        <p style="margin: 0;">We are delighted to welcome you to the Shayors Cosmetics & Spa experience. Each formula is crafted with the finest ingredients and timeless care, designed to elevate your skincare ritual into a moment of indulgence. Thank you for allowing us to be part of your pursuit of radiant, lasting beauty.</p>
-                        <p style="margin: 15px 0 0;">With elegance and appreciation, The Shayors Cosmetics Team</p>
+                <!-- Bottom Summary Section -->
+                <div style="display: flex; justify-content: space-between; page-break-inside: avoid;">
+                    <div style="width: 55%; font-size: 10px; color: #555;">
+                        <p style="margin: 0 0 6px; font-weight: bold; color: #333; font-size: 12px;">Notes</p>
+                        <p style="margin: 0; line-height: 1.4;">We are delighted to welcome you to the Shayors Cosmetics & Spa experience. Each formula is crafted with the finest ingredients and timeless care, designed to elevate your skincare ritual into a moment of indulgence. Thank you for allowing us to be part of your pursuit of radiant, lasting beauty.</p>
+                        <p style="margin: 10px 0 0;">With elegance and appreciation, The Shayors Cosmetics Team</p>
                         
-                        <div style="margin-top: 25px;">
+                        <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;">
                             <p style="margin: 0; font-weight: bold; color: #333;">Terms & Conditions</p>
-                            <p style="margin: 0;">Returns Policy ————————</p>
-                            <p style="margin: 0;">For hygiene and safety reasons, we cannot accept returns of opened items. If your order arrives damaged, incorrect, or you wish to return an unopened product, please contact us within 24 hrs of delivery. Replacements will be arranged in line with our policy.</p>
+                            <p style="margin: 4px 0;">Returns Policy ————————</p>
+                            <p style="margin: 0; line-height: 1.3;">For hygiene and safety reasons, we cannot accept returns of opened items. If your order arrives damaged, incorrect, or you wish to return an unopened product, please contact us within 24 hrs of delivery. Replacements will be arranged in line with our policy.</p>
                         </div>
                     </div>
                     <div style="width: 40%;">
-                        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee;">
-                            <span style="font-weight: bold;">Sub Total</span>
-                            <span>₦${(sale.total || 0).toLocaleString()}</span>
+                        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 12px;">
+                            <span style="color: #666;">Sub Total</span>
+                            <span>${(sale.total || 0).toLocaleString()}.00</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 15px 0; background: #fdfdfd;">
-                            <span style="font-weight: bold; color: #1a4a1a;">Total</span>
-                            <span style="font-weight: bold;">₦${(sale.total || 0).toLocaleString()}</span>
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold; font-size: 12px;">
+                            <span>Total</span>
+                            <span>₦${(sale.total || 0).toLocaleString()}.00</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-top: 2px solid #eee; margin-top: 10px;">
+                        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #eee; margin-top: 4px;">
                             <span style="font-weight: bold; color: #1a4a1a;">Balance Due</span>
-                            <span style="font-weight: bold; color: #1a4a1a; font-size: 1.2rem;">₦${(sale.total || 0).toLocaleString()}</span>
+                            <span style="font-weight: bold; color: #1a4a1a; font-size: 16px;">₦${(sale.total || 0).toLocaleString()}.00</span>
                         </div>
                     </div>
                 </div>
@@ -1073,14 +1084,15 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         const opt = {
-            margin: 0,
+            margin: 0.2,
             filename: `${invoiceNo}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
+            html2canvas: { scale: 3, useCORS: true, logging: false, letterRendering: true },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
         };
 
-        html2pdf().from(container.children[0]).set(opt).save();
+        const template = container.children[0];
+        html2pdf().from(template).set(opt).save();
     };
 
     async function renderSalesHistory() {
