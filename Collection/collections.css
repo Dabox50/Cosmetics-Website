@@ -679,7 +679,7 @@ footer {
         display: flex;
         flex-direction: column;
         overflow: hidden;
-        padding: 10px 15px;
+        padding: 10px 6px;
         gap: 10px;
     }
     .brands-scroll{
