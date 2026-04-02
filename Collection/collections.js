@@ -390,7 +390,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         html += `
                             <div class="row-container animate-on-scroll spa-services-section" style="margin-top: 50px; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
-                                <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                    <h2 class="row-title" style="display: flex; padding: 0; margin: 10px 0px 10px 0; font-size: 2rem;">🧖‍♀️ Spa and Wellness</h2>
                                     <button class="btn primary" onclick="openModal('spaManagementModal')">+ Add New Service</button>
                                 </div>
                                 <p style="color: #000000; font-size: 1rem; margin-bottom: 30px; font-style: italic;">Rejuvenated your body and refresh your natural glow.</p>
@@ -404,7 +405,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Always show the section with an add button so services can be added
                     html += `
                         <div class="row-container animate-on-scroll spa-services-section" style="margin-top: 50px; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
-                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h2 class="row-title" style="display: flex; padding: 0; margin: 10px 0px 10px 0; font-size: 2rem;">🧖‍♀️ Spa and Wellness</h2>
                                 <button class="btn primary" onclick="openModal('spaManagementModal')" style>+ Add New Service</button>
                             </div>
                             <p style="color: #000000; font-size: 1rem; margin-bottom: 20px; font-style: italic;">Rejuvenated your body and refresh your natural glow.</p>
