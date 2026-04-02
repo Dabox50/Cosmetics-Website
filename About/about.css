@@ -482,4 +482,21 @@ footer {
     .newsletter-box {
         padding: 20px;
     }
+    
+    .footer-content {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 5px 20px;
+    }
+
+    .footer-bottom {
+        width: 70%;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        margin-top: 20px;
+        padding-top: 20px;
+        font-size: 0.8rem;
+        color: #777;
+    }
 }

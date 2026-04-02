@@ -86,7 +86,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.location.hostname.startsWith('10.') || 
                         window.location.hostname.startsWith('172.');
 
-        const API_BASE = isLocal 
+        // SET THIS TO TRUE to use the LIVE server data while working locally
+        const USE_LIVE_DATA_LOCALLY = true;
+
+        const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
             ? `http://${window.location.hostname}:5000/api` 
             : "https://cosmetics-website.fly.dev/api";
 
@@ -292,7 +295,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             window.location.hostname.startsWith('10.') || 
                             window.location.hostname.startsWith('172.');
 
-            const API_BASE = isLocal 
+            // SET THIS TO TRUE to use the LIVE server data while working locally
+            const USE_LIVE_DATA_LOCALLY = true;
+
+            const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
                 ? `http://${window.location.hostname}:5000/api` 
                 : "https://cosmetics-website.fly.dev/api";
 

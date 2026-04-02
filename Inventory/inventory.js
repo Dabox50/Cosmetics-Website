@@ -5,7 +5,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.hostname.startsWith('10.') || 
                     window.location.hostname.startsWith('172.');
 
-    const API_BASE = isLocal 
+    // SET THIS TO TRUE to use the LIVE server data while working locally
+    const USE_LIVE_DATA_LOCALLY = true;
+
+    const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
         ? `http://${window.location.hostname}:5000/api` 
         : "https://cosmetics-website.fly.dev/api";
 
@@ -971,127 +974,142 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open(`https://wa.me/2348189085285?text=${msg}`); 
     }
 
-    window.downloadInvoice = function(id) {
-        const sale = sales.find(s => s.apiId === id || s.id === id);
-        if (!sale) return;
-
+    window.renderInvoice = function(sale) {
         const container = document.getElementById('invoiceContainer');
         const dateStr = new Date(sale.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
         const invoiceNo = `INV-${(sale.apiId || sale.id).toString().slice(-6).toUpperCase()}`;
 
         container.innerHTML = `
-            <div id="invoice-template" style="padding: 20px; font-family: Arial, sans-serif; color: #333; background: #fff; width: 750px; line-height: 1.2;">
+            <div id="invoice-template" style="padding: 40px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; background: #fff; width: 800px; margin: 0 auto; box-sizing: border-box; line-height: 1.4;">
                 <!-- Header -->
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                    <div style="display: flex; align-items: center;">
-                        <img src="../Image/Shayor's Cosmetics .png" style="width: 80px; margin-right: 15px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 1px solid #eee; padding-bottom: 20px;">
+                    <div style="display: flex; align-items: flex-start;">
+                        <img src="../Image/Shayor's Cosmetics .png" style="width: 100px; margin-right: 20px;">
                         <div>
-                            <h1 style="margin: 0; font-size: 20px; color: #000;">SHAYORS COSMETICS</h1>
-                            <p style="margin: 2px 0; font-size: 11px; color: #555;">
+                            <h1 style="margin: 0; font-size: 22px; color: #000; font-weight: bold; letter-spacing: 0.5px;">SHAYORS COSMETICS</h1>
+                            <p style="margin: 5px 0; font-size: 12px; color: #555; line-height: 1.5;">
                                 Shop Yk 059, Floor 1, Adebgite shopping complex, Adebisi street, Itire/ikate<br>
-                                Surulere Lagos 101241 Nigeria 08189085285<br>
-                                shayorscosmestics@gmail.com | www.Shayorscosmetics.com
+                                Surulere Lagos 101241 Nigeria<br>
+                                08189085285<br>
+                                shayorscosmestics@gmail.com | www.shayorscosmestics.com
                             </p>
                         </div>
                     </div>
-                    <div style="text-align: right;">
-                        <h2 style="margin: 0; color: #76a9a4; font-size: 30px; font-weight: normal; letter-spacing: 2px;">INVOICE</h2>
+                    <div style="text-align: right; display: flex; flex-direction: column; justify-content: center;">
+                        <h2 style="margin: 0; color: #004936; font-size: 35px; font-weight: 300; letter-spacing: 3px; opacity: 0.8;">INVOICE</h2>
                     </div>
                 </div>
 
-                <!-- Invoice Details Info -->
-                <div style="display: flex; margin-bottom: 20px; border: 1px solid #ddd;">
-                    <div style="width: 50%; border-right: 1px solid #ddd; padding: 10px;">
-                        <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
-                            <tr><td style="color: #666; width: 100px; padding: 2px 0;">Invoice#</td><td>: <strong>${invoiceNo}</strong></td></tr>
-                            <tr><td style="color: #666; padding: 2px 0;">Invoice Date</td><td>: ${dateStr}</td></tr>
-                            <tr><td style="color: #666; padding: 2px 0;">Terms</td><td>: Due on Receipt</td></tr>
-                            <tr><td style="color: #666; padding: 2px 0;">Due Date</td><td>: ${dateStr}</td></tr>
+                <!-- Invoice Details Boxed -->
+                <div style="display: flex; position: relative; justify-content: center; align-items: center; margin-bottom: 25px;">
+                    <div style="display: flex; flex-direction: row; width: 50%; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; background: #fafafa;">
+                        <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+                            <tr><td style="color: #777; border: none; width: 110px; padding: 4px 0;">Invoice#</td><td style="font-weight: 600; border: none;">: ${invoiceNo}</td></tr>
+                            <tr><td style="color: #777; border: none; padding: 4px 0;">Invoice Date</td><td style="font-weight: 600; border: none;">: ${dateStr}</td></tr>
+                            <tr><td style="color: #777; border: none; padding: 4px 0;">Terms</td><td style="font-weight: 600; border: none;">: Due on Receipt</td></tr>
+                            <tr><td style="color: #777; border: none; padding: 4px 0;">Due Date</td><td style="font-weight: 600; border: none;">: ${dateStr}</td></tr>
                         </table>
+
+                        <!-- Subject/Banking -->
+                        <div style=" position: absolute; right: 5px; margin-bottom: 10px; font-size: 13px; padding: 0 5px;">
+                            <p style="margin: 0 0 6px; color: #777;">Subject :</p>
+                            <p style="margin: 0 0 12px; color: #444;">Make payment into the account details below!</p>
+                            <div style="background: #fff; padding: 0;">
+                                <p style="margin: 3px 0; color: #000;">Account number:: <strong>0089883643</strong></p>
+                                <p style="margin: 3px 0; color: #000;">Bank:: <strong>Sterling</strong></p>
+                                <p style="margin: 3px 0; color: #000;">Account name:: <strong>Shayors Cosmetics</strong></p>
+                            </div>
+                        </div>
                     </div>
-                    <div style="width: 50%; padding: 10px;"></div>
+                    <div style="width: 50%;"></div>
                 </div>
+                
 
-                <!-- Bill To & Subject -->
-                <div style="margin-bottom: 20px;">
-                    <div style="background: #f4f4f4; padding: 5px 12px; font-weight: bold; border-bottom: 1px solid #ddd; font-size: 13px;">Bill To</div>
-                    <div style="padding: 10px 12px; font-size: 14px; font-weight: bold;">${sale.customer || 'Walk-in Customer'}</div>
-                </div>
-
-                <div style="margin-bottom: 20px; font-size: 12px; padding: 0 12px;">
-                    <p style="margin: 0 0 4px; color: #666;">Subject :</p>
-                    <p style="margin: 0 0 10px;">Make payment into the account details below!</p>
-                    <p style="margin: 3px 0;"><strong>Account number:: 0089883643 Bank:: Sterling</strong></p>
-                    <p style="margin: 0;"><strong>Account name:: Shayors Cosmetics</strong></p>
+                <!-- Bill To -->
+                <div style="margin-bottom: 25px; border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden;">
+                    <div style="background: #f5f5f5; padding: 6px 15px; font-weight: 600; font-size: 12px; color: #444; border-bottom: 1px solid #e0e0e0;">Bill To</div>
+                    <div style="padding: 12px 15px; font-size: 15px; font-weight: bold; color: #000;">${sale.customer || 'Walk-in Customer'}</div>
                 </div>
 
                 <!-- Items Table -->
-                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; border: 1px solid #ddd;">
+                <table style="display: flex; flex-direction: column; border-collapse: collapse;">
                     <thead>
-                        <tr style="background: #f9f9f9;">
-                            <th style="padding: 8px; text-align: left; width: 30px; border: 1px solid #ddd; font-size: 12px;">#</th>
-                            <th style="padding: 8px; text-align: left; border: 1px solid #ddd; font-size: 12px;">Item & Description</th>
-                            <th style="padding: 8px; text-align: center; width: 60px; border: 1px solid #ddd; font-size: 12px;">Qty</th>
-                            <th style="padding: 8px; text-align: right; width: 100px; border: 1px solid #ddd; font-size: 12px;">Rate</th>
-                            <th style="padding: 8px; text-align: right; width: 110px; border: 1px solid #ddd; font-size: 12px;">Amount</th>
+                        <tr style="background: #333; color: #fff;">
+                            <th style="padding: 12px 10px; text-align: left; width: 50px; font-size: 12px; border-right: 1px solid #444;">#</th>
+                            <th style="padding: 12px 10px; text-align: left; width: 220px; font-size: 12px; border-right: 1px solid #444;">ITEM & DESCRIPTION</th>
+                            <th style="padding: 12px 10px; text-align: center; width: 150px; font-size: 12px; border-right: 1px solid #444;">Qty</th>
+                            <th style="padding: 12px 10px; text-align: right; width: 150px; font-size: 12px; border-right: 1px solid #444;">Rate</th>
+                            <th style="padding: 12px 10px; text-align: right; width: 150px; font-size: 12px;">Amount</th>
                         </tr>
                     </thead>
                     <tbody>
                         ${sale.items.map((item, index) => `
-                            <tr>
-                                <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-size: 12px; vertical-align: top;">${index + 1}</td>
-                                <td style="padding: 8px; border: 1px solid #ddd; font-size: 12px; vertical-align: top;">
-                                    <div style="font-weight: bold;">${item.name}</div>
-                                    <div style="font-size: 10px; color: #666; margin-top: 3px;">${item.description || ''}</div>
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 12px 10px; text-align: center; width: 50px; font-size: 13px; color: #666; vertical-align: top;">${index + 1}</td>
+                                <td style="padding: 12px 10px; font-size: 13px; width: 220px; vertical-align: top;">
+                                    <div style="font-weight: 600; color: #000;">${item.name}</div>
+                                    <div style="font-size: 11px; color: #777; margin-top: 5px; line-height: 1.4;">${item.description || ''}</div>
                                 </td>
-                                <td style="padding: 8px; text-align: center; border: 1px solid #ddd; font-size: 12px; vertical-align: top;">${item.qty}.00</td>
-                                <td style="padding: 8px; text-align: right; border: 1px solid #ddd; font-size: 12px; vertical-align: top;">${(item.price || 0).toLocaleString()}.00</td>
-                                <td style="padding: 8px; text-align: right; border: 1px solid #ddd; font-size: 12px; vertical-align: top;">${(item.total || 0).toLocaleString()}.00</td>
+                                <td style="padding: 12px 10px; text-align: center; width: 150px; font-size: 13px; vertical-align: top;">${item.qty}.00</td>
+                                <td style="padding: 12px 10px; text-align: right; width: 150px; font-size: 13px; vertical-align: top;">${(item.price || 0).toLocaleString()}.00</td>
+                                <td style="padding: 12px 10px; text-align: right; width: 150px; font-size: 13px; vertical-align: top; font-weight: 600;">${(item.total || 0).toLocaleString()}.00</td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
 
                 <!-- Bottom Summary Section -->
-                <div style="display: flex; justify-content: space-between; page-break-inside: avoid;">
-                    <div style="width: 55%; font-size: 10px; color: #555;">
-                        <p style="margin: 0 0 6px; font-weight: bold; color: #333; font-size: 12px;">Notes</p>
-                        <p style="margin: 0; line-height: 1.4;">We are delighted to welcome you to the Shayors Cosmetics & Spa experience. Each formula is crafted with the finest ingredients and timeless care, designed to elevate your skincare ritual into a moment of indulgence. Thank you for allowing us to be part of your pursuit of radiant, lasting beauty.</p>
-                        <p style="margin: 10px 0 0;">With elegance and appreciation, The Shayors Cosmetics Team</p>
-                        
-                        <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px;">
-                            <p style="margin: 0; font-weight: bold; color: #333;">Terms & Conditions</p>
-                            <p style="margin: 4px 0;">Returns Policy ————————</p>
-                            <p style="margin: 0; line-height: 1.3;">For hygiene and safety reasons, we cannot accept returns of opened items. If your order arrives damaged, incorrect, or you wish to return an unopened product, please contact us within 24 hrs of delivery. Replacements will be arranged in line with our policy.</p>
+                <div style="display: flex; justify-content: space-between; page-break-inside: avoid; margin-top: 1px;">
+                    <div style="width: 55%; font-size: 11px; color: #666;">
+                        <div style="margin-top: 25px; padding-top: 10px;">
+                            <p style="margin: 0; font-weight: bold; color: #000; font-size: 12px;">Terms & Conditions</p>
+                            <p style="margin: 6px 0; color: #777;">Returns Policy ————————</p>
+                            <p style="margin: 0; line-height: 1.5;">For hygiene and safety reasons, we cannot accept returns of opened items. If your order arrives damaged, incorrect, or you wish to return an unopened product, please contact us within 24 hrs of delivery. Replacements will be arranged in line with our policy.</p>
                         </div>
                     </div>
-                    <div style="width: 40%;">
-                        <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; font-size: 12px;">
-                            <span style="color: #666;">Sub Total</span>
-                            <span>${(sale.total || 0).toLocaleString()}.00</span>
+                    <div style="width: 40%; background: #fafafa; padding: 20px; border-radius: 4px; height: fit-content;">
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 13px;">
+                            <span style="color: #777;">Sub Total</span>
+                            <span style="color: #444;">${(sale.total || 0).toLocaleString()}.00</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold; font-size: 12px;">
-                            <span>Total</span>
-                            <span>₦${(sale.total || 0).toLocaleString()}.00</span>
+                        <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 2px solid #eee; font-weight: bold; font-size: 13px;">
+                            <span style="color: #000;">Total</span>
+                            <span style="color: #000;">₦${(sale.total || 0).toLocaleString()}.00</span>
                         </div>
-                        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid #eee; margin-top: 4px;">
-                            <span style="font-weight: bold; color: #1a4a1a;">Balance Due</span>
-                            <span style="font-weight: bold; color: #1a4a1a; font-size: 16px;">₦${(sale.total || 0).toLocaleString()}.00</span>
+                        <div style="display: flex; justify-content: space-between; padding: 15px 0 0; margin-top: 5px;">
+                            <span style="font-weight: bold; color: #2e7d32; font-size: 14px;">Balance Due</span>
+                            <span style="font-weight: bold; color: #2e7d32; font-size: 18px;">₦${(sale.total || 0).toLocaleString()}.00</span>
                         </div>
                     </div>
                 </div>
+
+                <!-- Footer attribution -->
+                <div style="margin-top: 50px; text-align: center; border-top: 1px solid #eee; padding-top: 15px; color: #999; font-size: 10px;">
+                    <p style="margin: 0;">Thank you for your business!</p>
+                </div>
             </div>
         `;
+        
+        container.scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.downloadInvoice = function(id) {
+        const sale = sales.find(s => s.apiId === id || s.id === id);
+        if (!sale) return;
+        
+        // Render it first (needed for html2pdf to find the element)
+        renderInvoice(sale);
+        const invoiceNo = `INV-${(sale.apiId || sale.id).toString().slice(-6).toUpperCase()}`;
 
         const opt = {
-            margin: 0.2,
+            margin: 0.1,
             filename: `${invoiceNo}.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 3, useCORS: true, logging: false, letterRendering: true },
             jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
         };
 
-        const template = container.children[0];
+        const template = document.getElementById('invoice-template');
         html2pdf().from(template).set(opt).save();
     };
 
@@ -1134,9 +1152,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Try local first
         const localSale = sales.find(s => s.apiId === id || s.id === id);
         
-        if (localSale && localSale.type === 'spa') {
-             alert(`Booking Details:\nCustomer: ${localSale.customer}\nContact: ${localSale.contact}\nService: ${localSale.items[0].name}\nTotal: ₦${localSale.total}\nStatus: ${localSale.status}`);
-             return;
+        if (localSale) {
+            renderInvoice(localSale);
+            return;
         }
 
         try {
@@ -1145,15 +1163,24 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (response.ok) {
                 const order = await response.json();
-                alert(`Order Details:\nCustomer: ${order.customerName}\nPhone: ${order.customerPhone}\nAddress: ${order.shippingAddress}\nTotal: ₦${order.totalAmount}\nStatus: ${order.orderStatus}\nItems: ${order.items.map(i => i.productName).join(', ')}`);
-            } else if (localSale) {
-                alert(`Order Details (Local):\nCustomer: ${localSale.customer}\nContact: ${localSale.contact}\nTotal: ₦${localSale.total}\nStatus: ${localSale.status}`);
+                // Map API order to sale format for rendering
+                const mappedSale = {
+                    id: order._id,
+                    apiId: order._id,
+                    date: order.createdAt,
+                    customer: order.customerName,
+                    total: order.totalAmount,
+                    items: order.items.map(i => ({
+                        name: i.productName,
+                        qty: i.quantity,
+                        price: i.price,
+                        total: i.price * i.quantity
+                    }))
+                };
+                renderInvoice(mappedSale);
             }
         } catch (e) { 
             console.error(e);
-            if (localSale) {
-                alert(`Order Details (Offline):\nCustomer: ${localSale.customer}\nContact: ${localSale.contact}\nTotal: ₦${localSale.total}\nStatus: ${localSale.status}`);
-            }
         }
     };
 

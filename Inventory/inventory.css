@@ -21,6 +21,7 @@ body {
     background-color: var(--bg-color);
     color: var(--text-color);
     line-height: 1.6;
+    
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -291,15 +292,6 @@ nav {
     margin-top: 10px;
     padding-top: 10px;
     font-weight: bold;
-}
-
-@media screen and (max-width: 1024px) {
-    .app-wrapper { flex-direction: column; }
-    .sidebar { width: 100%; display: flex; overflow-x: auto; padding: 10px; }
-    .sidebar-header { display: none; }
-    .sidebar-nav { display: flex; }
-    .sidebar-nav li { white-space: nowrap; padding: 10px 15px; }
-    .sale-grid { grid-template-columns: 1fr; }
 }
 
 .action-bar {
@@ -824,8 +816,45 @@ footer {
 }
 
 @media screen and (max-width: 1200px) {
+
     .dashboard-summary-row {
         grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    .nav-links {
+        display: flex;
+        justify-content: space-around;
+        width: 50%;
+        list-style: none;
+    }
+    .app-wrapper { 
+        flex-direction: column; 
+    }
+
+    .sidebar { 
+        width: 100%; 
+        display: flex; 
+        overflow-x: auto; 
+        padding: 10px; 
+    }
+
+    .sidebar-header { 
+        display: none; 
+    }
+
+    .sidebar-nav { 
+        display: flex; 
+    }
+
+    .sidebar-nav li { 
+        white-space: nowrap; 
+        padding: 10px 25px; 
+    }
+
+    .sale-grid { 
+        grid-template-columns: 1fr; 
     }
 }
 

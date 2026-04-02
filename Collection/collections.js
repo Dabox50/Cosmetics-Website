@@ -13,7 +13,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.hostname.startsWith('10.') || 
                     window.location.hostname.startsWith('172.');
 
-    const API_BASE = isLocal 
+    // SET THIS TO TRUE to use the LIVE server data while working locally
+    const USE_LIVE_DATA_LOCALLY = true;
+
+    const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
         ? `http://${window.location.hostname}:5000/api` 
         : "https://cosmetics-website.fly.dev/api";
 
@@ -348,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 productRowsContainer.innerHTML = `
                     <div class="search-results">
                         <h2 class="row-title">
-                            ${filterCat === 'All' ? 'Search' : filterCat} Results (${totalResults})
+                            Results (${totalResults})
                         </h2>
                         <div class="product-grid">
                             ${filteredProducts.map(p => createProductCard(p)).join('')}
@@ -365,7 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     return `
                         <div class="row-container animate-on-scroll">
-                            <h2 class="row-title">${cat}</h2>
                             <div class="slider-wrapper">
                                 <div class="product-slider" id="slider-${index}">
                                     ${productsInCat.map(p => createProductCard(p)).join('')}
@@ -388,8 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         html += `
                             <div class="row-container animate-on-scroll spa-services-section" style="margin-top: 50px; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                    <h2 class="row-title" style="display: flex; padding: 0; margin: 10px 0px 10px 0; font-size: 2rem;">🧖‍♀️ Spa and Wellness</h2>
+                                <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
                                     <button class="btn primary" onclick="openModal('spaManagementModal')">+ Add New Service</button>
                                 </div>
                                 <p style="color: #000000; font-size: 1rem; margin-bottom: 30px; font-style: italic;">Rejuvenated your body and refresh your natural glow.</p>
@@ -403,8 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Always show the section with an add button so services can be added
                     html += `
                         <div class="row-container animate-on-scroll spa-services-section" style="margin-top: 50px; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                <h2 class="row-title" style="display: flex; padding: 0; margin: 10px 0px 10px 0; font-size: 2rem;">🧖‍♀️ Spa and Wellness</h2>
+                            <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 10px;">
                                 <button class="btn primary" onclick="openModal('spaManagementModal')" style>+ Add New Service</button>
                             </div>
                             <p style="color: #000000; font-size: 1rem; margin-bottom: 20px; font-style: italic;">Rejuvenated your body and refresh your natural glow.</p>
