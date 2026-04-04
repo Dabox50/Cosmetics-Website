@@ -1059,7 +1059,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="margin-top: 10px;  padding-top: 10px;">
                             <p style="margin: 0; font-weight: bold; color: #000; font-size: 11px;">Terms & Conditions</p>
                             <p style="margin: 4px 0; color: #777;">Returns Policy ————————</p>
-                            <p style="margin: 0; font-weight: 700; line-height: 1.4;">For hygiene and safety reasons, we cannot accept returns of opened items. If your order arrives damaged, please contact us within 24 hrs of delivery.</p>
+                            <p style="margin: 0; font-weight: 800; line-height: 1.4;">For hygiene and safety reasons, we cannot accept returns of opened items. If your order arrives damaged, incorrect, or you wish to return an unopened product. please contact us within 24 hrs of delivery. Replacements will be arranged in line with our policy.</p>
                         </div>
                     </div>
                     <div style="width: 40%; background: #fafafa; padding: 15px; border-radius: 4px; height: fit-content; border: 1px solid #eee;">
@@ -1081,8 +1081,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <!-- Footer attribution -->
                 <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #eee; padding-top: 15px;">
                     <div style="color: #999; font-size: 9px; text-align: left;">
-                        <p style="margin: 0;">Thank you for your patronage!</p>
-                        <p style="margin: 5px 0 0; color: #555;">Scan to visit our website: <strong>www.shayorscosmestics.com</strong></p>
+                        <p style="margin: 0; font-weight: 600;">Thank you for your patronage!</p>
+                        <p style="margin: 5px 0 0; font-weight: 600; color: #555;">Scan to visit our website: <strong>www.shayorscosmestics.com</strong></p>
                     </div>
                     <div id="invoice-qrcode" style="width: 60px; height: 60px;"></div>
                 </div>
