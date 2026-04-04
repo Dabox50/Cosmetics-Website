@@ -1081,7 +1081,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <!-- Footer attribution -->
                 <div style="margin-top: 30px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid #eee; padding-top: 15px;">
                     <div style="color: #999; font-size: 9px; text-align: left;">
-                        <p style="margin: 0;">Thank you for your business!</p>
+                        <p style="margin: 0;">Thank you for your patronage!</p>
                         <p style="margin: 5px 0 0; color: #555;">Scan to visit our website: <strong>www.shayorscosmestics.com</strong></p>
                     </div>
                     <div id="invoice-qrcode" style="width: 60px; height: 60px;"></div>
