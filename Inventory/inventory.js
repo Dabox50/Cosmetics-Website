@@ -990,7 +990,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p style="margin: 5px 0; font-size: 11px; font-weight: 600; color: #555; line-height: 1.4;">
                                 Shop Yk 059, Floor 1, Adebgite shopping complex, Adebisi street, Itire/ikate<br>
                                 Surulere Lagos 101241 Nigeria<br>
-                                08189085285<br>
+                                +2348189085285, +2348079333403<br>
                                 shayorscosmestics@gmail.com | www.shayorscosmestics.com
                             </p>
                         </div>
