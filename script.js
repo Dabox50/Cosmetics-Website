@@ -267,6 +267,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (checkoutForm) {
         checkoutForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            const submitBtn = checkoutForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Processing Order...";
+            submitBtn.disabled = true;
+
             const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
             
             const orderData = {
@@ -282,12 +288,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     quantity: item.qty,
                     price: item.price
                 })),
-                totalAmount: total
+                totalAmount: total,
+                platform: 'Web Store'
             };
-
-            const itemsList = cart.map(item => `${item.name} (x${item.qty})`).join(', ');
-            const waMessage = `New Order from ${orderData.customerName}:\nItems: ${itemsList}\nTotal: ₦${total.toLocaleString()}\nAddress: ${orderData.shippingAddress}\nPhone: ${orderData.customerPhone}\nPayment: ${orderData.paymentMethod}\nNotes: ${orderData.notes || 'None'}`;
-            window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
 
             const isLocal = window.location.hostname === "localhost" || 
                             window.location.hostname === "127.0.0.1" || 
@@ -295,14 +298,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             window.location.hostname.startsWith('10.') || 
                             window.location.hostname.startsWith('172.');
 
-            // SET THIS TO TRUE to use the LIVE server data while working locally
             const USE_LIVE_DATA_LOCALLY = true;
-
             const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
                 ? `http://${window.location.hostname}:5000/api` 
                 : "https://cosmetics-website.fly.dev/api";
 
             try {
+                // 1. Send to Backend First (This triggers Email & Dashboard record)
                 const response = await fetch(`${API_BASE}/orders`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -310,53 +312,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.ok) {
-                    // Record in local sales history for Analytics module
+                    const createdOrder = await response.json();
+                    
+                    // 2. Open WhatsApp (Now that we know it's saved)
+                    const itemsList = cart.map(item => `${item.name} (x${item.qty})`).join(', ');
+                    const waMessage = `New Order from ${orderData.customerName}:\nOrder ID: ${createdOrder._id}\nItems: ${itemsList}\nTotal: ₦${total.toLocaleString()}\nAddress: ${orderData.shippingAddress}\nPhone: ${orderData.customerPhone}\nPayment: ${orderData.paymentMethod}`;
+                    window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
+
+                    // 3. Update Local Records
                     const sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
-                    const newSale = {
-                        id: 'S' + Date.now(),
+                    sales.push({
+                        ...orderData,
+                        id: createdOrder._id,
                         date: new Date().toISOString(),
-                        customer: orderData.customerName,
-                        contact: orderData.customerPhone,
-                        items: orderData.items,
-                        total: orderData.totalAmount,
-                        status: 'Paid', // Assuming paid for simplicity or check orderData.paymentMethod
-                        paymentMethod: orderData.paymentMethod,
-                        amountPaid: orderData.totalAmount,
-                        platform: 'Web Store',
-                        deliveryStatus: 'Pending',
+                        status: 'Unpaid',
+                        amountPaid: 0,
                         type: 'product'
-                    };
-                    sales.push(newSale);
+                    });
                     localStorage.setItem('shayorsSales', JSON.stringify(sales));
 
-                    // Record in Customer Database for Record Keeping/Debtors
-                    const customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
-                    const itemsList = orderData.items.map(i => `${i.productName} (x${i.quantity})`).join(', ');
-                    const totalUnits = orderData.items.reduce((sum, i) => sum + i.quantity, 0);
-                    const debtorRecord = {
-                        id: 'C' + Date.now(),
-                        date: new Date().toISOString().split('T')[0],
-                        invoiceNo: newSale.id,
-                        name: orderData.customerName,
-                        contact: orderData.customerPhone,
-                        product: itemsList,
-                        totalUnits: totalUnits,
-                        totalAmount: orderData.totalAmount,
-                        partlyPaid: orderData.totalAmount, // Assuming fully paid online for now
-                        dueDate: '',
-                        status: 'Paid'
-                    };
-                    customers.push(debtorRecord);
-                    localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
-
-                    alert('Order placed successfully!');
+                    alert('Order placed successfully! Redirecting to WhatsApp for confirmation...');
                     cart = [];
                     saveCart();
                     updateCartUI();
                     closeModal('checkoutModal');
+                } else {
+                    const err = await response.json();
+                    alert(`Order failed: ${err.message || 'Please try again.'}`);
                 }
             } catch (error) {
                 console.error('Order error:', error);
+                alert('Connection error. Please check your internet and try again.');
+            } finally {
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
             }
         });
     }

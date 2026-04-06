@@ -278,11 +278,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 currentOrders = data.orders || [];
                 renderOrders();
+                updateNewOrderBadge(); // Clear badge if looking at all/pending orders
             }
         } catch (err) {
             console.error("Order fetch failed:", err);
         }
     };
+
+    async function updateNewOrderBadge() {
+        const token = getAdminToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/orders?status=pending`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                const pendingCount = (data.orders || []).length;
+                const badge = document.getElementById('newOrderBadge');
+                if (badge) {
+                    if (pendingCount > 0) {
+                        badge.innerText = pendingCount;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            }
+        } catch (err) { console.error("Badge update failed:", err); }
+    }
+
+    // Poll for new orders every 30 seconds
+    setInterval(updateNewOrderBadge, 30000);
+    setTimeout(updateNewOrderBadge, 5000); // Initial check after 5s
 
     function renderOrders(filterData = currentOrders) {
         const body = document.getElementById('ordersBody');

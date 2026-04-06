@@ -44,8 +44,12 @@
 
     <div class="app-wrapper auth-hidden" id="adminAppWrapper">
         <aside class="sidebar">
-            <div class="sidebar-header">
+            <div class="sidebar-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h3>Admin Panel</h3>
+                <div class="notification-bell" onclick="showModule('orders')">
+                    <img src="../Image/bell.png" alt="Notifications" width="20">
+                    <span class="badge badge-out" id="newOrderBadge" style="display: none; position: absolute; top: 10px; right: 10px; font-size: 10px; padding: 2px 5px;">0</span>
+                </div>
             </div>
             <ul class="sidebar-nav">
                 <li class="active" onclick="showModule('inventory')">📦 Inventory</li>

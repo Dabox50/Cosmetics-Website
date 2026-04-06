@@ -193,6 +193,39 @@ nav {
     border-left: 4px solid var(--out-of-stock);
 }
 
+.notification-bell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    background: rgba(255,255,255,0.1);
+    padding: 8px 9px;
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.notification-bell:hover {
+    background: var(--primary-color);
+}
+
+.notification-bell .badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #ff4d4d;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    border: 2px solid var(--secondary-color);
+}
+
 /* Forms & Grids */
 .sale-grid {
     display: grid;
