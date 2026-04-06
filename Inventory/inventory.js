@@ -161,6 +161,11 @@ document.addEventListener('DOMContentLoaded', () => {
             await fetchSpaCategories();
             await syncSalesWithAPI();
             enforcePermissions();
+
+            // Request permission for system notifications
+            if ("Notification" in window && Notification.permission === "default") {
+                Notification.requestPermission();
+            }
         }
     }
 
@@ -283,8 +288,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
             oscillator.start();
             oscillator.stop(audioCtx.currentTime + 0.2); // 200ms beep
+
+            // Trigger System Notification
+            if ("Notification" in window && Notification.permission === "granted") {
+                new Notification("🛍️ New Order Received!", {
+                    body: "A new order has arrived. Check the dashboard for details.",
+                    icon: "../Image/Shayor's Logo.png"
+                });
+            }
         } catch (err) {
-            console.error("Audio play failed:", err);
+            console.error("Audio/Notification failed:", err);
         }
     }
 
