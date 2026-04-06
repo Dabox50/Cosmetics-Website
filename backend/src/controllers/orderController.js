@@ -3,7 +3,40 @@ const Product = require('../models/Product');
 const { validateOrder } = require('../utils/validation');
 const nodemailer = require('nodemailer');
 
-// ... (keep sendEmailAlert as is)
+const sendEmailAlert = async (order) => {
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: process.env.ADMIN_EMAIL || process.env.EMAIL_USER,
+      subject: `New Order Received - Shayors Cosmetics`,
+      html: `
+        <h2>New Order Notification</h2>
+        <p><strong>Customer:</strong> ${order.customerName}</p>
+        <p><strong>Phone:</strong> ${order.customerPhone || 'N/A'}</p>
+        <p><strong>Total Amount:</strong> ₦${order.totalAmount.toLocaleString()}</p>
+        <p><strong>Platform:</strong> ${order.platform}</p>
+        <h3>Order Items:</h3>
+        <ul>
+          ${order.items.map(item => `<li>${item.productName} x ${item.quantity} - ₦${item.price.toLocaleString()}</li>`).join('')}
+        </ul>
+        <p>Check the admin dashboard for more details.</p>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log('Order notification email sent');
+  } catch (error) {
+    console.error('Email alert error:', error);
+  }
+};
 
 // @desc    Create new order
 // @route   POST /api/orders

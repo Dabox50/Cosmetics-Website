@@ -30,7 +30,7 @@ const productSchema = mongoose.Schema({
   description: { type: String },
   howToUse: { type: String },
   skinConcern: { type: String },
-  barcode: { type: String },
+  barcode: { type: String, unique: true, index: true },
   reviews: [reviewSchema],
   rating: { type: Number, required: true, default: 0 },
   numReviews: { type: Number, required: true, default: 0 }

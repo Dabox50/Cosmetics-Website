@@ -17,12 +17,12 @@ const orderSchema = mongoose.Schema({
   paymentStatus: {
     type: String,
     enum: ['unpaid', 'paid', 'failed', 'partly paid'],
-    default: 'paid'
+    default: 'unpaid'
   },
   orderStatus: {
     type: String,
     enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'completed'],
-    default: 'completed'
+    default: 'pending'
   },
   platform: { type: String, default: 'In-Store' },
   notes: { type: String }

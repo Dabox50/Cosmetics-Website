@@ -263,7 +263,97 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
     let categories = JSON.parse(localStorage.getItem('shayorsCategories')) || initialCategoriesList.map(name => ({ name, _id: 'local_' + Math.random().toString(36).substr(2, 9) }));
 
+    let currentOrders = [];
     let currentSaleItems = [];
+
+    // --- WEB ORDERS MODULE ---
+    window.fetchOrders = async function() {
+        const status = document.getElementById('orderStatusFilter').value;
+        const token = getAdminToken();
+        try {
+            const res = await fetch(`${API_BASE}/orders?status=${status}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                currentOrders = data.orders || [];
+                renderOrders();
+            }
+        } catch (err) {
+            console.error("Order fetch failed:", err);
+        }
+    };
+
+    function renderOrders(filterData = currentOrders) {
+        const body = document.getElementById('ordersBody');
+        if (!body) return;
+        body.innerHTML = '';
+
+        filterData.forEach(order => {
+            const date = new Date(order.createdAt).toLocaleDateString();
+            const items = order.items.map(i => `${i.productName} (x${i.quantity})`).join('<br>');
+            
+            body.innerHTML += `
+                <tr>
+                    <td>${date}</td>
+                    <td><strong>${order.customerName}</strong><br><small>${order.customerPhone}</small></td>
+                    <td>${items}</td>
+                    <td>₦${order.totalAmount.toLocaleString()}</td>
+                    <td><span class="badge ${order.paymentStatus === 'paid' ? 'badge-in' : 'badge-out'}">${order.paymentStatus}</span></td>
+                    <td>
+                        <select onchange="updateOrderStatus('${order._id}', this.value)" class="status-select">
+                            <option value="pending" ${order.orderStatus === 'pending' ? 'selected' : ''}>Pending</option>
+                            <option value="confirmed" ${order.orderStatus === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                            <option value="processing" ${order.orderStatus === 'processing' ? 'selected' : ''}>Processing</option>
+                            <option value="shipped" ${order.orderStatus === 'shipped' ? 'selected' : ''}>Shipped</option>
+                            <option value="delivered" ${order.orderStatus === 'delivered' ? 'selected' : ''}>Delivered</option>
+                            <option value="cancelled" ${order.orderStatus === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="btn secondary" onclick="viewOrderDetails('${order._id}')">View</button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    window.updateOrderStatus = async function(id, status) {
+        const token = getAdminToken();
+        try {
+            const res = await fetch(`${API_BASE}/orders/${id}`, {
+                method: 'PATCH',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ orderStatus: status })
+            });
+            if (res.ok) {
+                alert('Order status updated!');
+                fetchOrders();
+            }
+        } catch (err) {
+            console.error("Status update failed:", err);
+        }
+    };
+
+    window.searchOrders = function() {
+        const term = document.getElementById('orderSearch').value.toLowerCase();
+        const filtered = currentOrders.filter(o => 
+            o.customerName.toLowerCase().includes(term) || 
+            o._id.includes(term)
+        );
+        renderOrders(filtered);
+    };
+
+    window.viewOrderDetails = function(id) {
+        const order = currentOrders.find(o => o._id === id);
+        if (!order) return;
+        // Reuse invoice logic or a simple alert for now
+        alert(`Order for ${order.customerName}\nAddress: ${order.shippingAddress}\nTotal: ₦${order.totalAmount.toLocaleString()}\nNotes: ${order.notes || 'None'}`);
+    };
+    // --- END WEB ORDERS MODULE ---
 
     // Fetch Inventory from Backend
     async function fetchInventory() {
@@ -296,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeLi) activeLi.classList.add('active');
 
         if (moduleId === 'inventory') renderInventory();
+        if (moduleId === 'orders') fetchOrders();
         if (moduleId === 'sales') { syncSalesWithAPI().then(() => { renderSalesHistory(); updateSaleProductDropdown(); }); }
         if (moduleId === 'expenses') renderExpenses();
         if (moduleId === 'analytics') { syncSalesWithAPI().then(() => renderAnalytics()); }
@@ -355,6 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!inventoryBody) return;
         inventoryBody.innerHTML = '';
         let totalValue = 0;
+        let totalItems = 0;
         let lowStockCount = 0;
 
         filterData.forEach(p => {
@@ -363,6 +455,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const badgeClass = p.stock === 0 ? 'badge-out' : (p.stock <= threshold ? 'badge-low' : 'badge-in');
             
             totalValue += (p.price || 0) * (p.stock || 0);
+            totalItems += (p.stock || 0);
+            const productValue = (p.price || 0) * (p.stock || 0);
             if (p.stock <= threshold) lowStockCount++;
 
             const row = document.createElement('tr');
@@ -380,10 +474,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
                 <td>
                     <div class="stock-control">
-                        <button onclick="updateStock('${p._id}', -1)">-</button>
+                        <button class="btn-stock-out" title="Stock Out" onclick="updateStock('${p._id}', -1)">-</button>
                         <input type="number" value="${p.stock}" onchange="setStock('${p._id}', this.value)">
-                        <button onclick="updateStock('${p._id}', 1)">+</button>
+                        <button class="btn-stock-in" title="Stock In" onclick="updateStock('${p._id}', 1)">+</button>
                     </div>
+                </td>
+                <td>
+                    <strong>₦${productValue.toLocaleString()}</strong>
                 </td>
                 <td><span class="badge ${badgeClass}">${status}</span></td>
                 <td>
@@ -395,6 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.getElementById('totalProducts').innerText = filterData.length;
+        document.getElementById('totalItemsCount').innerText = totalItems.toLocaleString();
         document.getElementById('totalStockValue').innerText = `₦${totalValue.toLocaleString()}`;
         document.getElementById('lowStockCount').innerText = lowStockCount;
     }
@@ -636,6 +734,84 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }, 100);
     };
+
+    // --- SMART SCANNER LOGIC ---
+    let html5QrCode = null;
+
+    window.toggleCameraScanner = function() {
+        const reader = document.getElementById('camera-reader');
+        reader.classList.toggle('hidden');
+
+        if (!reader.classList.contains('hidden')) {
+            // Start scanning
+            html5QrCode = new Html5Qrcode("camera-reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+                .catch(err => {
+                    console.error("Camera start error:", err);
+                    alert("Could not start camera. Please ensure you have given permission.");
+                    reader.classList.add('hidden');
+                });
+        } else {
+            // Stop scanning
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                }).catch(err => console.error("Camera stop error:", err));
+            }
+        }
+    };
+
+    function onScanSuccess(decodedText, decodedResult) {
+        // Success callback
+        console.log(`Code scanned: ${decodedText}`);
+        document.getElementById('barcodeScannerInput').value = decodedText;
+        
+        // Vibrate if supported
+        if (navigator.vibrate) navigator.vibrate(100);
+
+        // Process the barcode
+        loadProductByBarcode(decodedText);
+
+        // Optionally stop scanner after first success
+        window.toggleCameraScanner();
+    }
+
+    async function loadProductByBarcode(barcode) {
+        if (!barcode) return;
+        
+        try {
+            const response = await fetch(`${API_BASE}/products/barcode/${barcode}`);
+            if (response.ok) {
+                const product = await response.json();
+                // Highlight product in list
+                scrollToProduct(product._id);
+                // Also open edit form if needed, or just highlight
+                // For now, we'll just scroll and highlight.
+            } else {
+                alert("Product not found with this barcode.");
+            }
+        } catch (error) {
+            console.error("Barcode lookup failed:", error);
+            alert("Error looking up barcode.");
+        }
+    }
+
+    // Handle external scanner input (Enter key)
+    const barcodeInput = document.getElementById('barcodeScannerInput');
+    if (barcodeInput) {
+        barcodeInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const barcode = e.target.value.trim();
+                if (barcode) {
+                    loadProductByBarcode(barcode);
+                    e.target.value = ''; // Clear for next scan
+                }
+            }
+        });
+    }
+    // --- END SMART SCANNER LOGIC ---
 
     // Close dropdown when clicking outside
     document.addEventListener('click', (e) => {

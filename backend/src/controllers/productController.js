@@ -94,9 +94,23 @@ const createProductReview = async (req, res, next) => {
   }
 };
 
+const getProductByBarcode = async (req, res, next) => {
+  try {
+    const product = await Product.findOne({ barcode: req.params.barcode });
+    if (product) {
+      res.json(product);
+    } else {
+      res.status(404).json({ message: 'Product not found with this barcode' });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProducts,
   getProductById,
+  getProductByBarcode,
   createProduct,
   updateProduct,
   deleteProduct,
