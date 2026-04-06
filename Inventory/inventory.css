@@ -1106,6 +1106,7 @@ footer {
         border-bottom: 2px solid var(--primary-color);
         padding-bottom: 15px;
     }
+
     .brands-bar {
         display: flex;
         flex-direction: column;
