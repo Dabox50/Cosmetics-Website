@@ -265,6 +265,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentOrders = [];
     let currentSaleItems = [];
+    let lastPendingCount = 0;
+
+    // Helper to play notification beep
+    function playNotificationSound() {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // A5 note
+            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.2); // 200ms beep
+        } catch (err) {
+            console.error("Audio play failed:", err);
+        }
+    }
 
     // --- WEB ORDERS MODULE ---
     window.fetchOrders = async function() {
@@ -278,7 +300,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await res.json();
                 currentOrders = data.orders || [];
                 renderOrders();
-                updateNewOrderBadge(); // Clear badge if looking at all/pending orders
+                
+                // Update lastPendingCount based on what we just fetched
+                const pendingNow = currentOrders.filter(o => o.orderStatus === 'pending').length;
+                lastPendingCount = pendingNow;
+                
+                updateNewOrderBadge(); 
             }
         } catch (err) {
             console.error("Order fetch failed:", err);
@@ -295,6 +322,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.ok) {
                 const data = await res.json();
                 const pendingCount = (data.orders || []).length;
+                
+                // Play sound if count increased
+                if (pendingCount > lastPendingCount) {
+                    playNotificationSound();
+                }
+                lastPendingCount = pendingCount;
+
                 const badge = document.getElementById('newOrderBadge');
                 if (badge) {
                     if (pendingCount > 0) {
