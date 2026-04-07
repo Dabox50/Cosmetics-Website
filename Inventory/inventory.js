@@ -5,8 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.hostname.startsWith('10.') || 
                     window.location.hostname.startsWith('172.');
 
-    // SET THIS TO TRUE to use the LIVE server data while working locally
-    const USE_LIVE_DATA_LOCALLY = true;
+    // SET THIS TO FALSE to use your LOCAL server for testing
+    const USE_LIVE_DATA_LOCALLY = false;
 
     const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
         ? `http://${window.location.hostname}:5000/api` 
@@ -69,18 +69,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!token) return;
 
         try {
-            const [ordersRes, bookingsRes] = await Promise.all([
+            const [ordersRes, bookingsRes, salesRes] = await Promise.all([
                 fetch(`${API_BASE}/orders?limit=1000`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${API_BASE}/bookings`, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch(`${API_BASE}/bookings`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch(`${API_BASE}/sales`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
+
+            let localSales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
+            let modified = false;
 
             if (ordersRes.ok) {
                 const data = await ordersRes.json();
                 const apiOrders = data.orders || [];
                 
-                let localSales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
-                let modified = false;
-
                 apiOrders.forEach(order => {
                     const exists = localSales.find(s => s.apiId === order._id || s.id === order._id);
                     if (!exists) {
@@ -107,18 +108,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         modified = true;
                     }
                 });
-
-                if (modified) {
-                    sales = localSales;
-                    localStorage.setItem('shayorsSales', JSON.stringify(sales));
-                }
             }
             
             if (bookingsRes.ok) {
                 const apiBookings = await bookingsRes.json();
-                let localSales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
-                let modified = false;
-
                 apiBookings.forEach(booking => {
                     const exists = localSales.find(s => s.apiId === booking._id || s.id === booking._id);
                     if (!exists) {
@@ -128,8 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             date: booking.createdAt,
                             customer: booking.customerName,
                             contact: booking.customerContact,
-                            items: [{ name: booking.serviceName, qty: 1, price: 0, type: 'spa' }], // price might be 0 if not stored in booking
-                            total: 0, // Bookings might not have price in the base object
+                            items: [{ name: booking.serviceName, qty: 1, price: 0, type: 'spa' }], 
+                            total: 0, 
                             status: 'Paid',
                             platform: 'WhatsApp',
                             type: 'spa'
@@ -137,16 +130,401 @@ document.addEventListener('DOMContentLoaded', () => {
                         modified = true;
                     }
                 });
+            }
 
-                if (modified) {
-                    sales = localSales;
-                    localStorage.setItem('shayorsSales', JSON.stringify(sales));
-                }
+            if (salesRes.ok) {
+                const apiSales = await salesRes.json();
+                apiSales.forEach(sale => {
+                    const exists = localSales.find(s => s.apiId === sale._id || s.id === sale._id);
+                    if (!exists) {
+                        localSales.push({
+                            id: sale._id,
+                            apiId: sale._id,
+                            date: sale.createdAt || sale.saleDate,
+                            customer: sale.customerName || 'Walk-in',
+                            contact: sale.customerContact || '',
+                            items: sale.items.map(i => ({
+                                name: i.name,
+                                qty: i.quantity,
+                                price: i.price,
+                                total: i.total
+                            })),
+                            total: sale.totalAmount,
+                            status: 'Paid',
+                            paymentMethod: sale.paymentMethod,
+                            amountPaid: sale.amountPaid || sale.totalAmount,
+                            platform: sale.platform || 'POS',
+                            type: 'product'
+                        });
+                        modified = true;
+                    }
+                });
+            }
+
+            if (modified) {
+                sales = localSales;
+                localStorage.setItem('shayorsSales', JSON.stringify(sales));
             }
         } catch (error) {
             console.error("Sync Sales Error:", error);
         }
     }
+
+    // --- POS MODULE LOGIC ---
+    const posSearchInput = document.getElementById('posBarcodeSearch');
+    if (posSearchInput) {
+        posSearchInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                const val = this.value.trim();
+                if (val) addToCartByBarcode(val);
+                this.value = '';
+            }
+        });
+
+        posSearchInput.addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            const resultsDiv = document.getElementById('posSearchResults');
+            if (term.length < 2) {
+                resultsDiv.classList.add('hidden');
+                return;
+            }
+
+            const matches = inventory.filter(p => 
+                p.name.toLowerCase().includes(term) || 
+                (p.barcode && p.barcode.toLowerCase().includes(term))
+            ).slice(0, 5);
+
+            if (matches.length > 0) {
+                resultsDiv.innerHTML = matches.map(p => `
+                    <div class="search-item" onclick="addIdToCart('${p._id}')">
+                        <span>${p.name}</span>
+                        <span>₦${p.price.toLocaleString()}</span>
+                    </div>
+                `).join('');
+                resultsDiv.classList.remove('hidden');
+            } else {
+                resultsDiv.classList.add('hidden');
+            }
+        });
+    }
+
+    async function addToCartByBarcode(barcode) {
+        // First check if already in inventory array
+        let product = inventory.find(p => p.barcode === barcode);
+        
+        if (!product) {
+            // Try fetching from API just in case it's not in local inventory array
+            const token = getAdminToken();
+            try {
+                const res = await fetch(`${API_BASE}/products/barcode/${barcode}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    product = await res.json();
+                }
+            } catch (err) { console.error("Barcode fetch error", err); }
+        }
+
+        if (product) {
+            addProductToPOSCart(product);
+        } else {
+            alert("Product not found with barcode: " + barcode);
+        }
+    }
+
+    window.addIdToCart = function(id) {
+        const product = inventory.find(p => p._id === id);
+        if (product) {
+            addProductToPOSCart(product);
+            document.getElementById('posSearchResults').classList.add('hidden');
+            document.getElementById('posBarcodeSearch').value = '';
+        }
+    }
+
+    function addProductToPOSCart(product) {
+        const existing = posCart.find(item => item.product === product._id);
+        if (existing) {
+            if (existing.quantity + 1 > product.stock) {
+                alert("Cannot add more. Insufficient stock!");
+                return;
+            }
+            existing.quantity++;
+            existing.total = existing.quantity * existing.price;
+        } else {
+            if (product.stock < 1) {
+                alert("Product out of stock!");
+                return;
+            }
+            posCart.push({
+                product: product._id,
+                name: product.name,
+                price: product.price,
+                quantity: 1,
+                total: product.price,
+                stock: product.stock
+            });
+        }
+        renderPOSCart();
+    }
+
+    function renderPOSCart() {
+        const body = document.getElementById('posCartBody');
+        if (!body) return;
+        body.innerHTML = '';
+
+        posCart.forEach((item, index) => {
+            body.innerHTML += `
+                <tr>
+                    <td>${item.name}</td>
+                    <td>₦${item.price.toLocaleString()}</td>
+                    <td>
+                        <div class="qty-controls">
+                            <button onclick="updateCartQty(${index}, -1)">-</button>
+                            <span>${item.quantity}</span>
+                            <button onclick="updateCartQty(${index}, 1)">+</button>
+                        </div>
+                    </td>
+                    <td>₦${item.total.toLocaleString()}</td>
+                    <td><button class="btn-text danger" onclick="removeFromCart(${index})">Remove</button></td>
+                </tr>
+            `;
+        });
+
+        calculatePOSTotals();
+    }
+
+    // --- POS CALCULATION LOGIC ---
+    window.calculatePOSTotals = function() {
+        let subtotal = posCart.reduce((sum, item) => sum + item.total, 0);
+        let totalItems = posCart.reduce((sum, item) => sum + item.quantity, 0);
+
+        // Discount Calculation
+        let discountVal = parseFloat(document.getElementById('posDiscount').value) || 0;
+        let discountType = document.getElementById('posDiscountType').value;
+        let discountAmount = discountType === 'percent' ? (subtotal * discountVal / 100) : discountVal;
+
+        // Tax Calculation
+        let taxVal = parseFloat(document.getElementById('posTax').value) || 0;
+        let taxType = document.getElementById('posTaxType').value;
+        let taxAmount = taxType === 'percent' ? ((subtotal - discountAmount) * taxVal / 100) : taxVal;
+
+        // Grand Total
+        let grandTotal = subtotal - discountAmount + taxAmount;
+        if (grandTotal < 0) grandTotal = 0;
+
+        // Balance/Change
+        let amountPaid = parseFloat(document.getElementById('posAmountPaid').value) || 0;
+        let balance = amountPaid - grandTotal;
+
+        // Update UI
+        document.getElementById('posTotalItems').innerText = totalItems;
+        document.getElementById('posSubtotal').innerText = `₦${subtotal.toLocaleString()}`;
+        document.getElementById('posGrandTotal').innerText = `₦${grandTotal.toLocaleString()}`;
+        document.getElementById('posBalance').innerText = `₦${Math.abs(balance).toLocaleString()}`;
+        
+        const balanceLabel = document.querySelector('#balanceDisplayContainer span');
+        if (balanceLabel) {
+            balanceLabel.innerText = balance >= 0 ? 'Change:' : 'Balance Due:';
+        }
+    };
+
+    window.setQuickAmount = function(amount) {
+        // Remove active class from all quick buttons
+        document.querySelectorAll('.btn-quick').forEach(btn => btn.classList.remove('active'));
+        
+        const amountPaidInput = document.getElementById('posAmountPaid');
+        const grandTotalStr = document.getElementById('posGrandTotal').innerText.replace('₦', '').replace(/,/g, '');
+        const grandTotal = parseFloat(grandTotalStr) || 0;
+
+        if (amount === 'exact') {
+            amountPaidInput.value = grandTotal.toFixed(2);
+            event.target.classList.add('active');
+        } else {
+            amountPaidInput.value = amount.toFixed(2);
+            event.target.classList.add('active');
+        }
+        calculatePOSTotals();
+    };
+
+    window.keypadInput = function(val) {
+        const input = document.getElementById('posAmountPaid');
+        let current = input.value;
+
+        if (val === 'clear') {
+            input.value = '0';
+        } else if (val === 'backspace') {
+            input.value = current.length > 1 ? current.slice(0, -1) : '0';
+        } else if (val === '.') {
+            if (!current.includes('.')) input.value = current + '.';
+        } else {
+            // If current is '0', replace it unless it's a decimal
+            if (current === '0') {
+                input.value = val;
+            } else {
+                input.value = current + val;
+            }
+        }
+        calculatePOSTotals();
+    };
+
+    window.updateCartQty = function(index, delta) {
+        const item = posCart[index];
+        if (item.quantity + delta > item.stock) {
+            alert("Insufficient stock!");
+            return;
+        }
+        item.quantity += delta;
+        if (item.quantity <= 0) {
+            posCart.splice(index, 1);
+        } else {
+            item.total = item.quantity * item.price;
+        }
+        renderPOSCart();
+    };
+
+    window.removeFromCart = function(index) {
+        posCart.splice(index, 1);
+        renderPOSCart();
+    };
+
+    window.clearPOSCart = function() {
+        if (confirm("Clear current cart?")) {
+            posCart = [];
+            renderPOSCart();
+        }
+    };
+
+    window.checkoutPOS = async function() {
+        if (posCart.length === 0) {
+            alert("Cart is empty!");
+            return;
+        }
+
+        const paymentMethod = document.getElementById('posPaymentMethod').value;
+        const customerName = document.getElementById('posCustomerName').value;
+        const customerContact = document.getElementById('posCustomerContact').value;
+
+        // Current totals from calculation logic
+        const subtotal = posCart.reduce((sum, item) => sum + item.total, 0);
+        const grandTotalStr = document.getElementById('posGrandTotal').innerText.replace('₦', '').replace(/,/g, '');
+        const totalAmount = parseFloat(grandTotalStr) || 0;
+        const totalItems = posCart.reduce((sum, item) => sum + item.quantity, 0);
+
+        const amountPaid = parseFloat(document.getElementById('posAmountPaid').value) || 0;
+
+        // Validation for cash payments
+        if (paymentMethod === 'Cash' && amountPaid < totalAmount) {
+            if (!confirm(`Amount paid (₦${amountPaid}) is less than Total (₦${totalAmount}). Proceed as partial payment?`)) {
+                return;
+            }
+        }
+
+        const token = getAdminToken();
+        try {
+            const res = await fetch(`${API_BASE}/sales`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    items: posCart,
+                    totalAmount,
+                    totalItems,
+                    paymentMethod,
+                    customerName,
+                    customerContact,
+                    amountPaid,
+                    subtotal // Optional: track subtotal
+                })
+            });
+
+            if (res.ok) {
+                const saleData = await res.json();
+                alert("Sale completed successfully!");
+                showReceipt(saleData);
+                
+                // Reset POS
+                posCart = [];
+                document.getElementById('posDiscount').value = '0';
+                document.getElementById('posTax').value = '0';
+                document.getElementById('posAmountPaid').value = '0';
+                renderPOSCart();
+                fetchInventory(); // Refresh stock in UI
+            } else {
+                const err = await res.json();
+                alert("Checkout failed: " + err.message);
+            }
+        } catch (err) {
+            console.error("POS Checkout error", err);
+            alert("An error occurred during checkout.");
+        }
+    };
+
+    function showReceipt(sale) {
+        document.getElementById('receiptDate').innerText = new Date(sale.createdAt).toLocaleString();
+        document.getElementById('receiptNumber').innerText = sale._id.slice(-6).toUpperCase();
+        
+        const itemsBody = document.getElementById('receiptItemsBody');
+        itemsBody.innerHTML = sale.items.map(item => `
+            <tr>
+                <td>${item.name}</td>
+                <td>${item.quantity}</td>
+                <td>₦${item.price.toLocaleString()}</td>
+                <td>₦${item.total.toLocaleString()}</td>
+            </tr>
+        `).join('');
+
+        document.getElementById('receiptTotal').innerText = `₦${sale.totalAmount.toLocaleString()}`;
+        document.getElementById('receiptPayment').innerText = sale.paymentMethod;
+
+        document.getElementById('receiptModal').classList.remove('hidden');
+    }
+
+    window.closeReceiptModal = function() {
+        document.getElementById('receiptModal').classList.add('hidden');
+    };
+
+    // Close modal when clicking outside content
+    const receiptModal = document.getElementById('receiptModal');
+    if (receiptModal) {
+        receiptModal.addEventListener('click', function(e) {
+            if (e.target === this) window.closeReceiptModal();
+        });
+    }
+
+    window.printReceipt = function() {
+        const printContent = document.getElementById('receiptPrintArea').innerHTML;
+        const originalContent = document.body.innerHTML;
+        
+        // Use a hidden iframe or new window for cleaner printing
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <title>Print Receipt</title>
+                    <style>
+                        body { font-family: 'Courier New', Courier, monospace; width: 300px; margin: 0 auto; padding: 10px; }
+                        h2 { text-align: center; margin-bottom: 5px; }
+                        p { margin: 2px 0; font-size: 14px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        th { text-align: left; border-bottom: 1px solid #000; font-size: 14px; }
+                        td { padding: 5px 0; font-size: 14px; }
+                        .receipt-summary { margin-top: 10px; text-align: right; }
+                        .receipt-footer { margin-top: 20px; text-align: center; font-style: italic; }
+                        hr { border: none; border-top: 1px dashed #000; }
+                    </style>
+                </head>
+                <body>
+                    ${printContent}
+                    <script>
+                        window.onload = function() { window.print(); window.close(); }
+                    </script>
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+    };
 
     // 0. Admin Authentication
     async function init() {
@@ -271,6 +649,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentOrders = [];
     let currentSaleItems = [];
     let lastPendingCount = 0;
+
+    // POS State
+    let posCart = [];
 
     // Helper to play notification beep
     function playNotificationSound() {
@@ -461,6 +842,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeLi) activeLi.classList.add('active');
 
         if (moduleId === 'inventory') renderInventory();
+        if (moduleId === 'pos') {
+            renderPOSCart();
+            setTimeout(() => {
+                const searchInput = document.getElementById('posBarcodeSearch');
+                if (searchInput) searchInput.focus();
+            }, 100);
+        }
         if (moduleId === 'orders') fetchOrders();
         if (moduleId === 'sales') { syncSalesWithAPI().then(() => { renderSalesHistory(); updateSaleProductDropdown(); }); }
         if (moduleId === 'expenses') renderExpenses();
@@ -822,23 +1210,46 @@ document.addEventListener('DOMContentLoaded', () => {
             html5QrCode = new Html5Qrcode("camera-reader");
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
-                .catch(err => {
-                    console.error("Camera start error:", err);
-                    alert("Could not start camera. Please ensure you have given permission.");
-                    reader.classList.add('hidden');
-                });
+            html5QrCode.start({ facingMode: "environment" }, config, (text) => {
+                onScanSuccess(text);
+                window.toggleCameraScanner(); // Stop after success
+            }).catch(err => {
+                console.error("Camera start error:", err);
+                alert("Could not start camera.");
+                reader.classList.add('hidden');
+            });
         } else {
-            // Stop scanning
             if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    html5QrCode.clear();
-                }).catch(err => console.error("Camera stop error:", err));
+                html5QrCode.stop().then(() => html5QrCode.clear()).catch(e => console.error(e));
             }
         }
     };
 
-    function onScanSuccess(decodedText, decodedResult) {
+    window.toggleFormCameraScanner = function() {
+        const reader = document.getElementById('camera-reader');
+        reader.classList.toggle('hidden');
+
+        if (!reader.classList.contains('hidden')) {
+            html5QrCode = new Html5Qrcode("camera-reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            html5QrCode.start({ facingMode: "environment" }, config, (text) => {
+                document.getElementById('pBarcode').value = text;
+                if (navigator.vibrate) navigator.vibrate(100);
+                window.toggleFormCameraScanner(); // Stop
+            }).catch(err => {
+                console.error("Camera start error:", err);
+                alert("Could not start camera.");
+                reader.classList.add('hidden');
+            });
+        } else {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => html5QrCode.clear()).catch(e => console.error(e));
+            }
+        }
+    };
+
+    function onScanSuccess(decodedText) {
         // Success callback
         console.log(`Code scanned: ${decodedText}`);
         document.getElementById('barcodeScannerInput').value = decodedText;

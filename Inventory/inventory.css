@@ -608,7 +608,7 @@ td {
 .btn.secondary { background-color: var(--secondary-color); color: var(--white); }
 .btn.danger { background-color: #c62828; color: var(--white); }
 
-.hidden { display: none; }
+.hidden { display: none !important;}
 
 /* Footer */
 footer {
@@ -851,12 +851,12 @@ footer {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.85);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2000;
-    backdrop-filter: blur(5px);
+    z-index: 9999;
+    backdrop-filter: blur(8px);
 }
 
 .modal-content {
@@ -1026,7 +1026,22 @@ footer {
     .dashboard-summary-row {
         grid-template-columns: repeat(2, 1fr);
     }
+    .btn-sm {
+        background-color: #000;
+        color: white;
+        border: none;
+        border-top-left-radius: none;
+        border-bottom-left-radius: none;
+        border-top-right-radius: 6px;
+        border-bottom-right-radius: 6px;
+        padding: 1px 2px;
+        font-size: 0.8rem;
+        position: relative;
+        font-family: 'Montserrat', sans-serif;
+        right: 4px;
+    }
 }
+
 @media screen and (max-width: 780px) {
     .module-header {
         display: flex;
@@ -1103,6 +1118,21 @@ footer {
     #inventorySearch {
         width: 100%;
     }
+
+    .btn-sm {
+        background-color: #000;
+        color: white;
+        border: none;
+        border-top-left-radius: none;
+        border-bottom-left-radius: none;
+        border-top-right-radius: 6px;
+        border-bottom-right-radius: 6px;
+        padding: 1px 2px;
+        font-size: 0.8rem;
+        position: relative;
+        font-family: 'Montserrat', sans-serif;
+        right: 4px;
+    }
 }
 
 .nav-active {
@@ -1173,5 +1203,424 @@ footer {
     .dashboard-summary-row {
         grid-template-columns: 1fr;
     }
+    .btn-sm {
+        background-color: #000;
+        color: white;
+        border: none;
+        border-top-left-radius: none;
+        border-bottom-left-radius: none;
+        border-top-right-radius: 6px;
+        border-bottom-right-radius: 6px;
+        padding: 1px 2px;
+        font-size: 0.8rem;
+        position: relative;
+        font-family: 'Montserrat', sans-serif;
+        right: 4px;
+    }
+}
+
+/* --- POS MODULE STYLES --- */
+.pos-container {
+    display: grid;
+    grid-template-columns: 1fr 350px;
+    gap: 20px;
+    align-items: start;
+}
+
+.pos-module-header{
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 15px;
+}
+
+.card {
+    background: var(--white);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+.pos-search-section {
+    position: relative;
+}
+
+.search-input-group {
+    position: relative;
+}
+
+#posBarcodeSearch {
+    width: 100%;
+    padding: 15px;
+    font-size: 1.1rem;
+    border: 2px solid #eee;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+#posBarcodeSearch:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.1);
+}
+
+.hint {
+    font-size: 0.8rem;
+    color: #888;
+    margin-top: 8px;
+}
+
+.cart-table-wrapper {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+#posCartTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#posCartTable th {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 2px solid #eee;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+#posCartTable td {
+    padding: 15px 12px;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.qty-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.qty-controls button {
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.qty-controls button:hover {
+    background: #f5f5f5;
+}
+
+.pos-summary-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+    font-size: 1rem;
+}
+
+.grand-total {
+    font-size: 1.4rem;
+    color: var(--secondary-color);
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 2px solid #eee;
+}
+
+.grand-total strong {
+    color: var(--primary-color);
+}
+
+.pos-checkout-form {
+    margin-top: 25px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.pos-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.full-width {
+    width: 100%;
+}
+
+/* Receipt Modal Styles */
+.receipt-content {
+    max-width: 400px !important;
+}
+
+#receiptPrintArea {
+    font-family: 'Courier New', Courier, monospace;
+    padding: 10px;
+    color: #000;
+    box-sizing: border-box;
+}
+
+.receipt-header {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.receipt-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    min-width: auto;
+}
+
+.receipt-table th {
+    text-align: left;
+    border-bottom: 1px dashed #000;
+    font-size: 0.9rem;
+}
+
+.receipt-table td {
+    padding: 5px 0;
+    font-size: 0.9rem;
+}
+
+.receipt-summary {
+    text-align: right;
+    margin-top: 10px;
+}
+
+.receipt-footer {
+    text-align: center;
+    margin-top: 20px;
+    font-style: italic;
+    font-size: 0.85rem;
+}
+
+.btn-text {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    padding: 5px;
+    transition: var(--transition);
+}
+
+.btn-text.danger {
+    color: var(--out-of-stock);
+}
+
+.btn-text.danger:hover {
+    text-decoration: underline;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.search-item {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+}
+
+.input-with-action {
+    display: flex;
+    gap: 10px;
+}
+
+.input-with-action input {
+    flex-grow: 1;
+    padding: 10px;
+}
+
+.btn-sm {
+    background-color: #000;
+    color: white;
+    border: none;
+    border-top-left-radius: none;
+    border-bottom-left-radius: none;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+    padding: 1px 8px;
+    font-size: 0.8rem;
+    position: relative;
+    font-family: 'Montserrat', sans-serif;
+    right: 4px;
+}
+
+.search-item:hover {
+    background: #fdf7e7;
+}
+
+/* --- NEW POS CALCULATOR STYLES --- */
+.pos-summary-item-input {
+    margin-bottom: 12px;
+}
+
+.pos-summary-item-input label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #666;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.input-group-row {
+    display: flex;
+    gap: 5px;
+}
+
+.input-group-row input {
+    flex-grow: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.input-group-row select {
+    width: 60px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #f9f9f9;
+}
+
+.amount-paid-section {
+    margin-top: 15px;
+    display: block !important;
+}
+
+.amount-paid-section label {
+    font-weight: 700;
+    color: var(--secondary-color);
+    margin-bottom: 8px;
+}
+
+.highlight-input {
+    font-size: 1.2rem !important;
+    font-weight: 700 !important;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color) !important;
+    background: #fffdf5 !important;
+    text-align: right;
+}
+
+.balance-section {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.balance-section strong {
+    font-size: 1.1rem;
+}
+
+/* Quick Cash Buttons */
+.quick-cash-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 15px 0;
+}
+
+.btn-quick {
+    padding: 10px 5px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-quick:hover {
+    background: #f0f0f0;
+    border-color: var(--primary-color);
+}
+
+.btn-quick.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Keypad Styles */
+.pos-keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.pos-keypad button {
+    padding: 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: 1px solid #eee;
+    background: #fafafa;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.pos-keypad button:hover {
+    background: #f0f0f0;
+    border-color: #ccc;
+}
+
+.pos-keypad button:active {
+    background: #e0e0e0;
+}
+
+.key-wide {
+    grid-column: span 1.5;
+}
+
+.pos-keypad button.key-wide {
+    grid-column: span 1.5;
+}
+
+/* Adjust grid if needed */
+.pos-keypad {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.pos-keypad button:nth-last-child(2),
+.pos-keypad button:nth-last-child(1) {
+    grid-column: span 1.5;
+    background: #fff1f1;
+    color: #c62828;
 }
 
