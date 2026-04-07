@@ -1211,20 +1211,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let html5QrCode = null;
 
     window.toggleCameraScanner = function() {
-        const reader = document.getElementById('camera-reader');
+        const isPosActive = document.getElementById('pos-module').classList.contains('active');
+        const readerId = isPosActive ? 'pos-camera-reader' : 'camera-reader';
+        const reader = document.getElementById(readerId);
         reader.classList.toggle('hidden');
 
         if (!reader.classList.contains('hidden')) {
             // Start scanning
-            html5QrCode = new Html5Qrcode("camera-reader");
+            html5QrCode = new Html5Qrcode(readerId);
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
             html5QrCode.start({ facingMode: "environment" }, config, (text) => {
                 onScanSuccess(text);
-                window.toggleCameraScanner(); // Stop after success
+                // The toggleCameraScanner call inside onScanSuccess will handle stopping
             }).catch(err => {
                 console.error("Camera start error:", err);
-                alert("Could not start camera.");
+                alert("Could not start camera. Please ensure you have given camera permissions.");
                 reader.classList.add('hidden');
             });
         } else {
