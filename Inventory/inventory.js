@@ -444,6 +444,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("Sale completed successfully!");
                 showReceipt(saleData);
                 
+                // Add to local sales history
+                sales.push(saleData);
+                localStorage.setItem('shayorsSales', JSON.stringify(sales));
+                
                 // Reset POS
                 posCart = [];
                 document.getElementById('posDiscount').value = '0';
@@ -451,6 +455,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('posAmountPaid').value = '0';
                 renderPOSCart();
                 fetchInventory(); // Refresh stock in UI
+                renderRecentPosTransactions();
+                renderSalesHistory();
             } else {
                 const err = await res.json();
                 alert("Checkout failed: " + err.message);
@@ -504,12 +510,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <head>
                     <title>Print Receipt</title>
                     <style>
-                        body { font-family: 'Courier New', Courier, monospace; width: 300px; margin: 0 auto; padding: 10px; }
+                        body { font-family: 'Courier New', Courier, monospace; min-width: auto; width: 300px; margin: 0 auto; padding: 10px; box-sizing: border-box; }
                         h2 { text-align: center; margin-bottom: 5px; }
                         p { margin: 2px 0; font-size: 14px; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
                         th { text-align: left; border-bottom: 1px solid #000; font-size: 14px; }
                         td { padding: 5px 0; font-size: 14px; }
+                        th:nth-child(2), th:nth-child(3), th:nth-child(4),
+                        td:nth-child(2), td:nth-child(3), td:nth-child(4) { text-align: center; }
                         .receipt-summary { margin-top: 10px; text-align: right; }
                         .receipt-footer { margin-top: 20px; text-align: center; font-style: italic; }
                         hr { border: none; border-top: 1px dashed #000; }
@@ -544,6 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if ("Notification" in window && Notification.permission === "default") {
                 Notification.requestPermission();
             }
+            renderRecentPosTransactions();
         }
     }
 
@@ -1252,15 +1261,22 @@ document.addEventListener('DOMContentLoaded', () => {
     function onScanSuccess(decodedText) {
         // Success callback
         console.log(`Code scanned: ${decodedText}`);
-        document.getElementById('barcodeScannerInput').value = decodedText;
+        
+        // If we are in the POS module, add directly to cart
+        const posModule = document.getElementById('pos-module');
+        if (posModule && posModule.classList.contains('active')) {
+            document.getElementById('posBarcodeSearch').value = decodedText;
+            addToCartByBarcode(decodedText);
+        } else {
+            // Otherwise, use default behavior (inventory lookup)
+            document.getElementById('barcodeScannerInput').value = decodedText;
+            loadProductByBarcode(decodedText);
+        }
         
         // Vibrate if supported
         if (navigator.vibrate) navigator.vibrate(100);
 
-        // Process the barcode
-        loadProductByBarcode(decodedText);
-
-        // Optionally stop scanner after first success
+        // Stop scanner after success to save battery
         window.toggleCameraScanner();
     }
 
@@ -1355,6 +1371,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('newSaleSection').classList.toggle('hidden');
         updateSaleProductDropdown();
         togglePaymentFields(); // Initial state
+        renderRecentPosTransactions();
     };
 
     window.togglePaymentFields = function() {
@@ -1567,6 +1584,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderCurrentSaleList();
                 await fetchInventory(); // Refresh stock levels from server
                 renderSalesHistory();
+                renderRecentPosTransactions();
                 document.getElementById('newSaleSection').classList.add('hidden');
                 alert('Sale Recorded Successfully!');
             } else {
@@ -2965,6 +2983,47 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('shayorsSpaCategories', JSON.stringify(spaCategories));
         updateSpaCategoryDropdowns();
         renderSpaCategoryManager();
+    };
+
+    window.renderRecentPosTransactions = function() {
+        const historyContainer = document.getElementById('posRecentTransactions');
+        if (!historyContainer) return;
+
+        // Get last 8 sales for horizontal display
+        const recentSales = [...sales].reverse().slice(0, 8);
+        
+        if (recentSales.length === 0) {
+            historyContainer.innerHTML = '<p style="text-align:center; color:#999; margin-top:10px; font-size: 0.8rem;">No recent transactions</p>';
+            return;
+        }
+
+        historyContainer.innerHTML = recentSales.map(s => {
+            const dateStr = s.date || s.createdAt;
+            const date = dateStr ? new Date(dateStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '---';
+            
+            let itemsText = 'No items';
+            if (Array.isArray(s.items)) {
+                itemsText = s.items.map(i => `${i.qty || i.quantity || 1}x ${i.name || i.productName}`).join(', ');
+            }
+            
+            return `
+                <div class="mini-history-item">
+                    <div class="header">
+                        <span>#${(s._id || s.apiId || s.id || '').toString().slice(-4).toUpperCase()}</span>
+                        <span>${date}</span>
+                    </div>
+                    <div class="details" title="${itemsText}">
+                        <strong>${s.customerName || s.customer || 'Walk-in'}</strong><br>
+                        ${itemsText}
+                    </div>
+                    <div class="total">₦${(s.totalAmount || s.total || 0).toLocaleString()}</div>
+                    <div class="actions">
+                        <button class="btn secondary btn-mini" onclick='showReceipt(${JSON.stringify(s).replace(/'/g, "&apos;")})'>View</button>
+                        <button class="btn primary btn-mini" onclick='downloadInvoice("${s._id || s.apiId || s.id}")'>Inv</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
     };
 
     // Initialize

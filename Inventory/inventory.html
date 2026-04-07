@@ -223,10 +223,13 @@
                     <div class="pos-main">
                         <div class="pos-search-section card">
                             <div class="search-input-group">
-                                <input type="text" id="posBarcodeSearch" placeholder="Scan Barcode or Search Product..." autocomplete="off">
+                                <div class="input-with-action">
+                                    <input type="text" id="posBarcodeSearch" placeholder="Scan Barcode or Search Product..." autocomplete="off">
+                                    <button type="button" class="btn-scan" onclick="toggleCameraScanner()">📷 Open Camera</button>
+                                </div>
                                 <div id="posSearchResults" class="search-results-dropdown hidden"></div>
                             </div>
-                            <p class="hint">Tip: Use a USB scanner or type barcode/name</p>
+                            <p class="hint">Tip: Use a USB scanner, phone camera, or type barcode/name</p>
                         </div>
 
                         <div class="pos-cart-section card">
@@ -246,6 +249,13 @@
                                         <!-- Cart items will be added here -->
                                     </tbody>
                                 </table>
+                            </div>
+                        </div>
+
+                        <div class="pos-history-section card">
+                            <h3>Recent POS Transactions</h3>
+                            <div class="mini-history-vertical" id="posRecentTransactions">
+                                <!-- Recent sales will appear here -->
                             </div>
                         </div>
                     </div>
@@ -358,7 +368,7 @@
                     <div class="modal-content receipt-content">
                         <div id="receiptPrintArea">
                             <div class="receipt-header">
-                                <h2>Shayor's Cosmetics</h2>
+                                <h2>Shayors Cosmetics</h2>
                                 <p>Date: <span id="receiptDate"></span></p>
                                 <p>Receipt #: <span id="receiptNumber"></span></p>
                             </div>
