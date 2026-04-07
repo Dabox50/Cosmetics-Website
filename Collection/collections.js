@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let spaServices = []; // Will be fetched from API
     const initialSpaCategories = [{ name: "Salon & Beauty" }, { name: "Spa and Wellness" }, { name: "Massage" }];
     let spaCategories = JSON.parse(localStorage.getItem('shayorsSpaCategories')) || initialSpaCategories;
-    const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
+    const initialCategoriesList = ["Skincare", "Supplements", "Fragrance", "Spa", "Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
     let categories = JSON.parse(localStorage.getItem('shayorsCategories')) || initialCategoriesList.map(name => ({ name }));
 
     const isLocal = window.location.hostname === "localhost" || 
@@ -87,7 +87,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     setTimeout(() => {
                         const catSelect = document.getElementById('catSelect');
                         if (catSelect) {
-                            catSelect.value = catParam;
+                            // Only set dropdown if it's a single category
+                            if (!catParam.includes(',')) {
+                                catSelect.value = catParam;
+                            }
                             renderProductRows(catParam, searchParam || "");
                         }
                     }, 100);
@@ -325,8 +328,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Filter by Category
             if (filterCat !== "All") {
-                filteredProducts = filteredProducts.filter(p => p.category === filterCat);
-                if (filterCat === "Spa") {
+                const catArray = typeof filterCat === 'string' ? filterCat.split(',').map(c => c.trim()) : [filterCat];
+                
+                filteredProducts = filteredProducts.filter(p => catArray.includes(p.category));
+                
+                // If any of the categories is "Spa", show spa services
+                if (catArray.includes("Spa")) {
                     filteredServices = spaServices;
                 }
             } else if (searchTerm) {
