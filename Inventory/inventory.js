@@ -1246,13 +1246,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.toggleCameraScanner = function() {
         const isPosActive = document.getElementById('pos-module').classList.contains('active');
-        const readerId = isPosActive ? 'pos-camera-reader' : 'camera-reader';
+        const isFormActive = !document.getElementById('productForm').classList.contains('hidden');
+        
+        let readerId = 'camera-reader';
+        if (isPosActive) {
+            readerId = 'pos-camera-reader';
+        } else if (isFormActive) {
+            readerId = 'form-camera-reader';
+        }
+        
         const reader = document.getElementById(readerId);
+        if (!reader) return;
+        
         reader.classList.toggle('hidden');
 
         if (!reader.classList.contains('hidden')) {
             const scanner = new Html5Qrcode(readerId);
-            if (isPosActive) posScanner = scanner; else invScanner = scanner;
+            if (isPosActive) posScanner = scanner; 
+            else if (isFormActive) formScanner = scanner;
+            else invScanner = scanner;
             
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
@@ -1264,11 +1276,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 reader.classList.add('hidden');
             });
         } else {
-            const scanner = isPosActive ? posScanner : invScanner;
+            const scanner = isPosActive ? posScanner : (isFormActive ? formScanner : invScanner);
             if (scanner) {
                 scanner.stop().then(() => {
                     scanner.clear();
-                    if (isPosActive) posScanner = null; else invScanner = null;
+                    if (isPosActive) posScanner = null; 
+                    else if (isFormActive) formScanner = null;
+                    else invScanner = null;
                 }).catch(e => console.error(e));
             }
         }
@@ -1350,46 +1364,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.toggleFormCameraScanner = function() {
-        const reader = document.getElementById('form-camera-reader');
-        if (!reader) return;
-        
-        reader.classList.toggle('hidden');
-
-        if (!reader.classList.contains('hidden')) {
-            formScanner = new Html5Qrcode("form-camera-reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-            formScanner.start({ facingMode: "environment" }, config, async (text) => {
-                document.getElementById('pBarcode').value = text;
-                if (navigator.vibrate) navigator.vibrate(100);
-                
-                // Stop scanner first
-                if (formScanner) {
-                    await formScanner.stop().then(() => {
-                        formScanner.clear();
-                        formScanner = null;
-                        reader.classList.add('hidden');
-                    }).catch(e => console.error(e));
-                }
-                
-                // Then fetch and fill
-                await window.fetchProductInfoByBarcode(text); 
-            }).catch(err => {
-                console.error("Camera start error:", err);
-                alert("Could not start camera. Please check permissions.");
-                reader.classList.add('hidden');
-            });
-        } else {
-            if (formScanner) {
-                formScanner.stop().then(() => {
-                    formScanner.clear();
-                    formScanner = null;
-                }).catch(e => console.error(e));
-            }
-        }
-    };
-
     function onScanSuccess(decodedText) {
         // Success callback
         console.log(`Code scanned: ${decodedText}`);
@@ -1418,39 +1392,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.toggleCameraScanner();
     }
 
-    async function loadProductByBarcode(barcode) {
-        if (!barcode) return;
-        
-        try {
-            const response = await fetch(`${API_BASE}/products/barcode/${barcode}`);
-            if (response.ok) {
-                const product = await response.json();
-                // Highlight product in list
-                scrollToProduct(product._id);
-                // Also open edit form if needed, or just highlight
-                // For now, we'll just scroll and highlight.
-            } else {
-                alert("Product not found with this barcode.");
-            }
-        } catch (error) {
-            console.error("Barcode lookup failed:", error);
-            alert("Error looking up barcode.");
-        }
-    }
-
-    // Handle external scanner input (Enter key)
-    const barcodeInput = document.getElementById('barcodeScannerInput');
-    if (barcodeInput) {
-        barcodeInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                const barcode = e.target.value.trim();
-                if (barcode) {
-                    loadProductByBarcode(barcode);
-                    e.target.value = ''; // Clear for next scan
-                }
-            }
-        });
-    }
     // --- END SMART SCANNER LOGIC ---
 
     // Close dropdown when clicking outside
@@ -2040,10 +1981,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!confirm("Delete this order? This action will remove it from both local and server records.")) return;
         
-        // Remove from local first - check all possible ID fields
-        sales = sales.filter(s => s.apiId !== id && s.id !== id && s._id !== id);
-        localStorage.setItem('shayorsSales', JSON.stringify(sales));
-
         try {
             const token = getAdminToken();
             const headers = { 'Authorization': `Bearer ${token}` };
@@ -2055,14 +1992,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 `${API_BASE}/sales/${id}`
             ];
 
-            // Wait for all delete attempts. Errors are caught for individual fetch calls.
-            await Promise.all(endpoints.map(url => 
-                fetch(url, { method: 'DELETE', headers })
-                    .then(res => {
-                        if (res.ok) console.log(`Deleted successfully from ${url}`);
-                    })
-                    .catch(err => console.warn(`Delete failed for ${url}`, err))
-            ));
+            let deletedOnServer = false;
+            
+            // Try each endpoint sequentially until one succeeds
+            for (const url of endpoints) {
+                try {
+                    const res = await fetch(url, { method: 'DELETE', headers });
+                    if (res.ok) {
+                        console.log(`Deleted successfully from ${url}`);
+                        deletedOnServer = true;
+                        break; // Stop after first successful deletion
+                    }
+                } catch (err) {
+                    console.warn(`Delete failed for ${url}`, err);
+                }
+            }
+
+            if (!deletedOnServer) {
+                // If it wasn't found on server, maybe it's only local, or server delete failed.
+                // We'll proceed to remove locally anyway if the user confirmed, but warn them.
+                console.warn("Could not confirm deletion on server. It might already be gone or server is unreachable.");
+            }
+
+            // Remove from local - check all possible ID fields
+            sales = sales.filter(s => s.apiId !== id && s.id !== id && s._id !== id);
+            localStorage.setItem('shayorsSales', JSON.stringify(sales));
 
             renderSalesHistory();
             renderRecentPosTransactions();

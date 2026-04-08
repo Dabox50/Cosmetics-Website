@@ -81,14 +81,6 @@
                         </div>
                     </div>
 
-                    <!-- Smart Scanner Section -->
-                    <div class="smart-scanner-container">
-                        <div class="scanner-input-group">
-                            <input type="text" id="barcodeScannerInput" placeholder="Scan Barcode / Enter Manually..." autocomplete="off">
-                            <button class="btn secondary" onclick="toggleCameraScanner()">📷 Open Camera Scanner</button>
-                        </div>
-                        <div id="camera-reader" style="width: 100%; max-width: 500px; margin-top: 10px;" class="hidden"></div>
-                    </div>
                 </div>
 
                 <div class="dashboard-mini-summary">
@@ -140,7 +132,7 @@
                         <input type="text" id="pSize" placeholder="Size" required>
                         <div class="input-with-action">
                             <input type="text" id="pBarcode" placeholder="Barcode / SKU" onchange="fetchProductInfoByBarcode(this.value)">
-                            <button type="button" class="btn-sm" onclick="toggleFormCameraScanner()">📷 Scan</button>
+                            <button type="button" class="btn-sm" onclick="toggleCameraScanner()">📷 Smart Scan</button>
                         </div>
                         <div id="form-camera-reader" style="width: 100%; max-width: 500px; margin-top: 10px;" class="hidden full-width"></div>
                         <input type="text" id="pShade" placeholder="Shade (N/A if none)">
