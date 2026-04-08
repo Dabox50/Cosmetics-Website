@@ -139,9 +139,10 @@
                         </select>
                         <input type="text" id="pSize" placeholder="Size" required>
                         <div class="input-with-action">
-                            <input type="text" id="pBarcode" placeholder="Barcode / SKU">
+                            <input type="text" id="pBarcode" placeholder="Barcode / SKU" onchange="fetchProductInfoByBarcode(this.value)">
                             <button type="button" class="btn-sm" onclick="toggleFormCameraScanner()">📷 Scan</button>
                         </div>
+                        <div id="form-camera-reader" style="width: 100%; max-width: 500px; margin-top: 10px;" class="hidden full-width"></div>
                         <input type="text" id="pShade" placeholder="Shade (N/A if none)">
                         <input type="text" id="pSkinTypes" placeholder="Skin Types (e.g. Oily, Dry, All)">
                         <input type="text" id="pSkinConcern" placeholder="Skin Concern (e.g. Acne, Aging)">
@@ -254,7 +255,10 @@
                         </div>
 
                         <div class="pos-history-section card">
-                            <h3>Recent POS Transactions</h3>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <h3>Recent POS Transactions</h3>
+                                <button class="btn danger" onclick="resetPOSHistory()" style="font-size: 0.7rem; padding: 2px 8px;">Reset History</button>
+                            </div>
                             <div class="mini-history-vertical" id="posRecentTransactions">
                                 <!-- Recent sales will appear here -->
                             </div>

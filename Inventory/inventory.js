@@ -209,26 +209,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function addToCartByBarcode(barcode) {
-        // First check if already in inventory array
-        let product = inventory.find(p => p.barcode === barcode);
+        // Find product in LOCAL inventory (products added to your store)
+        const product = inventory.find(p => p.barcode === barcode);
         
-        if (!product) {
-            // Try fetching from API just in case it's not in local inventory array
+        if (product) {
+            addProductToPOSCart(product);
+            if (navigator.vibrate) navigator.vibrate(50);
+        } else {
+            // If not in memory, try the store's API (still limited to YOUR store)
             const token = getAdminToken();
             try {
                 const res = await fetch(`${API_BASE}/products/barcode/${barcode}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
-                    product = await res.json();
+                    const apiProd = await res.json();
+                    addProductToPOSCart(apiProd);
+                    if (navigator.vibrate) navigator.vibrate(50);
+                } else {
+                    alert(`Product not found in store inventory: ${barcode}`);
                 }
-            } catch (err) { console.error("Barcode fetch error", err); }
-        }
-
-        if (product) {
-            addProductToPOSCart(product);
-        } else {
-            alert("Product not found with barcode: " + barcode);
+            } catch (err) { 
+                console.error("Barcode fetch error", err);
+                alert("Error searching for product in store.");
+            }
         }
     }
 
@@ -464,6 +468,24 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (err) {
             console.error("POS Checkout error", err);
             alert("An error occurred during checkout.");
+        }
+    };
+
+    window.resetPOSHistory = function() {
+        if (!confirm("Are you sure you want to clear the recent POS transaction history? This only clears the local view display.")) return;
+        
+        // If the user meant to delete from server too, they should use the Sales history 'Del' button.
+        // But usually 'reset history' in POS view is just to clear the display list.
+        // However, if we want to actually clear the data, we'd need to know if we're clearing EVERYTHING or just POS.
+        // For now, let's just clear the local 'sales' array and re-render.
+        // NOTE: This will also clear the Sales & Records history since they share the 'sales' array.
+        
+        if (confirm("This will also clear the Sales Record history. Proceed?")) {
+            sales = [];
+            localStorage.setItem('shayorsSales', JSON.stringify(sales));
+            renderRecentPosTransactions();
+            renderSalesHistory();
+            if (typeof renderAnalytics === 'function') renderAnalytics();
         }
     };
 
@@ -1210,6 +1232,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SMART SCANNER LOGIC ---
     let html5QrCode = null;
 
+    let posScanner = null;
+    let formScanner = null;
+    let invScanner = null;
+
     window.toggleCameraScanner = function() {
         const isPosActive = document.getElementById('pos-module').classList.contains('active');
         const readerId = isPosActive ? 'pos-camera-reader' : 'camera-reader';
@@ -1217,45 +1243,129 @@ document.addEventListener('DOMContentLoaded', () => {
         reader.classList.toggle('hidden');
 
         if (!reader.classList.contains('hidden')) {
-            // Start scanning
-            html5QrCode = new Html5Qrcode(readerId);
+            const scanner = new Html5Qrcode(readerId);
+            if (isPosActive) posScanner = scanner; else invScanner = scanner;
+            
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-            html5QrCode.start({ facingMode: "environment" }, config, (text) => {
+            scanner.start({ facingMode: "environment" }, config, (text) => {
                 onScanSuccess(text);
-                // The toggleCameraScanner call inside onScanSuccess will handle stopping
             }).catch(err => {
                 console.error("Camera start error:", err);
                 alert("Could not start camera. Please ensure you have given camera permissions.");
                 reader.classList.add('hidden');
             });
         } else {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => html5QrCode.clear()).catch(e => console.error(e));
+            const scanner = isPosActive ? posScanner : invScanner;
+            if (scanner) {
+                scanner.stop().then(() => {
+                    scanner.clear();
+                    if (isPosActive) posScanner = null; else invScanner = null;
+                }).catch(e => console.error(e));
             }
         }
     };
 
+    window.fetchProductInfoByBarcode = async function(barcode) {
+        if (!barcode) return;
+        
+        // Show loading state if possible
+        const barcodeInput = document.getElementById('pBarcode');
+        const originalValue = barcodeInput.value;
+        barcodeInput.value = "Fetching info...";
+        
+        try {
+            // Using OpenFoodFacts (Cosmetics are often under the same API or specialized beauty APIs)
+            // This is a free public API.
+            const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+            const data = await response.json();
+            
+            if (data.status === 1 && data.product) {
+                const prod = data.product;
+                
+                // Auto-fill form fields
+                if (prod.product_name) document.getElementById('pName').value = prod.product_name;
+                if (prod.brands) document.getElementById('pBrand').value = prod.brands;
+                if (prod.quantity) document.getElementById('pSize').value = prod.quantity;
+                
+                // Attempt to match category
+                if (prod.categories) {
+                    const categories = prod.categories.toLowerCase();
+                    const categorySelect = document.getElementById('pCategory');
+                    for (let i = 0; i < categorySelect.options.length; i++) {
+                        if (categories.includes(categorySelect.options[i].value.toLowerCase())) {
+                            categorySelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+                
+                if (prod.ingredients_text) document.getElementById('pIngredients').value = prod.ingredients_text;
+                
+                alert("Product information found and auto-filled!");
+            } else {
+                console.warn("Product not found in external database.");
+                // Check local database as well
+                const localRes = await fetch(`${API_BASE}/products/barcode/${barcode}`);
+                if (localRes.ok) {
+                    const localProd = await localRes.json();
+                    if (confirm("Product already exists in inventory. Load its data?")) {
+                        loadProductToForm(localProd);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error fetching product info:", error);
+        } finally {
+            barcodeInput.value = barcode;
+        }
+    };
+
+    function loadProductToForm(p) {
+        document.getElementById('pId').value = p._id || '';
+        document.getElementById('pName').value = p.name || '';
+        document.getElementById('pBrand').value = p.brand || '';
+        document.getElementById('pCategory').value = p.category || 'Scrub';
+        document.getElementById('pSize').value = p.size || '';
+        document.getElementById('pBarcode').value = p.barcode || '';
+        document.getElementById('pPrice').value = p.price || '';
+        document.getElementById('pCostPrice').value = p.costPrice || '';
+        document.getElementById('pStock').value = p.stock || 0;
+        document.getElementById('pThreshold').value = p.threshold || 5;
+        document.getElementById('pDescription').value = p.description || '';
+        document.getElementById('pIngredients').value = p.ingredients || '';
+        
+        if (p.image) {
+            const preview = document.getElementById('imagePreview');
+            preview.src = p.image;
+            preview.classList.remove('hidden');
+        }
+    }
+
     window.toggleFormCameraScanner = function() {
-        const reader = document.getElementById('camera-reader');
+        const reader = document.getElementById('form-camera-reader');
         reader.classList.toggle('hidden');
 
         if (!reader.classList.contains('hidden')) {
-            html5QrCode = new Html5Qrcode("camera-reader");
+            formScanner = new Html5Qrcode("form-camera-reader");
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-            html5QrCode.start({ facingMode: "environment" }, config, (text) => {
+            formScanner.start({ facingMode: "environment" }, config, (text) => {
                 document.getElementById('pBarcode').value = text;
                 if (navigator.vibrate) navigator.vibrate(100);
                 window.toggleFormCameraScanner(); // Stop
+                window.fetchProductInfoByBarcode(text); // Fetch info
             }).catch(err => {
                 console.error("Camera start error:", err);
                 alert("Could not start camera.");
                 reader.classList.add('hidden');
             });
         } else {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => html5QrCode.clear()).catch(e => console.error(e));
+            if (formScanner) {
+                formScanner.stop().then(() => {
+                    formScanner.clear();
+                    formScanner = null;
+                }).catch(e => console.error(e));
             }
         }
     };
@@ -1901,18 +2011,22 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('shayorsSales', JSON.stringify(sales));
 
         try {
-            const response = await fetch(`${API_BASE}/orders/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${getAdminToken()}` }
-            });
-            
-            // Also try deleting from bookings if it was a spa service
-            await fetch(`${API_BASE}/bookings/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${getAdminToken()}` }
-            }).catch(() => {});
+            const token = getAdminToken();
+            const headers = { 'Authorization': `Bearer ${token}` };
+
+            // Try deleting from various endpoints (Orders, Bookings, Sales)
+            const endpoints = [
+                `${API_BASE}/orders/${id}`,
+                `${API_BASE}/bookings/${id}`,
+                `${API_BASE}/sales/${id}`
+            ];
+
+            await Promise.all(endpoints.map(url => 
+                fetch(url, { method: 'DELETE', headers }).catch(err => console.warn(`Delete failed for ${url}`, err))
+            ));
 
             renderSalesHistory();
+            renderRecentPosTransactions();
             if (typeof renderAnalytics === 'function') renderAnalytics();
         } catch (e) { 
             console.error(e); 

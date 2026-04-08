@@ -1701,19 +1701,17 @@ footer {
     .dashboard-summary-row {
         grid-template-columns: 1fr;
     }
+
     .btn-sm {
         background-color: #000;
         color: white;
         border: none;
-        border-top-left-radius: none;
-        border-bottom-left-radius: none;
-        border-top-right-radius: 6px;
-        border-bottom-right-radius: 6px;
+        border-radius: 1px;
         padding: 1px 2px;
         font-size: 0.8rem;
         position: relative;
         font-family: 'Montserrat', sans-serif;
-        right: 4px;
+        right: 1px;
     }
 
     .pos-container {
