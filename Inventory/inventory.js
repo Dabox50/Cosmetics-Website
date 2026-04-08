@@ -448,8 +448,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert("Sale completed successfully!");
                 showReceipt(saleData);
                 
-                // Add to local sales history
-                sales.push(saleData);
+                // Add to local sales history with consistent ID mapping
+                const mappedSale = {
+                    ...saleData,
+                    id: saleData._id || saleData.id,
+                    apiId: saleData._id || saleData.id,
+                    date: saleData.createdAt || new Date().toISOString(),
+                    customer: saleData.customerName || 'Walk-in',
+                    type: 'product'
+                };
+                sales.push(mappedSale);
                 localStorage.setItem('shayorsSales', JSON.stringify(sales));
                 
                 // Reset POS
@@ -1344,20 +1352,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.toggleFormCameraScanner = function() {
         const reader = document.getElementById('form-camera-reader');
+        if (!reader) return;
+        
         reader.classList.toggle('hidden');
 
         if (!reader.classList.contains('hidden')) {
             formScanner = new Html5Qrcode("form-camera-reader");
             const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
-            formScanner.start({ facingMode: "environment" }, config, (text) => {
+            formScanner.start({ facingMode: "environment" }, config, async (text) => {
                 document.getElementById('pBarcode').value = text;
                 if (navigator.vibrate) navigator.vibrate(100);
-                window.toggleFormCameraScanner(); // Stop
-                window.fetchProductInfoByBarcode(text); // Fetch info
+                
+                // Stop scanner first
+                if (formScanner) {
+                    await formScanner.stop().then(() => {
+                        formScanner.clear();
+                        formScanner = null;
+                        reader.classList.add('hidden');
+                    }).catch(e => console.error(e));
+                }
+                
+                // Then fetch and fill
+                await window.fetchProductInfoByBarcode(text); 
             }).catch(err => {
                 console.error("Camera start error:", err);
-                alert("Could not start camera.");
+                alert("Could not start camera. Please check permissions.");
                 reader.classList.add('hidden');
             });
         } else {
@@ -1376,9 +1396,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // If we are in the POS module, add directly to cart
         const posModule = document.getElementById('pos-module');
+        const productForm = document.getElementById('productForm');
+        
         if (posModule && posModule.classList.contains('active')) {
             document.getElementById('posBarcodeSearch').value = decodedText;
             addToCartByBarcode(decodedText);
+        } else if (productForm && !productForm.classList.contains('hidden')) {
+            // If product form is open, fill it
+            document.getElementById('pBarcode').value = decodedText;
+            window.fetchProductInfoByBarcode(decodedText);
         } else {
             // Otherwise, use default behavior (inventory lookup)
             document.getElementById('barcodeScannerInput').value = decodedText;
@@ -1945,18 +1971,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const itemCount = Array.isArray(s.items) ? s.items.length : 1;
             const badgeClass = s.status === 'Paid' ? 'badge-in' : 'badge-out';
             
+            const displayId = (s.apiId || s.id || s._id || '').toString().slice(-6).toUpperCase();
+            const orderId = s.apiId || s.id || s._id;
+            
             body.innerHTML += `
                 <tr>
-                    <td>${(s.apiId || s.id || '').toString().slice(-6).toUpperCase()}</td>
+                    <td>${displayId}</td>
                     <td>${date}</td>
                     <td>${s.customer || 'Walk-in'}</td>
                     <td>${itemCount} items (${s.type || 'product'})</td>
                     <td>₦${(s.total || 0).toLocaleString()}</td>
                     <td><span class="badge ${badgeClass}">${s.status || 'Paid'}</span></td>
                     <td>
-                        <button class="btn secondary" onclick='viewOrder("${s.apiId || s.id}")'>View</button>
-                        <button class="btn primary" onclick='downloadInvoice("${s.apiId || s.id}")'>Inv</button>
-                        <button class="btn danger" onclick='deleteOrder("${s.apiId || s.id}")'>Del</button>
+                        <button class="btn secondary" onclick='viewOrder("${orderId}")'>View</button>
+                        <button class="btn primary" onclick='downloadInvoice("${orderId}")'>Inv</button>
+                        <button class="btn danger" onclick='deleteOrder("${orderId}")'>Del</button>
                     </td>
                 </tr>
             `;
@@ -2004,10 +2033,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.deleteOrder = async function(id) {
-        if (!confirm("Delete this order?")) return;
+        if (!id || id === "undefined" || id === "null") {
+            alert("Could not determine record ID for deletion.");
+            return;
+        }
         
-        // Remove from local first
-        sales = sales.filter(s => s.apiId !== id && s.id !== id);
+        if (!confirm("Delete this order? This action will remove it from both local and server records.")) return;
+        
+        // Remove from local first - check all possible ID fields
+        sales = sales.filter(s => s.apiId !== id && s.id !== id && s._id !== id);
         localStorage.setItem('shayorsSales', JSON.stringify(sales));
 
         try {
@@ -2021,16 +2055,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 `${API_BASE}/sales/${id}`
             ];
 
+            // Wait for all delete attempts. Errors are caught for individual fetch calls.
             await Promise.all(endpoints.map(url => 
-                fetch(url, { method: 'DELETE', headers }).catch(err => console.warn(`Delete failed for ${url}`, err))
+                fetch(url, { method: 'DELETE', headers })
+                    .then(res => {
+                        if (res.ok) console.log(`Deleted successfully from ${url}`);
+                    })
+                    .catch(err => console.warn(`Delete failed for ${url}`, err))
             ));
 
             renderSalesHistory();
             renderRecentPosTransactions();
             if (typeof renderAnalytics === 'function') renderAnalytics();
+            
+            alert("Order deleted successfully.");
         } catch (e) { 
             console.error(e); 
             renderSalesHistory();
+            alert("Error deleting order: " + (e.message || "Unknown error"));
         }
     };
 
