@@ -61,7 +61,25 @@ const getSales = async (req, res, next) => {
   }
 };
 
+// @desc    Delete a sale
+// @route   DELETE /api/sales/:id
+// @access  Private/Admin
+const deleteSale = async (req, res, next) => {
+  try {
+    const sale = await Sale.findById(req.params.id);
+    if (sale) {
+      await Sale.findByIdAndDelete(req.params.id);
+      res.json({ message: 'Sale removed' });
+    } else {
+      res.status(404).json({ message: 'Sale not found' });
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createSale,
-  getSales
+  getSales,
+  deleteSale
 };

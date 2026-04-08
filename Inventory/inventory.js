@@ -68,6 +68,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = getAdminToken();
         if (!token) return;
 
+        // Get deleted IDs to avoid re-syncing them
+        const deletedIds = JSON.parse(localStorage.getItem('shayorsDeletedSalesIds')) || [];
+
         try {
             const [ordersRes, bookingsRes, salesRes] = await Promise.all([
                 fetch(`${API_BASE}/orders?limit=1000`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -83,6 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const apiOrders = data.orders || [];
                 
                 apiOrders.forEach(order => {
+                    if (deletedIds.includes(order._id)) return; // SKIP DELETED
+
                     const exists = localSales.find(s => s.apiId === order._id || s.id === order._id);
                     if (!exists) {
                         localSales.push({
@@ -113,6 +118,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (bookingsRes.ok) {
                 const apiBookings = await bookingsRes.json();
                 apiBookings.forEach(booking => {
+                    if (deletedIds.includes(booking._id)) return; // SKIP DELETED
+
                     const exists = localSales.find(s => s.apiId === booking._id || s.id === booking._id);
                     if (!exists) {
                         localSales.push({
@@ -135,6 +142,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (salesRes.ok) {
                 const apiSales = await salesRes.json();
                 apiSales.forEach(sale => {
+                    if (deletedIds.includes(sale._id)) return; // SKIP DELETED
+
                     const exists = localSales.find(s => s.apiId === sale._id || s.id === sale._id);
                     if (!exists) {
                         localSales.push({
@@ -1343,6 +1352,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const pBarcodeInput = document.getElementById('pBarcode');
+    if (pBarcodeInput) {
+        pBarcodeInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                window.fetchProductInfoByBarcode(this.value.trim());
+            }
+        });
+    }
+
     function loadProductToForm(p) {
         document.getElementById('pId').value = p._id || '';
         document.getElementById('pName').value = p.name || '';
@@ -1380,9 +1399,13 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('pBarcode').value = decodedText;
             window.fetchProductInfoByBarcode(decodedText);
         } else {
-            // Otherwise, use default behavior (inventory lookup)
-            document.getElementById('barcodeScannerInput').value = decodedText;
-            loadProductByBarcode(decodedText);
+            // Dashboard mode: Only fill the search input (scanning alone)
+            const searchInput = document.getElementById('inventorySearch');
+            if (searchInput) {
+                searchInput.value = decodedText;
+                // Manually trigger the search logic
+                if (typeof searchInventory === 'function') searchInventory();
+            }
         }
         
         // Vibrate if supported
@@ -1993,6 +2016,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ];
 
             let deletedOnServer = false;
+            let errors = [];
             
             // Try each endpoint sequentially until one succeeds
             for (const url of endpoints) {
@@ -2002,16 +2026,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.log(`Deleted successfully from ${url}`);
                         deletedOnServer = true;
                         break; // Stop after first successful deletion
+                    } else {
+                        const errorData = await res.json().catch(() => ({}));
+                        errors.push(`${url}: ${res.status} ${errorData.message || ''}`);
                     }
                 } catch (err) {
                     console.warn(`Delete failed for ${url}`, err);
+                    errors.push(`${url}: ${err.message}`);
                 }
             }
 
             if (!deletedOnServer) {
-                // If it wasn't found on server, maybe it's only local, or server delete failed.
-                // We'll proceed to remove locally anyway if the user confirmed, but warn them.
-                console.warn("Could not confirm deletion on server. It might already be gone or server is unreachable.");
+                console.error("Server deletion failed for all endpoints:", errors);
+                // We don't alert here anymore to avoid annoying the user if it's already gone from server
+                // but still in local list.
+            }
+
+            // PERMANENT LOCAL FIX: Add to deleted IDs list so sync doesn't bring it back
+            let deletedIds = JSON.parse(localStorage.getItem('shayorsDeletedSalesIds')) || [];
+            if (!deletedIds.includes(id)) {
+                deletedIds.push(id);
+                localStorage.setItem('shayorsDeletedSalesIds', JSON.stringify(deletedIds));
             }
 
             // Remove from local - check all possible ID fields
