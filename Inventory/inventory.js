@@ -506,25 +506,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    function showReceipt(sale) {
-        document.getElementById('receiptDate').innerText = new Date(sale.createdAt).toLocaleString();
-        document.getElementById('receiptNumber').innerText = sale._id.slice(-6).toUpperCase();
+    window.showReceipt = function(sale) {
+        if (!sale) return;
+        const dateStr = sale.createdAt || sale.date;
+        document.getElementById('receiptDate').innerText = dateStr ? new Date(dateStr).toLocaleString() : '---';
+        const receiptId = (sale._id || sale.apiId || sale.id || '').toString();
+        document.getElementById('receiptNumber').innerText = receiptId ? receiptId.slice(-6).toUpperCase() : '---';
         
         const itemsBody = document.getElementById('receiptItemsBody');
-        itemsBody.innerHTML = sale.items.map(item => `
+        const itemsList = Array.isArray(sale.items) ? sale.items : [];
+        itemsBody.innerHTML = itemsList.map(item => `
             <tr>
-                <td>${item.name}</td>
-                <td>${item.quantity}</td>
-                <td>₦${item.price.toLocaleString()}</td>
-                <td>₦${item.total.toLocaleString()}</td>
+                <td>${item.name || item.productName || 'Unknown Product'}</td>
+                <td>${item.quantity || item.qty || 1}</td>
+                <td>₦${(item.price || 0).toLocaleString()}</td>
+                <td>₦${(item.total || 0).toLocaleString()}</td>
             </tr>
         `).join('');
 
-        document.getElementById('receiptTotal').innerText = `₦${sale.totalAmount.toLocaleString()}`;
-        document.getElementById('receiptPayment').innerText = sale.paymentMethod;
+        document.getElementById('receiptTotal').innerText = `₦${(sale.totalAmount || sale.total || 0).toLocaleString()}`;
+        document.getElementById('receiptPayment').innerText = sale.paymentMethod || 'Cash';
 
         document.getElementById('receiptModal').classList.remove('hidden');
-    }
+    };
 
     window.closeReceiptModal = function() {
         document.getElementById('receiptModal').classList.add('hidden');
@@ -3166,7 +3170,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="total">₦${(s.totalAmount || s.total || 0).toLocaleString()}</div>
                     <div class="actions">
                         <button class="btn secondary btn-mini" onclick='showReceipt(${JSON.stringify(s).replace(/'/g, "&apos;")})'>View</button>
-                        <button class="btn primary btn-mini" onclick='downloadInvoice("${s._id || s.apiId || s.id}")'>Inv</button>
+                        <button class="btn primary btn-mini" onclick='showReceipt(${JSON.stringify(s).replace(/'/g, "&apos;")})'>Print</button>
                     </div>
                 </div>
             `;
