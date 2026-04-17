@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // reconciliation between API and localStorage
     async function syncSalesWithAPI() {
         const token = getAdminToken();
-        if (!token) return;
+        if (!token) return false;
 
         // Get deleted IDs to avoid re-syncing them
         const deletedIds = JSON.parse(localStorage.getItem('shayorsDeletedSalesIds')) || [];
@@ -171,11 +171,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (modified) {
+                // Sort by date descending
+                localSales.sort((a, b) => new Date(b.date) - new Date(a.date));
                 sales = localSales;
                 localStorage.setItem('shayorsSales', JSON.stringify(sales));
             }
+            return modified;
         } catch (error) {
             console.error("Sync Sales Error:", error);
+            return false;
         }
     }
 
@@ -464,6 +468,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     apiId: saleData._id || saleData.id,
                     date: saleData.createdAt || new Date().toISOString(),
                     customer: saleData.customerName || 'Walk-in',
+                    total: saleData.totalAmount || totalAmount, // Ensure total is set
                     type: 'product'
                 };
                 sales.push(mappedSale);
@@ -588,14 +593,25 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleAuthVisibility(true);
             await fetchInventory();
             await fetchSpaCategories();
-            await syncSalesWithAPI();
+            const syncModified = await syncSalesWithAPI();
             enforcePermissions();
 
             // Request permission for system notifications
             if ("Notification" in window && Notification.permission === "default") {
                 Notification.requestPermission();
             }
-            renderRecentPosTransactions();
+            
+            // Re-render if sync changed anything
+            if (syncModified) {
+                renderRecentPosTransactions();
+                // Also update sales history if it's the active module
+                const activeModule = document.querySelector('.module.active');
+                if (activeModule && activeModule.id === 'sales-module') {
+                    renderSalesHistory();
+                }
+            } else {
+                renderRecentPosTransactions();
+            }
         }
     }
 
@@ -680,8 +696,6 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.reload();
         }
     };
-
-    init();
 
     // 1. Core Data Structures
     let inventory = [];
@@ -1948,7 +1962,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${date}</td>
                     <td>${s.customer || 'Walk-in'}</td>
                     <td>${itemCount} items (${s.type || 'product'})</td>
-                    <td>₦${(s.total || 0).toLocaleString()}</td>
+                    <td>₦${parseFloat(s.total || s.totalAmount || 0).toLocaleString()}</td>
                     <td><span class="badge ${badgeClass}">${s.status || 'Paid'}</span></td>
                     <td>
                         <button class="btn secondary" onclick='viewOrder("${orderId}")'>View</button>
@@ -3092,8 +3106,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const spaCategory = document.getElementById('spaCategory');
         if (spaCategory) {
             const currentVal = spaCategory.value;
+            // Ensure spaCategories is an array
+            const cats = Array.isArray(spaCategories) ? spaCategories : [];
             spaCategory.innerHTML = '<option value="">Select Category...</option>' + 
-                spaCategories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('');
+                cats.map(cat => `<option value="${cat.name || ''}">${cat.name || 'Unknown'}</option>`).join('');
             if (currentVal) spaCategory.value = currentVal;
         }
     }
@@ -3167,7 +3183,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <strong>${s.customerName || s.customer || 'Walk-in'}</strong><br>
                         ${itemsText}
                     </div>
-                    <div class="total">₦${(s.totalAmount || s.total || 0).toLocaleString()}</div>
+                    <div class="total">₦${parseFloat(s.total || s.totalAmount || 0).toLocaleString()}</div>
                     <div class="actions">
                         <button class="btn secondary btn-mini" onclick='showReceipt(${JSON.stringify(s).replace(/'/g, "&apos;")})'>View</button>
                         <button class="btn primary btn-mini" onclick='showReceipt(${JSON.stringify(s).replace(/'/g, "&apos;")})'>Print</button>
@@ -3185,4 +3201,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         renderInventory();
     }
+
+    init();
 });
