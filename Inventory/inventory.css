@@ -304,7 +304,224 @@ nav {
     border-radius: 4px;
 }
 
-.sale-form-box, .invoice-box, .admin-card {
+.sale-form-box, .invoice-box, /* Zuru App Style - Store Management */
+.zuru-style {
+    background: #252525;
+    color: #006a4e;
+    padding: 20px;
+    border-radius: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.zuru-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.zuru-header h2 {
+    flex-grow: 1;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #006a4e;
+    margin: 0;
+}
+
+.zuru-back-btn {
+    background: none;
+    border: none;
+    color: #006a4e;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+}
+
+.zuru-input-group {
+    margin-bottom: 25px;
+}
+
+.zuru-label {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: #ffffff;
+}
+
+.zuru-sublabel {
+    display: block;
+    font-size: 0.9rem;
+    color: #888888;
+    margin-bottom: 15px;
+}
+
+.zuru-input {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #333333;
+    border-radius: 12px;
+    padding: 15px;
+    color: #111111;
+    font-size: 1rem;
+    outline: none;
+}
+
+.zuru-input::placeholder {
+    color: #353535;
+}
+
+.zuru-permission-card {
+    background: #ffffff;
+    border: 1px solid #333333;
+    border-radius: 15px;
+    padding: 10px;
+    margin-bottom: 20px;
+}
+
+.zuru-permission-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #1c1c1e;
+}
+
+.zuru-permission-item:last-child {
+    border-bottom: none;
+}
+
+.zuru-permission-item input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    margin-right: 15px;
+    accent-color: #34c759;
+    background: transparent;
+    border: 1px solid #555555;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.zuru-permission-icon {
+    margin-right: 15px;
+    font-size: 1.2rem;
+    color: #888888;
+    width: 24px;
+    text-align: center;
+}
+
+.zuru-permission-name {
+    flex-grow: 1;
+    font-size: 1rem;
+    color: #000000;
+}
+
+.zuru-submit-btn {
+    width: 100%;
+    background: #000000;
+    color: #34c759;
+    border: none;
+    border-radius: 12px;
+    padding: 18px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.3s;
+}
+
+.zuru-submit-btn:hover {
+    background: #253d32;
+}
+
+.zuru-create-role-btn {
+    width: 100%;
+    background: transparent;
+    border: 1px solid #34c759;
+    color: #34c759;
+    border-radius: 12px;
+    padding: 15px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-card.zuru-style h3 {
+    color: #000000;
+    font-family: inherit;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.admin-card.zuru-style {
+    box-shadow: none;
+    margin-bottom: 30px;
+}
+
+.zuru-role-select {
+    width: 100%;
+    background: #ffffff;
+    border: 1px solid #333333;
+    border-radius: 12px;
+    padding: 15px;
+    color: #000000;
+    font-size: 1rem;
+    outline: none;
+    appearance: none;
+    margin-bottom: 10px;
+}
+
+.zuru-role-list, .zuru-staff-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 20px;
+}
+
+.zuru-item {
+    background: #000000;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.zuru-item-info strong {
+    display: block;
+    color: #ffffff;
+}
+
+.zuru-item-info small {
+    color: #888888;
+}
+
+#rolesList, #staffList {
+    background: #ffffff;
+    padding: 10px 0;
+}
+
+#rolesList li, #staffList li {
+    background: #1c1c1e;
+    color: #ffffff;
+    margin-bottom: 10px;
+    padding: 15px;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#rolesList li button, #staffList li button {
+    margin-left: 10px;
+}
+
+.admin-card {
     background: var(--white);
     padding: 25px;
     border-radius: 8px;

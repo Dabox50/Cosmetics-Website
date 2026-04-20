@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const Admin = require('../models/Admin');
+const Staff = require('../models/Staff');
 
 const protect = async (req, res, next) => {
   let token;
@@ -11,9 +12,19 @@ const protect = async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.admin = await Admin.findById(decoded.id).select('-password');
-      if (!req.admin) {
-        return res.status(401).json({ message: 'Not authorized, admin user not found' });
+      
+      // Try Admin first
+      req.user = await Admin.findById(decoded.id).select('-password');
+      req.isAdmin = !!req.user;
+
+      if (!req.user) {
+        // Try Staff
+        req.user = await Staff.findById(decoded.id).select('-password');
+        req.isAdmin = false;
+      }
+
+      if (!req.user) {
+        return res.status(401).json({ message: 'Not authorized, user not found' });
       }
       next();
     } catch (error) {
@@ -27,4 +38,12 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = { protect };
+const admin = (req, res, next) => {
+  if (req.user && req.isAdmin) {
+    next();
+  } else {
+    res.status(401).json({ message: 'Not authorized as an admin' });
+  }
+};
+
+module.exports = { protect, admin };

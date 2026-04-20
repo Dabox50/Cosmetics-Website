@@ -10,6 +10,9 @@ const orderRoutes = require('./routes/orderRoutes');
 const bookingRoutes = require('./routes/bookingRoutes');
 const serviceRoutes = require('./routes/serviceRoutes');
 const saleRoutes = require('./routes/saleRoutes');
+const customerRoutes = require('./routes/customerRoutes');
+const adjustmentRoutes = require('./routes/adjustmentRoutes');
+const expenseCategoryRoutes = require('./routes/expenseCategoryRoutes');
 
 const app = express();
 
@@ -28,6 +31,9 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/services', serviceRoutes);
 app.use('/api/sales', saleRoutes);
+app.use('/api/customers', customerRoutes);
+app.use('/api/adjustments', adjustmentRoutes);
+app.use('/api/expense-categories', expenseCategoryRoutes);
 
 app.get('/health', (req, res) => res.status(200).send('OK'));
 

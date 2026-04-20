@@ -28,6 +28,7 @@ const validateOrder = (order) => {
 
 const validateAdminLogin = (admin) => {
   const schema = Joi.object({
+    email: Joi.string().email().optional(),
     password: Joi.string().required()
   });
 

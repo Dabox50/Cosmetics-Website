@@ -247,15 +247,6 @@
                             </div>
                         </div>
 
-                        <div class="pos-history-section card">
-                            <div style="display: flex; justify-content: space-between; align-items: center;">
-                                <h3>Recent POS Transactions</h3>
-                                <button class="btn danger" onclick="resetPOSHistory()" style="font-size: 0.7rem; padding: 2px 8px;">Reset History</button>
-                            </div>
-                            <div class="mini-history-vertical" id="posRecentTransactions">
-                                <!-- Recent sales will appear here -->
-                            </div>
-                        </div>
                     </div>
 
                     <aside class="pos-sidebar card">
@@ -361,6 +352,15 @@
                     </aside>
                 </div>
 
+                <div class="pos-history-section card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3>Recent POS Transactions</h3>
+                        <button class="btn danger" onclick="resetPOSHistory()" style="font-size: 0.7rem; padding: 2px 8px;">Reset History</button>
+                    </div>
+                    <div class="mini-history-vertical" id="posRecentTransactions">
+                        <!-- Recent sales will appear here -->
+                    </div>
+                </div>
                 <!-- Receipt Modal (Hidden) -->
                 <div id="receiptModal" class="modal hidden">
                     <div class="modal-content receipt-content">
@@ -534,7 +534,15 @@
                 </div>
 
                 <div class="sales-history">
-                    <h3>Sales History</h3>
+                    <div class="history-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                        <h3 style="margin: 0;">Sales History</h3>
+                        <div class="filter-controls" style="display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.05); padding: 8px 12px; border-radius: 8px;">
+                            <i class="fas fa-calendar-alt" style="color: var(--primary-color);"></i>
+                            <input type="date" id="salesDateFilter" onchange="renderSalesHistory()" 
+                                   style="border: none; background: transparent; color: #333; font-family: inherit; outline: none; cursor: pointer;">
+                            <button class="btn-text" onclick="clearSalesDateFilter()" style="color: #888; font-size: 0.8rem; border-left: 1px solid #ddd; padding-left: 10px;">Clear</button>
+                        </div>
+                    </div>
                     <div class="table-container">
                         <table id="salesHistoryTable">
                             <thead><tr><th>ID</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Type</th><th>Actions</th></tr></thead>
@@ -548,23 +556,18 @@
             <section id="expenses-module" class="module">
                 <div class="module-header">
                     <h2>Expenses & Cost Analysis</h2>
-                    <button class="btn primary" onclick="showExpenseForm()">+ Record Expense</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn primary" onclick="showExpenseForm()">+ Record Expense</button>
+                        <button class="btn secondary" onclick="showCostAnalysisForm()">+ Cost Analysis</button>
+                    </div>
                 </div>
                 <form id="expenseForm" class="hidden">
+                    <h3>Expenses Analysis</h3>
                     <div class="form-grid">
                         <input type="date" id="expDate" required>
-                        <input type="text" id="expCode" placeholder="Expense Code/Ref">
+                        <input type="text" id="expCode" placeholder="Inv Number">
                         <select id="expCategory" required>
                             <option value="">Category...</option>
-                            <option value="Rent">Rent</option>
-                            <option value="Salaries">Salaries</option>
-                            <option value="Raw Materials">Raw Materials</option>
-                            <option value="Utility">Utility</option>
-                            <option value="Logistics">Logistics</option>
-                            <option value="Advertising">Advertising</option>
-                            <option value="Maintenance">Maintenance</option>
-                            <option value="Tax">Tax</option>
-                            <option value="Other">Other</option>
                         </select>
                         <input type="text" id="expName" placeholder="Description" required>
                         <input type="text" id="expVendor" placeholder="Vendor / Recipient">
@@ -576,7 +579,6 @@
                             <option value="Card">Card</option>
                             <option value="USSD">USSD</option>
                             <option value="Mobile Money">Mobile Money</option>
-                            <option value="Others">Others</option>
                         </select>
                         <input type="number" id="expAmount" placeholder="Amount (₦)" required>
                         <select id="expStatus" required>
@@ -587,13 +589,40 @@
                         <button class="btn primary" type="submit">Save Expense</button>
                     </div>
                 </form>
-                <div class="table-container">
+
+                <form id="costAnalysisForm" class="hidden" style="margin-top: 20px; background: rgba(0,0,0,0.02); padding: 20px 0px; border-radius: 8px;">
+                    <h3>Cost Analysis</h3>
+                    <div class="form-grid">
+                        <input type="date" id="costDate" required>
+                        <input type="text" id="costProductName" placeholder="Product Name" required>
+                        <select id="costCategory" required>
+                            <option value="">Category...</option>
+                        </select>
+                        <input type="text" id="costSize" placeholder="Size (e.g. 250ml)">
+                        <input type="number" id="costRawMaterials" placeholder="Raw Materials (₦)" oninput="calcCostAnalysis()">
+                        <input type="number" id="costContainer" placeholder="Container (₦)" oninput="calcCostAnalysis()">
+                        <input type="number" id="costLabel" placeholder="Label (₦)" oninput="calcCostAnalysis()">
+                        <input type="number" id="costSeals" placeholder="Seals (₦)" oninput="calcCostAnalysis()">
+                        <input type="number" id="costLogistics" placeholder="Logistics (₦)" oninput="calcCostAnalysis()">
+                        <input type="number" id="costOutput" placeholder="Output (Qty)" required oninput="calcCostAnalysis()">
+                        <div class="cost-results" style="grid-column: span 2; display: flex; gap: 20px; padding: 10px; background: var(--primary-color); color: white; border-radius: 5px; margin-top: 10px;">
+                            <span>Total Input: <strong id="resTotalInput">₦0.00</strong></span>
+                            <span>Cost Price: <strong id="resCostPrice">₦0.00</strong></span>
+                        </div>
+                        <button class="btn primary" type="submit" style="grid-column: span 1;">Save Analysis</button>
+                    </div>
+                </form>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3>Expense Records</h3>
                     <table id="expensesTable">
                         <thead>
                             <tr>
-                                <th>Date/Code</th>
+                                <th>Date</th>
+                                <th>Inv Number</th>
                                 <th>Category</th>
-                                <th>Description/Vendor</th>
+                                <th>Description</th>
+                                <th>Vendor</th>
                                 <th>Method</th>
                                 <th>Amount</th>
                                 <th>Status</th>
@@ -601,6 +630,26 @@
                             </tr>
                         </thead>
                         <tbody id="expensesBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="table-container" style="margin-top: 30px;">
+                    <h3>Cost Analysis Records</h3>
+                    <table id="costAnalysisTable">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Size</th>
+                                <th>Raw Mtls</th>
+                                <th>Total Input</th>
+                                <th>Output</th>
+                                <th>Cost Price</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="costAnalysisBody"></tbody>
                     </table>
                 </div>
             </section>
@@ -899,62 +948,111 @@
                 <div class="module-header"><h2>Store & Admin Management</h2></div>
                 <div class="store-grid">
                     <!-- Roles & Permissions -->
-                    <div class="admin-card">
-                        <h3>Role Management</h3>
-                        <div class="action-bar"><button class="btn secondary" onclick="toggleRoleForm()">+ Create Role</button></div>
+                    <div class="admin-card zuru-style">
+                        <div class="zuru-header">
+                            <button class="zuru-back-btn" onclick="toggleRoleForm()">←</button>
+                            <h2>Create Role</h2>
+                        </div>
+                        
                         <form id="roleForm" class="hidden">
-                            <input type="text" id="roleName" placeholder="Role Name (e.g. Sales Rep)" required>
+                            <div class="zuru-input-group">
+                                <label class="zuru-label">Role Name</label>
+                                <span class="zuru-sublabel">Enter a descriptive name for this role</span>
+                                <input type="text" id="roleName" class="zuru-input" placeholder="e.g. Sales Representative" required>
+                            </div>
                             
-                            <div class="role-question" style="margin-top: 15px;">
-                                <h4 style="margin: 0; font-size: 1.1rem; color: #333;">What can this role do?</h4>
-                                <p style="margin: 5px 0 15px; font-size: 0.85rem; color: #666;">Choose the permissions that best fit this role</p>
+                            <div class="zuru-input-group">
+                                <label class="zuru-label">What can this role do?</label>
+                                <span class="zuru-sublabel">Choose the permissions that best fit this role</span>
+                                
+                                <div class="zuru-permission-card">
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">⚙️</span>
+                                        <span class="zuru-permission-name">Manage Settings</span>
+                                        <input type="checkbox" value="manage_settings">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">🛒</span>
+                                        <span class="zuru-permission-name">Record Sale</span>
+                                        <input type="checkbox" value="record_sale">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">✅</span>
+                                        <span class="zuru-permission-name">Confirm Sales Payment</span>
+                                        <input type="checkbox" value="confirm_sales_payment">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">↩️</span>
+                                        <span class="zuru-permission-name">Record Returns</span>
+                                        <input type="checkbox" value="record_returns">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">➕</span>
+                                        <span class="zuru-permission-name">Add Product</span>
+                                        <input type="checkbox" value="add_product">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">✏️</span>
+                                        <span class="zuru-permission-name">Edit Product</span>
+                                        <input type="checkbox" value="edit_product">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">🗑️</span>
+                                        <span class="zuru-permission-name">Delete Product</span>
+                                        <input type="checkbox" value="delete_product">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">📦</span>
+                                        <span class="zuru-permission-name">View Inventory</span>
+                                        <input type="checkbox" value="view_inventory">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">📊</span>
+                                        <span class="zuru-permission-name">View Analytics</span>
+                                        <input type="checkbox" value="view_store_analytics">
+                                    </label>
+                                </div>
                             </div>
-
-                            <div class="permissions-list" style="max-height: 400px; overflow-y: auto; padding-right: 10px;">
-                                <label><input type="checkbox" value="manage_suppliers"> Manage Suppliers</label>
-                                <label><input type="checkbox" value="receive_sales_alerts"> Receive Sales Alerts</label>
-                                <label><input type="checkbox" value="edit_invoice_style"> Edit Invoice Style</label>
-                                <label><input type="checkbox" value="view_records"> View Records</label>
-                                <label><input type="checkbox" value="view_weekly_sales_summary"> View Weekly Sales Summary</label>
-                                <label><input type="checkbox" value="set_payment_reminder_time"> Set Payment Reminder Time</label>
-                                <label><input type="checkbox" value="export_data"> Export Data</label>
-                                <label><input type="checkbox" value="delete_records"> Delete Records</label>
-                                <label><input type="checkbox" value="view_inventory"> View Inventory</label>
-                                <label><input type="checkbox" value="view_store_analytics"> View Store Analytics</label>
-                                <label><input type="checkbox" value="view_reports"> View Reports</label>
-                                <label><input type="checkbox" value="manage_staff"> Manage Staff</label>
-                                <label><input type="checkbox" value="create_store_role"> Create Store Role</label>
-                                <label><input type="checkbox" value="assign_role"> Assign Role</label>
-                                <label><input type="checkbox" value="add_store_staff"> Add Store Staff</label>
-                                <label><input type="checkbox" value="remove_store_staff"> Remove Store Staff</label>
-                                <label><input type="checkbox" value="view_customers"> View Customers</label>
-                                <label><input type="checkbox" value="manage_settings"> Manage Settings</label>
-                                <label><input type="checkbox" value="record_sale"> Record Sale</label>
-                                <label><input type="checkbox" value="confirm_sales_payment"> Confirm Sales Payment</label>
-                                <label><input type="checkbox" value="record_returns"> Record Returns</label>
-                                <label><input type="checkbox" value="add_product"> Add Product</label>
-                                <label><input type="checkbox" value="edit_product"> Edit Product</label>
-                                <label><input type="checkbox" value="delete_product"> Delete Product</label>
-                                <label><input type="checkbox" value="record_restock"> Record Restock</label>
-                                <label><input type="checkbox" value="record_stock_out"> Record Stock Out</label>
-                            </div>
-                            <button type="submit" class="btn primary" style="width: 100%; margin-top: 20px;">Save Role</button>
+                            
+                            <button type="submit" class="zuru-submit-btn">Create Role</button>
                         </form>
-                        <ul id="rolesList"></ul>
+                        
+                        <div id="rolesListContainer">
+                            <div class="action-bar" style="border: none;"><button class="zuru-create-role-btn" onclick="toggleRoleForm()">+ Create New Role</button></div>
+                            <ul id="rolesList"></ul>
+                        </div>
                     </div>
 
                     <!-- Staff Management -->
-                    <div class="admin-card">
-                        <h3>Staff Management</h3>
-                        <div class="action-bar"><button class="btn secondary" onclick="toggleStaffForm()">+ Add Staff</button></div>
+                    <div class="admin-card zuru-style">
+                        <div class="zuru-header">
+                            <button class="zuru-back-btn" onclick="toggleStaffForm()">←</button>
+                            <h2>Add Staff</h2>
+                        </div>
+                        
                         <form id="staffForm" class="hidden">
-                            <input type="text" id="staffName" placeholder="Staff Name" required>
-                            <select id="staffRole" required>
-                                <option value="">Select Role...</option>
-                            </select>
-                            <button type="submit" class="btn primary">Save Staff</button>
+                            <div class="zuru-input-group">
+                                <label class="zuru-label">Email Address</label>
+                                <span class="zuru-sublabel">Enter the email address of the person you want to add</span>
+                                <input type="email" id="staffEmail" class="zuru-input" placeholder="example@email.com" required>
+                            </div>
+                            
+                            <div class="zuru-input-group">
+                                <label class="zuru-label">What can this person do?</label>
+                                <span class="zuru-sublabel">Choose the role that best fits their responsibilities</span>
+                                <select id="staffRole" class="zuru-role-select" required>
+                                    <option value="">Select Role...</option>
+                                </select>
+                                <button type="button" class="zuru-create-role-btn" onclick="toggleRoleForm()" style="padding: 10px; font-size: 0.9rem;">+ Create New Role</button>
+                            </div>
+                            
+                            <button type="submit" class="zuru-submit-btn">Add Staff</button>
                         </form>
-                        <ul id="staffList"></ul>
+                        
+                        <div id="staffListContainer">
+                            <div class="action-bar" style="border: none;"><button class="zuru-create-role-btn" onclick="toggleStaffForm()">+ Add New Staff</button></div>
+                            <ul id="staffList"></ul>
+                        </div>
                     </div>
 
                     <!-- Category Management -->
@@ -983,10 +1081,17 @@
                     </div>
 
                     <div class="admin-card">
-                        <h3>Store Settings</h3>
-                        <p>Manage multiple stores and printer settings.</p>
-                        <button class="btn secondary" onclick="printTest()">Test Printer</button>
+                        <h3>Expense Category Management</h3>
+                        <div class="action-bar">
+                            <input type="text" id="newExpCatName" placeholder="New Expense Category" style="width: 150px; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                            <button class="btn secondary" onclick="addExpenseCategory()" style="padding: 5px 10px;">+ Add</button>
+                        </div>
+                        <div id="expenseCategoriesManager" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                            <!-- Expense categories will be injected here -->
+                            <p style="font-size: 0.8rem; color: #888;">Loading expense categories...</p>
+                        </div>
                     </div>
+
                 </div>
             </section>
 

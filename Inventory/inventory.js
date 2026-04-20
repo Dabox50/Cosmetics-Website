@@ -23,11 +23,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkPermission(perm) {
-        const loggedInStaffId = sessionStorage.getItem('shayorsStaffId') || localStorage.getItem('shayorsStaffId');
-        if (!loggedInStaffId) return true; // Default to admin/all if not a specific staff login
+        const loggedInStaffEmail = sessionStorage.getItem('shayorsStaffEmail') || localStorage.getItem('shayorsStaffEmail');
+        const isMasterAdmin = sessionStorage.getItem('shayorsIsAdmin') === 'true' || localStorage.getItem('shayorsIsAdmin') === 'true' || localStorage.getItem('inventoryLoggedIn') === 'true';
+
+        // If it's the master admin, they have all permissions
+        if (isMasterAdmin) return true;
+
+        if (!loggedInStaffEmail) return false; 
         
-        const currentStaff = staff.find(s => s.id == loggedInStaffId);
+        const currentStaff = staff.find(s => s.email === loggedInStaffEmail);
         if (!currentStaff) return false;
+        
+        if (currentStaff.role === 'Admin') return true; // Any staff with "Admin" role also has full access
         
         const currentRole = roles.find(r => r.name === currentStaff.role);
         if (!currentRole) return false;
@@ -173,13 +180,66 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modified) {
                 // Sort by date descending
                 localSales.sort((a, b) => new Date(b.date) - new Date(a.date));
-                sales = localSales;
-                localStorage.setItem('shayorsSales', JSON.stringify(sales));
+                localStorage.setItem('shayorsSales', JSON.stringify(localSales));
             }
+            sales = localSales;
             return modified;
         } catch (error) {
             console.error("Sync Sales Error:", error);
             return false;
+        }
+    }
+
+    async function syncCustomersWithAPI() {
+        const token = getAdminToken();
+        if (!token) return;
+
+        let localCustomers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
+        if (localCustomers.length === 0) return;
+
+        try {
+            for (const cust of localCustomers) {
+                delete cust.id; // Let MongoDB generate ID
+                await fetch(`${API_BASE}/customers`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(cust)
+                });
+            }
+            // Clear local storage to avoid double sync
+            localStorage.removeItem('shayorsCustomers');
+            console.log("Local customers synced to API");
+        } catch (error) {
+            console.error("Sync Customers Error:", error);
+        }
+    }
+
+    async function syncAdjustmentsWithAPI() {
+        const token = getAdminToken();
+        if (!token) return;
+
+        let localAdjustments = JSON.parse(localStorage.getItem('shayorsAdjustments')) || [];
+        if (localAdjustments.length === 0) return;
+
+        try {
+            for (const adj of localAdjustments) {
+                delete adj.id;
+                await fetch(`${API_BASE}/adjustments`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(adj)
+                });
+            }
+            localStorage.removeItem('shayorsAdjustments');
+            console.log("Local adjustments synced to API");
+        } catch (error) {
+            console.error("Sync Adjustments Error:", error);
         }
     }
 
@@ -525,7 +585,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${item.name || item.productName || 'Unknown Product'}</td>
                 <td>${item.quantity || item.qty || 1}</td>
                 <td>₦${(item.price || 0).toLocaleString()}</td>
-                <td>₦${(item.total || 0).toLocaleString()}</td>
+                <td>₦${(item.total || ((item.price || 0) * (item.quantity || item.qty || 0)) || 0).toLocaleString()}</td>
             </tr>
         `).join('');
 
@@ -584,6 +644,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 0. Admin Authentication
     async function init() {
+        // Handle URL tokens for Invitations or Password Resets
+        const urlParams = new URLSearchParams(window.location.search);
+        const inviteToken = urlParams.get('inviteToken');
+        const resetToken = urlParams.get('resetToken');
+
+        if (inviteToken) {
+            showAcceptInviteModal(inviteToken);
+            return;
+        }
+        if (resetToken) {
+            showResetPasswordModal(resetToken);
+            return;
+        }
+
         let token = getAdminToken();
         
         if (!token) {
@@ -593,6 +667,11 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleAuthVisibility(true);
             await fetchInventory();
             await fetchSpaCategories();
+            await fetchExpenseCategories();
+            await syncCustomersWithAPI();
+            await syncAdjustmentsWithAPI();
+            await fetchCustomers();
+            await fetchAdjustments();
             const syncModified = await syncSalesWithAPI();
             enforcePermissions();
 
@@ -639,16 +718,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.innerHTML = `
             <div id="loginModal" class="modal">
-                <div class="modal-content" style="text-align: center;">
+                <div class="modal-content" style="text-align: center; max-width: 400px;">
                     <img src="../Image/Shayor's Cosmetics .png" width="150" style="margin-bottom: 20px;">
-                    <h2 style="margin-bottom: 20px; font-family: 'Playfair Display', serif;">Admin Login</h2>
+                    <h2 style="margin-bottom: 20px; font-family: 'Playfair Display', serif;">Inventory Login</h2>
+                    
                     <form id="loginForm">
-                        <input type="password" id="adminPass" placeholder="Enter Admin Password" required 
+                        <input type="email" id="loginEmail" placeholder="Email Address" required 
+                               style="width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 5px;">
+                        <input type="password" id="loginPass" placeholder="Password" required 
                                style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px;">
-                        <div style="text-align: left; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
-                            <input type="checkbox" id="rememberMe" style="width: 18px; height: 18px; cursor: pointer;">
-                            <label for="rememberMe" style="font-size: 0.9rem; color: #555; cursor: pointer;">Remember Me</label>
+                        
+                        <div style="text-align: left; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <input type="checkbox" id="rememberMe" style="width: 16px; height: 16px; cursor: pointer;">
+                                <label for="rememberMe" style="font-size: 0.85rem; color: #555; cursor: pointer;">Remember Me</label>
+                            </div>
+                            <a href="#" onclick="showForgotPasswordModal(); return false;" style="font-size: 0.85rem; color: var(--primary-color); text-decoration: none;">Forgot Password?</a>
                         </div>
+                        
                         <button type="submit" class="btn primary" style="width: 100%; padding: 12px; border-radius: 5px;">Login to Dashboard</button>
                     </form>
                     <p style="margin-top: 20px;"><a href="../index.html" style="color: #888; text-decoration: none; font-size: 0.85rem;">← Back to Home</a></p>
@@ -658,40 +745,145 @@ document.addEventListener('DOMContentLoaded', () => {
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const password = document.getElementById('adminPass').value;
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPass').value;
             const remember = document.getElementById('rememberMe').checked;
 
             try {
                 const response = await fetch(`${API_BASE}/admin/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ password })
+                    body: JSON.stringify({ email, password })
                 });
 
+                const data = await response.json();
+
                 if (response.ok) {
-                    const data = await response.json();
                     sessionStorage.setItem('shayorsAdminToken', data.token);
+                    sessionStorage.setItem('shayorsStaffEmail', data.email);
+                    sessionStorage.setItem('shayorsIsAdmin', !data.isStaff);
                     if (remember) {
                         localStorage.setItem('shayorsAdminToken', data.token);
+                        localStorage.setItem('shayorsStaffEmail', data.email);
+                        localStorage.setItem('shayorsIsAdmin', !data.isStaff);
+                        if (!data.isStaff) localStorage.setItem('inventoryLoggedIn', 'true');
                     }
                     toggleAuthVisibility(true);
-                    fetchInventory();
-                } else if (response.status === 503) {
-                    alert("Server is waking up, please wait a minute and try again...");
+                    location.reload(); // Reload to apply all changes and load data
                 } else {
-                    alert("Access Denied! Invalid Password.");
+                    alert(data.message || "Login failed. Please check your credentials.");
                 }
             } catch (error) {
                 console.error("Login failed:", error);
-                alert("Server is waking up, please wait a minute and try again...");
+                alert("Connection error. Is the server running?");
             }
         });
     }
 
+    window.showForgotPasswordModal = function() {
+        const container = document.getElementById('loginModalContainer');
+        container.innerHTML = `
+            <div class="modal">
+                <div class="modal-content" style="text-align: center; max-width: 400px;">
+                    <h2 style="margin-bottom: 10px;">Forgot Password</h2>
+                    <p style="font-size: 0.9rem; color: #666; margin-bottom: 20px;">Enter your Gmail to receive a reset link</p>
+                    <form id="forgotPassForm">
+                        <input type="email" id="resetEmail" placeholder="Your Gmail Address" required 
+                               style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px;">
+                        <button type="submit" class="btn primary" style="width: 100%; padding: 12px;">Send Reset Link</button>
+                        <button type="button" class="btn secondary" onclick="showLoginModal()" style="width: 100%; padding: 12px; margin-top: 10px;">Back to Login</button>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('forgotPassForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('resetEmail').value;
+            try {
+                const res = await fetch(`${API_BASE}/admin/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                alert(data.message);
+                if (res.ok) showLoginModal();
+            } catch (err) { alert("Failed to send reset link."); }
+        });
+    };
+
+    window.showResetPasswordModal = function(token) {
+        const container = document.getElementById('loginModalContainer');
+        container.innerHTML = `
+            <div class="modal">
+                <div class="modal-content" style="text-align: center; max-width: 400px;">
+                    <h2>Set New Password</h2>
+                    <form id="resetPassForm">
+                        <input type="password" id="newPass" placeholder="Enter New Password" required 
+                               style="width: 100%; padding: 12px; margin: 15px 0; border: 1px solid #ddd; border-radius: 5px;">
+                        <button type="submit" class="btn primary" style="width: 100%; padding: 12px;">Update Password</button>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('resetPassForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('newPass').value;
+            try {
+                const res = await fetch(`${API_BASE}/admin/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, password })
+                });
+                const data = await res.json();
+                alert(data.message);
+                if (res.ok) showLoginModal();
+            } catch (err) { alert("Reset failed."); }
+        });
+    };
+
+    window.showAcceptInviteModal = function(token) {
+        const container = document.getElementById('loginModalContainer');
+        container.innerHTML = `
+            <div class="modal">
+                <div class="modal-content" style="text-align: center; max-width: 400px;">
+                    <h2>Accept Staff Invitation</h2>
+                    <p style="margin-bottom: 15px;">Please set your password to join the team</p>
+                    <form id="acceptInviteForm">
+                        <input type="password" id="staffPass" placeholder="Choose a Password" required 
+                               style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px;">
+                        <button type="submit" class="btn primary" style="width: 100%; padding: 12px;">Activate Account</button>
+                    </form>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('acceptInviteForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('staffPass').value;
+            try {
+                const res = await fetch(`${API_BASE}/admin/accept-invite`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token, password })
+                });
+                const data = await res.json();
+                alert(data.message);
+                if (res.ok) showLoginModal();
+            } catch (err) { alert("Activation failed."); }
+        });
+    };
+
     window.logoutAdmin = function() {
         if (confirm("Are you sure you want to logout?")) {
             sessionStorage.removeItem('shayorsAdminToken');
+            sessionStorage.removeItem('shayorsStaffEmail');
+            sessionStorage.removeItem('shayorsIsAdmin');
             localStorage.removeItem('shayorsAdminToken');
+            localStorage.removeItem('shayorsStaffEmail');
+            localStorage.removeItem('shayorsIsAdmin');
             localStorage.removeItem('inventoryLoggedIn');
             window.location.reload();
         }
@@ -703,14 +895,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let expenses = JSON.parse(localStorage.getItem('shayorsExpenses')) || [];
     let customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
     let suppliers = JSON.parse(localStorage.getItem('shayorsSuppliers')) || [];
-    let staff = JSON.parse(localStorage.getItem('shayorsStaff')) || [{id: 1, name: 'Admin', role: 'Admin', email: 'admin@shayors.com'}];
+    let staff = JSON.parse(localStorage.getItem('shayorsStaff')) || [];
     let roles = JSON.parse(localStorage.getItem('shayorsRoles')) || [{name: 'Admin', permissions: ['all']}];
     let adjustments = JSON.parse(localStorage.getItem('shayorsAdjustments')) || [];
     let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
+    let costAnalysis = JSON.parse(localStorage.getItem('shayorsCostAnalysis')) || [];
     const initialSpaCategories = [{ name: "Salon & Beauty", _id: "spa1" }, { name: "Spa and Wellness", _id: "spa2" }, { name: "Massage", _id: "spa3" }];
     let spaCategories = JSON.parse(localStorage.getItem('shayorsSpaCategories')) || initialSpaCategories;
     const initialCategoriesList = ["Scrub", "Black soap", "Lotion", "Tube", "Oil", "Serum", "Bar soap", "Cleanser", "Toner", "Perfume oil", "Airfreshner", "Gift box", "Tea", "Facesoap", "Body spray", "Roll on", "Lubricant", "Sponge", "Haircare", "Aphrodisiacs", "Cotton pad", "Wipes"];
     let categories = JSON.parse(localStorage.getItem('shayorsCategories')) || initialCategoriesList.map(name => ({ name, _id: 'local_' + Math.random().toString(36).substr(2, 9) }));
+    
+    const initialExpenseCategories = ["Rent", "Salaries", "Raw Materials", "Utility", "Logistics", "Advertising", "Maintenance", "Tax", "Other"];
+    let expenseCategories = JSON.parse(localStorage.getItem('shayorsExpenseCategories')) || initialExpenseCategories.map(name => ({ name, _id: 'local_' + Math.random().toString(36).substr(2, 9) }));
 
     let currentOrders = [];
     let currentSaleItems = [];
@@ -917,13 +1113,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (moduleId === 'orders') fetchOrders();
         if (moduleId === 'sales') { syncSalesWithAPI().then(() => { renderSalesHistory(); updateSaleProductDropdown(); }); }
-        if (moduleId === 'expenses') renderExpenses();
+        if (moduleId === 'expenses') { renderExpenses(); renderCostAnalysis(); fetchExpenseCategories(); }
         if (moduleId === 'analytics') { syncSalesWithAPI().then(() => renderAnalytics()); }
         if (moduleId === 'spa') renderSpaServices();
         if (moduleId === 'adjustments') { renderAdjustments(); updateAdjustmentProductDropdown(); }
         if (moduleId === 'customers') renderCustomers();
         if (moduleId === 'suppliers') renderSuppliers();
         if (moduleId === 'store') { renderStore(); updateStaffRoleDropdown(); fetchCategories(); }
+        
+        enforcePermissions();
     };
 
     // 4. Image Handling
@@ -1842,12 +2040,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             <tr style="border-bottom: 1px solid #eee;">
                                 <td style="padding: 10px; text-align: center; font-size: 12px; color: #666; vertical-align: top;">${index + 1}</td>
                                 <td style="padding: 10px; font-size: 12px; vertical-align: top; word-wrap: break-word;">
-                                    <div style="font-weight: 600; color: #000;">${item.name}</div>
+                                    <div style="font-weight: 600; color: #000;">${item.name || item.productName || 'Unnamed Product'}</div>
                                     <div style="font-size: 10px; color: #777; margin-top: 3px; line-height: 1.4;">${item.description || ''}</div>
                                 </td>
-                                <td style="padding: 10px; text-align: center; font-size: 12px; vertical-align: top;">${item.qty}.00</td>
+                                <td style="padding: 10px; text-align: center; font-size: 12px; vertical-align: top;">${item.qty || item.quantity || 0}.00</td>
                                 <td style="padding: 10px; text-align: right; font-size: 12px; vertical-align: top;">${(item.price || 0).toLocaleString()}.00</td>
-                                <td style="padding: 10px; text-align: right; font-size: 12px; vertical-align: top; font-weight: 600;">${(item.total || 0).toLocaleString()}.00</td>
+                                <td style="padding: 10px; text-align: right; font-size: 12px; vertical-align: top; font-weight: 600;">${(item.total || ((item.price || 0) * (item.qty || item.quantity || 0)) || 0).toLocaleString()}.00</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -1865,15 +2063,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="width: 40%; background: #fafafa; padding: 15px; border-radius: 4px; height: fit-content; border: 1px solid #eee;">
                         <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 12px;">
                             <span style="color: #777;">Sub Total</span>
-                            <span style="color: #444;">${(sale.total || 0).toLocaleString()}.00</span>
+                            <span style="color: #444;">${(sale.total || sale.totalAmount || 0).toLocaleString()}.00</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 2px solid #eee; font-weight: bold; font-size: 12px;">
                             <span style="color: #000;">Total</span>
-                            <span style="color: #000;">₦${(sale.total || 0).toLocaleString()}.00</span>
+                            <span style="color: #000;">₦${(sale.total || sale.totalAmount || 0).toLocaleString()}.00</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; padding: 10px 0 0; margin-top: 5px;">
                             <span style="font-weight: bold; color: #2e7d32; font-size: 13px;">Balance Due</span>
-                            <span style="font-weight: bold; color: #2e7d32; font-size: 16px;">₦${(sale.total || 0).toLocaleString()}.00</span>
+                            <span style="font-weight: bold; color: #2e7d32; font-size: 16px;">₦${(sale.total || sale.totalAmount || 0).toLocaleString()}.00</span>
                         </div>
                     </div>
                 </div>
@@ -1944,12 +2142,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const body = document.getElementById('salesHistoryBody');
         if (!body) return;
         
-        // Use reconciled sales from localStorage
-        const localSales = [...sales].reverse();
+        const dateFilter = document.getElementById('salesDateFilter')?.value;
+        
+        // Use reconciled sales from localStorage sorted by date descending
+        let filteredSales = [...sales].sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        if (dateFilter) {
+            filteredSales = filteredSales.filter(s => {
+                const saleDate = new Date(s.date || s.createdAt).toISOString().split('T')[0];
+                return saleDate === dateFilter;
+            });
+        }
         
         body.innerHTML = '';
-        localSales.forEach(s => {
-            const date = new Date(s.date).toLocaleDateString();
+        filteredSales.forEach(s => {
+            const date = new Date(s.date || s.createdAt).toLocaleDateString();
             const itemCount = Array.isArray(s.items) ? s.items.length : 1;
             const badgeClass = s.status === 'Paid' ? 'badge-in' : 'badge-out';
             
@@ -1973,10 +2180,16 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         });
         
-        if (localSales.length === 0) {
-            body.innerHTML = '<tr><td colspan="7">No orders found.</td></tr>';
+        if (filteredSales.length === 0) {
+            body.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px; color: #888;">No orders found ${dateFilter ? 'for ' + dateFilter : ''}.</td></tr>`;
         }
     }
+
+    window.clearSalesDateFilter = function() {
+        const filter = document.getElementById('salesDateFilter');
+        if (filter) filter.value = '';
+        renderSalesHistory();
+    };
 
     window.viewOrder = async function(id) {
         // Try local first
@@ -2113,11 +2326,13 @@ document.addEventListener('DOMContentLoaded', () => {
         expenses.slice().reverse().forEach((e, idx) => {
             body.innerHTML += `
                 <tr>
-                    <td>${e.date}<br><small>${e.code || ''}</small></td>
+                    <td>${e.date}</td>
+                    <td>${e.code || ''}</td>
                     <td>${e.category}</td>
-                    <td>${e.description}<br><small>Vendor: ${e.vendor || 'N/A'}</small></td>
+                    <td>${e.description}</td>
+                    <td>${e.vendor || 'N/A'}</td>
                     <td>${e.paymentMethod || 'N/A'}</td>
-                    <td>₦${e.amount.toLocaleString()}</td>
+                    <td>₦${(e.amount || 0).toLocaleString()}</td>
                     <td><span class="badge ${e.status === 'Paid' ? 'badge-in' : (e.status === 'Pending' ? 'badge-out' : 'badge-low')}">${e.status}</span></td>
                     <td><button class="btn danger" onclick="deleteExpense(${idx})">Del</button></td>
                 </tr>
@@ -2129,6 +2344,92 @@ document.addEventListener('DOMContentLoaded', () => {
         expenses.splice(expenses.length - 1 - idx, 1);
         localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
         renderExpenses();
+    };
+
+    // Cost Analysis Functions
+    window.showCostAnalysisForm = function() {
+        document.getElementById('costAnalysisForm').classList.toggle('hidden');
+    };
+
+    window.calcCostAnalysis = function() {
+        const raw = parseFloat(document.getElementById('costRawMaterials').value) || 0;
+        const container = parseFloat(document.getElementById('costContainer').value) || 0;
+        const label = parseFloat(document.getElementById('costLabel').value) || 0;
+        const seals = parseFloat(document.getElementById('costSeals').value) || 0;
+        const logistics = parseFloat(document.getElementById('costLogistics').value) || 0;
+        const output = parseFloat(document.getElementById('costOutput').value) || 1;
+
+        const totalInput = raw + container + label + seals + logistics;
+        const costPrice = totalInput / (output || 1);
+
+        const resTotalInput = document.getElementById('resTotalInput');
+        const resCostPrice = document.getElementById('resCostPrice');
+        if (resTotalInput) resTotalInput.innerText = `₦${totalInput.toLocaleString()}`;
+        if (resCostPrice) resCostPrice.innerText = `₦${costPrice.toLocaleString()}`;
+    };
+
+    const costAnalysisForm = document.getElementById('costAnalysisForm');
+    if (costAnalysisForm) {
+        costAnalysisForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const totalInputRaw = document.getElementById('resTotalInput').innerText.replace('₦', '').replace(/,/g, '');
+            const costPriceRaw = document.getElementById('resCostPrice').innerText.replace('₦', '').replace(/,/g, '');
+
+            const analysis = {
+                id: Date.now(),
+                date: document.getElementById('costDate').value,
+                productName: document.getElementById('costProductName').value,
+                category: document.getElementById('costCategory').value,
+                size: document.getElementById('costSize').value,
+                rawMaterials: parseFloat(document.getElementById('costRawMaterials').value) || 0,
+                container: parseFloat(document.getElementById('costContainer').value) || 0,
+                label: parseFloat(document.getElementById('costLabel').value) || 0,
+                seals: parseFloat(document.getElementById('costSeals').value) || 0,
+                logistics: parseFloat(document.getElementById('costLogistics').value) || 0,
+                totalInput: parseFloat(totalInputRaw) || 0,
+                output: parseFloat(document.getElementById('costOutput').value) || 0,
+                costPrice: parseFloat(costPriceRaw) || 0
+            };
+            
+            costAnalysis.push(analysis);
+            localStorage.setItem('shayorsCostAnalysis', JSON.stringify(costAnalysis));
+            renderCostAnalysis();
+            
+            costAnalysisForm.reset();
+            document.getElementById('resTotalInput').innerText = '₦0.00';
+            document.getElementById('resCostPrice').innerText = '₦0.00';
+            costAnalysisForm.classList.add('hidden');
+        });
+    }
+
+    function renderCostAnalysis() {
+        const body = document.getElementById('costAnalysisBody');
+        if (!body) return;
+        body.innerHTML = '';
+        
+        costAnalysis.slice().reverse().forEach((c, idx) => {
+            body.innerHTML += `
+                <tr>
+                    <td>${c.date}</td>
+                    <td>${c.productName}</td>
+                    <td>${c.category}</td>
+                    <td>${c.size}</td>
+                    <td>₦${(c.rawMaterials || 0).toLocaleString()}</td>
+                    <td>₦${(c.totalInput || 0).toLocaleString()}</td>
+                    <td>${c.output || 0}</td>
+                    <td>₦${(c.costPrice || 0).toLocaleString()}</td>
+                    <td><button class="btn danger" onclick="deleteCostAnalysis(${idx})">Del</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    window.deleteCostAnalysis = function(idx) {
+        if (!confirm("Delete this analysis record?")) return;
+        costAnalysis.splice(costAnalysis.length - 1 - idx, 1);
+        localStorage.setItem('shayorsCostAnalysis', JSON.stringify(costAnalysis));
+        renderCostAnalysis();
     };
 
     // 8. Analytics Module
@@ -2156,7 +2457,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const totalOverallSales = sales.reduce((sum, s) => sum + (s.total || 0), 0);
         const totalUnitsSold = sales.reduce((sum, s) => {
-            return sum + (s.items || []).reduce((itemSum, item) => itemSum + (item.actualQty || item.qty || 0), 0);
+            return sum + (s.items || []).reduce((itemSum, item) => itemSum + (item.actualQty || item.qty || item.quantity || 0), 0);
         }, 0);
         const creditSalesOverall = sales.filter(s => s.status !== 'Paid').reduce((sum, s) => sum + ((s.total || 0) - (s.amountPaid || 0)), 0);
         const debtorsTotal = customers.reduce((sum, c) => sum + ((c.totalAmount || 0) - (c.partlyPaid || 0)), 0);
@@ -2404,13 +2705,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    async function fetchCustomers() {
+        const token = getAdminToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/customers`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                customers = data.map(c => ({ ...c, id: c._id }));
+                renderCustomers();
+            }
+        } catch (err) { console.error("Fetch customers failed:", err); }
+    }
+
+    async function fetchAdjustments() {
+        const token = getAdminToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/adjustments`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                adjustments = data.map(a => ({ ...a, id: a._id }));
+                renderAdjustments();
+            }
+        } catch (err) { console.error("Fetch adjustments failed:", err); }
+    }
+
     const customerForm = document.getElementById('customerForm');
     if (customerForm) {
-        customerForm.addEventListener('submit', (e) => {
+        customerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const token = getAdminToken();
             const id = document.getElementById('cId').value;
             const custData = {
-                id: id ? id : 'C' + Date.now(),
                 date: document.getElementById('cDate').value,
                 invoiceNo: document.getElementById('cInvoiceNo').value,
                 name: document.getElementById('cName').value,
@@ -2423,17 +2754,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 status: document.getElementById('cStatus').value
             };
 
-            if (id) {
-                const idx = customers.findIndex(c => c.id === id);
-                if (idx !== -1) customers[idx] = custData;
-            } else {
-                customers.push(custData);
-            }
+            try {
+                const url = id ? `${API_BASE}/customers/${id}` : `${API_BASE}/customers`;
+                const method = id ? 'PATCH' : 'POST';
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(custData)
+                });
 
-            localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
-            renderCustomers();
-            customerForm.reset();
-            toggleCustomerForm();
+                if (response.ok) {
+                    await fetchCustomers();
+                    customerForm.reset();
+                    toggleCustomerForm();
+                    alert(id ? 'Customer updated' : 'Customer added');
+                }
+            } catch (err) { alert("Save failed"); }
         });
     }
 
@@ -2486,9 +2825,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.deleteCustomer = function(id) {
         if (confirm('Delete this record?')) {
-            customers = customers.filter(c => c.id !== id);
-            localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
-            renderCustomers();
+            const token = getAdminToken();
+            fetch(`${API_BASE}/customers/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            }).then(res => {
+                if (res.ok) fetchCustomers();
+            });
         }
     };
 
@@ -2553,6 +2896,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderRoles();
         renderCategoryManager();
         renderSpaCategoryManager();
+        renderExpenseCategoriesManager();
     }
 
     function renderStaff() {
@@ -2561,9 +2905,12 @@ document.addEventListener('DOMContentLoaded', () => {
         list.innerHTML = '';
         staff.forEach((s, idx) => {
             list.innerHTML += `
-                <li>
-                    <strong>${s.name}</strong> (${s.role})<br>
-                    <button class="btn danger btn-xs" onclick="deleteStaff(${idx})">x</button>
+                <li class="zuru-item">
+                    <div class="zuru-item-info">
+                        <strong>${s.email}</strong>
+                        <small>${s.role}</small>
+                    </div>
+                    <button class="btn danger btn-xs" onclick="deleteStaff(${idx})">Remove</button>
                 </li>`;
         });
     }
@@ -2574,16 +2921,21 @@ document.addEventListener('DOMContentLoaded', () => {
         list.innerHTML = '';
         roles.forEach((r, idx) => {
             list.innerHTML += `
-                <li>
-                    <strong>${r.name}</strong>
-                    <p><small>${r.permissions.join(', ')}</small></p>
-                    ${r.name !== 'Admin' ? `<button class="btn danger btn-xs" onclick="deleteRole(${idx})">x</button>` : ''}
+                <li class="zuru-item">
+                    <div class="zuru-item-info">
+                        <strong>${r.name}</strong>
+                        <p><small>${r.permissions.join(', ')}</small></p>
+                    </div>
+                    ${r.name !== 'Admin' ? `<button class="btn danger btn-xs" onclick="deleteRole(${idx})">Delete</button>` : ''}
                 </li>`;
         });
     }
 
     window.toggleRoleForm = function() {
-        document.getElementById('roleForm').classList.toggle('hidden');
+        const form = document.getElementById('roleForm');
+        const list = document.getElementById('rolesListContainer');
+        form.classList.toggle('hidden');
+        list.classList.toggle('hidden');
     };
 
     const roleForm = document.getElementById('roleForm');
@@ -2614,23 +2966,46 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.toggleStaffForm = function() {
-        document.getElementById('staffForm').classList.toggle('hidden');
+        const form = document.getElementById('staffForm');
+        const list = document.getElementById('staffListContainer');
+        form.classList.toggle('hidden');
+        list.classList.toggle('hidden');
     };
 
     const staffForm = document.getElementById('staffForm');
     if (staffForm) {
-        staffForm.addEventListener('submit', (e) => {
+        staffForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const s = {
-                id: Date.now(),
-                name: document.getElementById('staffName').value,
-                role: document.getElementById('staffRole').value
-            };
-            staff.push(s);
-            localStorage.setItem('shayorsStaff', JSON.stringify(staff));
-            renderStaff();
-            staffForm.reset();
-            toggleStaffForm();
+            const email = document.getElementById('staffEmail').value;
+            const role = document.getElementById('staffRole').value;
+            const adminToken = getAdminToken();
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/invite`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({ email, role })
+                });
+
+                const data = await response.json();
+                alert(data.message);
+                
+                if (response.ok) {
+                    // Locally add to list for immediate feedback
+                    const s = { id: Date.now(), email, role };
+                    staff.push(s);
+                    localStorage.setItem('shayorsStaff', JSON.stringify(staff));
+                    renderStaff();
+                    staffForm.reset();
+                    toggleStaffForm();
+                }
+            } catch (error) {
+                console.error("Invite failed:", error);
+                alert("Failed to send invitation.");
+            }
         });
     }
 
@@ -2649,10 +3024,6 @@ document.addEventListener('DOMContentLoaded', () => {
             renderRoles();
             updateStaffRoleDropdown();
         }
-    };
-
-    window.printTest = function() {
-        alert('Printer test command sent to connected device.');
     };
 
     // 10. Stock Adjustments logic
@@ -2684,7 +3055,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const adminToken = getAdminToken();
 
                 try {
-                    const response = await fetch(`${API_BASE}/products/${productId}`, {
+                    // 1. Update Product Stock
+                    const stockRes = await fetch(`${API_BASE}/products/${productId}`, {
                         method: 'PATCH',
                         headers: { 
                             'Content-Type': 'application/json',
@@ -2693,29 +3065,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ stock: newStock })
                     });
 
-                    if (response.ok) {
+                    if (stockRes.ok) {
+                        // 2. Create Adjustment Record in Backend
+                        await fetch(`${API_BASE}/adjustments`, {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${adminToken}`
+                            },
+                            body: JSON.stringify({ productId, productName: product.name, type, qty, reason })
+                        });
+
                         product.stock = newStock;
-                        const adj = {
-                            date: new Date().toISOString(),
-                            productName: product.name,
-                            type,
-                            qty,
-                            reason
-                        };
-                        adjustments.push(adj);
-                        localStorage.setItem('shayorsAdjustments', JSON.stringify(adjustments));
-                        renderAdjustments();
+                        await fetchAdjustments();
                         renderInventory();
                         adjustmentForm.reset();
                         toggleAdjustmentForm();
-                        alert('Stock adjusted and synced to backend.');
+                        alert('Stock adjusted and synced.');
                     } else {
-                        const err = await response.json();
+                        const err = await stockRes.json();
                         alert(`Adjustment failed: ${err.message}`);
                     }
                 } catch (error) {
                     console.error("Adjustment sync failed:", error);
-                    alert("Could not connect to server to update stock.");
+                    alert("Could not connect to server.");
                 }
             }
         });
@@ -3152,12 +3525,137 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSpaCategoryManager();
     };
 
+    function renderExpenseCategoriesManager() {
+        const manager = document.getElementById('expenseCategoriesManager');
+        const expSelect = document.getElementById('expCategory');
+        const costSelect = document.getElementById('costCategory');
+        if (!manager) return;
+
+        manager.innerHTML = expenseCategories.map(cat => `
+            <div class="cat-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem;">
+                <span>${cat.name}</span>
+                <button class="btn-text danger" onclick="deleteExpenseCategory('${cat._id}')" style="font-size: 0.8rem;">Delete</button>
+            </div>
+        `).join('') || '<p style="font-size: 0.8rem; color: #888; text-align: center;">No categories added</p>';
+
+        const optionsHtml = '<option value="">Category...</option>' + 
+            expenseCategories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('');
+
+        if (expSelect) {
+            const currentVal = expSelect.value;
+            expSelect.innerHTML = optionsHtml;
+            expSelect.value = currentVal;
+        }
+        if (costSelect) {
+            const currentVal = costSelect.value;
+            costSelect.innerHTML = optionsHtml;
+            costSelect.value = currentVal;
+        }
+    }
+
+    async function fetchExpenseCategories() {
+        const token = getAdminToken();
+        try {
+            const res = await fetch(`${API_BASE}/expense-categories`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                let data = await res.json();
+                
+                // Seed defaults if database is empty
+                if (data.length === 0) {
+                    const defaults = ["Rent", "Salaries", "Raw Materials", "Utility", "Logistics", "Advertising", "Maintenance", "Tax", "Other"];
+                    for (const name of defaults) {
+                        await fetch(`${API_BASE}/expense-categories`, {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ name })
+                        });
+                    }
+                    // Re-fetch after seeding
+                    const reRes = await fetch(`${API_BASE}/expense-categories`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (reRes.ok) data = await reRes.json();
+                }
+
+                expenseCategories = data;
+                localStorage.setItem('shayorsExpenseCategories', JSON.stringify(expenseCategories));
+            }
+        } catch (err) {
+            console.error("Fetch expense categories failed", err);
+        }
+        renderExpenseCategoriesManager();
+    }
+
+    window.addExpenseCategory = async function() {
+        const nameInput = document.getElementById('newExpCatName');
+        const name = nameInput.value.trim();
+        if (!name) return alert("Enter a category name");
+
+        const token = getAdminToken();
+        try {
+            const res = await fetch(`${API_BASE}/expense-categories`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ name })
+            });
+
+            if (res.ok) {
+                nameInput.value = '';
+                await fetchExpenseCategories();
+            } else {
+                const err = await res.json();
+                alert(err.message || "Failed to add category");
+            }
+        } catch (err) {
+            console.error("Add expense category error", err);
+            alert("An error occurred");
+        }
+    };
+
+    window.deleteExpenseCategory = async function(id) {
+        if (!confirm("Are you sure you want to delete this category?")) return;
+        if (id.startsWith('local_')) {
+            expenseCategories = expenseCategories.filter(c => c._id !== id);
+            localStorage.setItem('shayorsExpenseCategories', JSON.stringify(expenseCategories));
+            renderExpenseCategoriesManager();
+            return;
+        }
+
+        const token = getAdminToken();
+        try {
+            const res = await fetch(`${API_BASE}/expense-categories/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                await fetchExpenseCategories();
+            } else {
+                const err = await res.json();
+                alert(err.message || "Failed to delete category");
+            }
+        } catch (err) {
+            console.error("Delete expense category error", err);
+            alert("An error occurred");
+        }
+    };
+
     window.renderRecentPosTransactions = function() {
         const historyContainer = document.getElementById('posRecentTransactions');
         if (!historyContainer) return;
 
+        // Sort by date descending (newest first)
+        const sortedSales = [...sales].sort((a, b) => new Date(b.date) - new Date(a.date));
+        
         // Get last 8 sales for horizontal display
-        const recentSales = [...sales].reverse().slice(0, 8);
+        const recentSales = sortedSales.slice(0, 8);
         
         if (recentSales.length === 0) {
             historyContainer.innerHTML = '<p style="text-align:center; color:#999; margin-top:10px; font-size: 0.8rem;">No recent transactions</p>';
