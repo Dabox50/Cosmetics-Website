@@ -15,7 +15,6 @@ const generateToken = (id) => {
 // @route   POST /api/auth/login
 // @access  Public
 const login = async (req, res) => {
-  console.log("Login request received:", req.body);
   const { email, password } = req.body;
   
   // 1. Try to find Admin
@@ -23,7 +22,6 @@ const login = async (req, res) => {
   let isStaff = false;
 
   if (!email) {
-    // If no email, find the first admin (legacy/easy login)
     user = await Admin.findOne();
   } else {
     user = await Admin.findOne({ email });
@@ -84,7 +82,8 @@ const inviteStaff = async (req, res) => {
   staff.invitationExpires = invitationExpires;
   await staff.save();
 
-  const inviteUrl = `${process.env.FRONTEND_URL}/Inventory/inventory.html?inviteToken=${invitationToken}`;
+  const baseUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:5500';
+  const inviteUrl = `${baseUrl}/Inventory/inventory.html?inviteToken=${invitationToken}`;
 
   const message = `You've been invited to join Shayors Cosmetics as ${role}. 
                    Please click the link below to set your password and access the inventory:
@@ -92,7 +91,7 @@ const inviteStaff = async (req, res) => {
 
   const html = `
     <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #d4af37; border-radius: 10px; max-width: 600px; background-color: #000; color: #fff;">
-      <h2 style="color: #d4af37; text-align: center;">Shayors Cosmetics Invitation</h2>
+      <h2 style="color: #d4af37; text-align: center;">Shayors Cosmestics Invitation</h2>
       <p style="font-size: 16px;">Hello,</p>
       <p style="font-size: 16px;">You've been invited to join the <strong>Shayors Cosmetics</strong> team as a <strong>${role}</strong>.</p>
       <p style="font-size: 16px;">Click the button below to set your password and access the inventory dashboard:</p>
@@ -163,7 +162,8 @@ const forgotPassword = async (req, res) => {
   user.resetPasswordExpires = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
   await user.save();
 
-  const resetUrl = `${process.env.FRONTEND_URL}/Inventory/inventory.html?resetToken=${resetToken}`;
+  const baseUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:5500';
+  const resetUrl = `${baseUrl}/Inventory/inventory.html?resetToken=${resetToken}`;
   const message = `You requested a password reset. Click the link below to reset your password:
                    \n\n ${resetUrl}`;
 
@@ -176,9 +176,6 @@ const forgotPassword = async (req, res) => {
       <div style="text-align: center; margin: 30px 0;">
         <a href="${resetUrl}" style="display: inline-block; padding: 15px 30px; background-color: #d4af37; color: #000; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 18px;">Reset Password</a>
       </div>
-      <p style="font-size: 14px; color: #aaa; margin-top: 20px; border-top: 1px solid #333; padding-top: 15px;">
-        If the button above doesn't work, please copy and paste this link into your browser:
-      </p>
       <p style="word-break: break-all; color: #d4af37;">${resetUrl}</p>
       <p style="font-size: 12px; color: #777; margin-top: 20px;">This reset link will expire in 1 hour.</p>
     </div>
@@ -269,7 +266,8 @@ const resendAllInvites = async (req, res) => {
       staff.invitationExpires = invitationExpires;
       await staff.save();
 
-      const inviteUrl = `${process.env.FRONTEND_URL}/Inventory/inventory.html?inviteToken=${invitationToken}`;
+      const baseUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:5500';
+      const inviteUrl = `${baseUrl}/Inventory/inventory.html?inviteToken=${invitationToken}`;
       const message = `You've been invited to join Shayors Cosmetics as ${staff.role}. Please click the link below to set your password: \n\n ${inviteUrl}`;
       
       const html = `
@@ -292,11 +290,11 @@ const resendAllInvites = async (req, res) => {
       });
       successCount++;
     } catch (err) {
-      console.error(`Failed to resend to ${staff.email}:`, err);
+      console.error('Failed to resend to ' + staff.email + ':', err);
     }
   }
 
-  res.json({ message: `Successfully resent ${successCount} invitations.` });
+  res.json({ message: 'Successfully resent ' + successCount + ' invitations.' });
 };
 
 // @desc    Delete staff
