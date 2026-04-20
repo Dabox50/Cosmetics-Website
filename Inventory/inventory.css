@@ -521,6 +521,11 @@ nav {
     margin-left: 10px;
 }
 
+.zuru-item-actions {
+    display: flex;
+    align-items: center;
+}
+
 .admin-card {
     background: var(--white);
     padding: 25px;

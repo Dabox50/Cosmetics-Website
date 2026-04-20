@@ -1027,13 +1027,24 @@
                     <div class="admin-card zuru-style">
                         <div class="zuru-header">
                             <button class="zuru-back-btn" onclick="toggleStaffForm()">←</button>
-                            <h2>Add Staff</h2>
+                            <h2>Staff Management</h2>
+                        </div>
+
+                        <div id="staffListContainer">
+                            <div class="action-bar" style="border: none; justify-content: space-between; align-items: center; gap: 10px;">
+                                <span class="zuru-sublabel">Manage your team and their permissions</span>
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="zuru-create-role-btn" onclick="resendAllPendingInvites()" style="background: #d4af37; color: #000; border: none;">↻ Resend All Invites</button>
+                                    <button class="zuru-create-role-btn" onclick="toggleStaffForm()">+ Add New Staff</button>
+                                </div>
+                            </div>
+                            <ul id="staffList"></ul>
                         </div>
                         
                         <form id="staffForm" class="hidden">
                             <div class="zuru-input-group">
                                 <label class="zuru-label">Email Address</label>
-                                <span class="zuru-sublabel">Enter the email address of the person you want to add</span>
+                                <span class="zuru-sublabel">Enter the email address of the person you want to add. If they already exist, you can remove them from the list below and re-add them if needed.</span>
                                 <input type="email" id="staffEmail" class="zuru-input" placeholder="example@email.com" required>
                             </div>
                             
@@ -1048,11 +1059,6 @@
                             
                             <button type="submit" class="zuru-submit-btn">Add Staff</button>
                         </form>
-                        
-                        <div id="staffListContainer">
-                            <div class="action-bar" style="border: none;"><button class="zuru-create-role-btn" onclick="toggleStaffForm()">+ Add New Staff</button></div>
-                            <ul id="staffList"></ul>
-                        </div>
                     </div>
 
                     <!-- Category Management -->

@@ -1119,7 +1119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (moduleId === 'adjustments') { renderAdjustments(); updateAdjustmentProductDropdown(); }
         if (moduleId === 'customers') renderCustomers();
         if (moduleId === 'suppliers') renderSuppliers();
-        if (moduleId === 'store') { renderStore(); updateStaffRoleDropdown(); fetchCategories(); }
+        if (moduleId === 'store') { renderStore(); updateStaffRoleDropdown(); fetchCategories(); fetchStaff(); }
         
         enforcePermissions();
     };
@@ -2899,21 +2899,108 @@ document.addEventListener('DOMContentLoaded', () => {
         renderExpenseCategoriesManager();
     }
 
+    async function fetchStaff() {
+        const token = getAdminToken();
+        if (!token) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/admin/staff`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const backendStaff = await res.json();
+                
+                // Reconciliation: If we have local staff not in backend, try to re-invite them
+                // This handles cases like alaminlamina5@gmail.com if it was local-only
+                const localStaff = JSON.parse(localStorage.getItem('shayorsStaff')) || [];
+                for (const ls of localStaff) {
+                    const exists = backendStaff.find(bs => bs.email.toLowerCase() === ls.email.toLowerCase());
+                    if (!exists && ls.email && ls.role) {
+                        console.log(`Syncing local staff to backend: ${ls.email}`);
+                        // Silent re-invite to sync
+                        fetch(`${API_BASE}/admin/invite`, {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ email: ls.email, role: ls.role })
+                        }).catch(err => console.error("Sync failed for", ls.email));
+                    }
+                }
+
+                staff = backendStaff;
+                localStorage.setItem('shayorsStaff', JSON.stringify(staff));
+                renderStaff();
+            }
+        } catch (err) {
+            console.error("Failed to fetch staff:", err);
+        }
+    }
+
     function renderStaff() {
         const list = document.getElementById('staffList');
         if (!list) return;
         list.innerHTML = '';
-        staff.forEach((s, idx) => {
+        staff.forEach((s) => {
+            const isMaster = s.isMaster || s.role === 'Master Admin';
             list.innerHTML += `
-                <li class="zuru-item">
+                <li class="zuru-item" style="${isMaster ? 'border-left: 4px solid #d4af37;' : ''}">
                     <div class="zuru-item-info">
-                        <strong>${s.email}</strong>
-                        <small>${s.role}</small>
+                        <strong>${s.email} ${isMaster ? '⭐' : ''}</strong>
+                        <small>${s.role} ${s.isActivated ? '' : '(Pending)'}</small>
                     </div>
-                    <button class="btn danger btn-xs" onclick="deleteStaff(${idx})">Remove</button>
+                    <div class="zuru-item-actions">
+                        ${!s.isActivated ? `<button class="btn primary btn-xs" onclick="resendInvite('${s.email}', '${s.role}')" style="margin-right: 5px;">Resend</button>` : ''}
+                        ${!isMaster ? `<button class="btn danger btn-xs" onclick="deleteStaff('${s._id}')">Remove</button>` : ''}
+                    </div>
                 </li>`;
         });
     }
+
+    window.resendAllPendingInvites = async function() {
+        if (!confirm("This will send a fresh invitation email to all staff members who haven't joined yet. Continue?")) return;
+        
+        const adminToken = getAdminToken();
+        try {
+            const response = await fetch(`${API_BASE}/admin/resend-all`, {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${adminToken}`
+                }
+            });
+
+            const data = await response.json();
+            alert(data.message);
+            await fetchStaff();
+        } catch (error) {
+            console.error("Resend all failed:", error);
+            alert("Failed to resend invitations.");
+        }
+    };
+
+    window.resendInvite = async function(email, role) {
+        const adminToken = getAdminToken();
+        try {
+            const response = await fetch(`${API_BASE}/admin/invite`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${adminToken}`
+                },
+                body: JSON.stringify({ email, role })
+            });
+
+            const data = await response.json();
+            alert(data.message);
+            if (response.ok) {
+                await fetchStaff();
+            }
+        } catch (error) {
+            console.error("Resend failed:", error);
+            alert("Failed to resend invitation.");
+        }
+    };
 
     function renderRoles() {
         const list = document.getElementById('rolesList');
@@ -2968,8 +3055,16 @@ document.addEventListener('DOMContentLoaded', () => {
     window.toggleStaffForm = function() {
         const form = document.getElementById('staffForm');
         const list = document.getElementById('staffListContainer');
+        const header = form.closest('.admin-card').querySelector('h2');
+        
         form.classList.toggle('hidden');
         list.classList.toggle('hidden');
+        
+        if (!form.classList.contains('hidden')) {
+            header.innerText = 'Add Staff';
+        } else {
+            header.innerText = 'Staff Management';
+        }
     };
 
     const staffForm = document.getElementById('staffForm');
@@ -2979,6 +3074,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const email = document.getElementById('staffEmail').value;
             const role = document.getElementById('staffRole').value;
             const adminToken = getAdminToken();
+
+            // Check if staff already exists in local list
+            const existingStaff = staff.find(s => s.email.toLowerCase() === email.toLowerCase());
+            if (existingStaff) {
+                if (existingStaff.isActivated) {
+                    alert("This staff member is already active in the system.");
+                    return;
+                } else {
+                    if (confirm("This staff member has a pending invitation. Would you like to resend it?")) {
+                        resendInvite(email, role);
+                        staffForm.reset();
+                        toggleStaffForm();
+                        return;
+                    }
+                }
+            }
 
             try {
                 const response = await fetch(`${API_BASE}/admin/invite`, {
@@ -2994,11 +3105,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert(data.message);
                 
                 if (response.ok) {
-                    // Locally add to list for immediate feedback
-                    const s = { id: Date.now(), email, role };
-                    staff.push(s);
-                    localStorage.setItem('shayorsStaff', JSON.stringify(staff));
-                    renderStaff();
+                    // Refresh list from server
+                    await fetchStaff();
                     staffForm.reset();
                     toggleStaffForm();
                 }
@@ -3009,11 +3117,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    window.deleteStaff = function(idx) {
+    window.deleteStaff = async function(id) {
         if (confirm('Delete this staff member?')) {
-            staff.splice(idx, 1);
-            localStorage.setItem('shayorsStaff', JSON.stringify(staff));
-            renderStaff();
+            const token = getAdminToken();
+            try {
+                const res = await fetch(`${API_BASE}/admin/staff/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    await fetchStaff();
+                } else {
+                    const data = await res.json();
+                    alert(data.message || 'Failed to delete staff');
+                }
+            } catch (err) {
+                console.error("Delete failed:", err);
+            }
         }
     };
 

@@ -59,18 +59,30 @@ const login = async (req, res) => {
 const inviteStaff = async (req, res) => {
   const { email, role } = req.body;
 
-  const staffExists = await Staff.findOne({ email });
-  if (staffExists) return res.status(400).json({ message: 'Staff with this email already exists' });
+  // Check if admin with this email exists
+  const adminExists = await Admin.findOne({ email });
+  if (adminExists) {
+    return res.status(400).json({ message: 'This email is registered as an Admin and cannot be added as staff' });
+  }
+
+  let staff = await Staff.findOne({ email });
+  
+  if (staff) {
+    if (staff.isActivated) {
+      return res.status(400).json({ message: 'Staff with this email already exists and is already active' });
+    }
+    // Update role in case it changed
+    staff.role = role;
+  } else {
+    staff = new Staff({ email, role });
+  }
 
   const invitationToken = crypto.randomBytes(32).toString('hex');
   const invitationExpires = Date.now() + 7 * 24 * 60 * 60 * 1000; // 7 days
 
-  const staff = await Staff.create({
-    email,
-    role,
-    invitationToken,
-    invitationExpires
-  });
+  staff.invitationToken = invitationToken;
+  staff.invitationExpires = invitationExpires;
+  await staff.save();
 
   const inviteUrl = `${process.env.FRONTEND_URL}/Inventory/inventory.html?inviteToken=${invitationToken}`;
 
@@ -216,10 +228,98 @@ const resetPassword = async (req, res) => {
   res.status(200).json({ message: 'Password reset successful' });
 };
 
+// @desc    Get all staff (including Master Admins)
+// @route   GET /api/admin/staff
+// @access  Private/Admin
+const getAllStaff = async (req, res) => {
+  const staff = await Staff.find({}).select('-password -invitationToken -invitationExpires');
+  const admins = await Admin.find({}).select('email');
+  
+  const combined = [
+    ...admins.map(a => ({ 
+      _id: a._id, 
+      email: a.email, 
+      role: 'Master Admin', 
+      isActivated: true, 
+      isMaster: true 
+    })),
+    ...staff
+  ];
+  
+  res.json(combined);
+};
+
+// @desc    Resend all pending invitations
+// @route   POST /api/admin/resend-all
+// @access  Private/Admin
+const resendAllInvites = async (req, res) => {
+  const pendingStaff = await Staff.find({ isActivated: false });
+  
+  if (pendingStaff.length === 0) {
+    return res.status(200).json({ message: 'No pending invitations to resend' });
+  }
+
+  let successCount = 0;
+  for (const staff of pendingStaff) {
+    try {
+      const invitationToken = crypto.randomBytes(32).toString('hex');
+      const invitationExpires = Date.now() + 7 * 24 * 60 * 60 * 1000;
+
+      staff.invitationToken = invitationToken;
+      staff.invitationExpires = invitationExpires;
+      await staff.save();
+
+      const inviteUrl = `${process.env.FRONTEND_URL}/Inventory/inventory.html?inviteToken=${invitationToken}`;
+      const message = `You've been invited to join Shayors Cosmetics as ${staff.role}. Please click the link below to set your password: \n\n ${inviteUrl}`;
+      
+      const html = `
+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #d4af37; border-radius: 10px; max-width: 600px; background-color: #000; color: #fff;">
+          <h2 style="color: #d4af37; text-align: center;">Shayors Cosmetics Invitation (Reminders)</h2>
+          <p style="font-size: 16px;">Hello,</p>
+          <p style="font-size: 16px;">This is a reminder that you've been invited to join the <strong>Shayors Cosmetics</strong> team as a <strong>${staff.role}</strong>.</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${inviteUrl}" style="display: inline-block; padding: 15px 30px; background-color: #d4af37; color: #000; text-decoration: none; border-radius: 5px; font-weight: bold; font-size: 18px;">Accept Invitation</a>
+          </div>
+          <p style="word-break: break-all; color: #d4af37;">${inviteUrl}</p>
+        </div>
+      `;
+
+      await sendEmail({
+        email: staff.email,
+        subject: 'Staff Invitation Reminder - Shayors Cosmetics',
+        message,
+        html
+      });
+      successCount++;
+    } catch (err) {
+      console.error(`Failed to resend to ${staff.email}:`, err);
+    }
+  }
+
+  res.json({ message: `Successfully resent ${successCount} invitations.` });
+};
+
+// @desc    Delete staff
+// @route   DELETE /api/admin/staff/:id
+// @access  Private/Admin
+const deleteStaff = async (req, res) => {
+  const staff = await Staff.findById(req.params.id);
+
+  if (staff) {
+    await staff.deleteOne();
+    res.json({ message: 'Staff removed' });
+  } else {
+    res.status(404).json({ message: 'Staff not found' });
+  }
+};
+
 module.exports = { 
   login, 
   inviteStaff, 
   acceptInvitation, 
   forgotPassword, 
-  resetPassword 
+  resetPassword,
+  getAllStaff,
+  deleteStaff,
+  resendAllInvites
 };
