@@ -1,9 +1,9 @@
 const dotenv = require('dotenv');
-const connectDB = require('./src/config/db');
-const app = require('./src/app');
-
 // Load environment variables
 dotenv.config();
+
+const connectDB = require('./src/config/db');
+const app = require('./src/app');
 
 // Connect to Database and start server
 const startServer = async () => {

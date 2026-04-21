@@ -82,7 +82,7 @@ const inviteStaff = async (req, res) => {
   staff.invitationExpires = invitationExpires;
   await staff.save();
 
-  const baseUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:5500';
+  const baseUrl = process.env.FRONTEND_URL || 'https://www.shayorscosmestics.com';
   const inviteUrl = `${baseUrl}/Inventory/inventory.html?inviteToken=${invitationToken}`;
 
   const message = `You've been invited to join Shayors Cosmetics as ${role}. 
@@ -162,7 +162,7 @@ const forgotPassword = async (req, res) => {
   user.resetPasswordExpires = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
   await user.save();
 
-  const baseUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:5500';
+  const baseUrl = process.env.FRONTEND_URL || 'https://www.shayorscosmestics.com';
   const resetUrl = `${baseUrl}/Inventory/inventory.html?resetToken=${resetToken}`;
   const message = `You requested a password reset. Click the link below to reset your password:
                    \n\n ${resetUrl}`;
@@ -266,7 +266,7 @@ const resendAllInvites = async (req, res) => {
       staff.invitationExpires = invitationExpires;
       await staff.save();
 
-      const baseUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:5500';
+      const baseUrl = process.env.FRONTEND_URL || 'https://www.shayorscosmestics.com';
       const inviteUrl = `${baseUrl}/Inventory/inventory.html?inviteToken=${invitationToken}`;
       const message = `You've been invited to join Shayors Cosmetics as ${staff.role}. Please click the link below to set your password: \n\n ${inviteUrl}`;
       
