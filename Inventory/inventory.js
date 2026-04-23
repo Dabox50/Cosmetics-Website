@@ -52,20 +52,44 @@ document.addEventListener('DOMContentLoaded', () => {
             let permissionNeeded = '';
             switch(module) {
                 case 'inventory': permissionNeeded = 'view_inventory'; break;
+                case 'pos': permissionNeeded = 'pos_checkout'; break;
+                case 'orders': permissionNeeded = 'view_records'; break;
                 case 'sales': permissionNeeded = 'record_sale'; break;
                 case 'expenses': permissionNeeded = 'view_records'; break;
-                case 'analytics': permissionNeeded = 'view_store_analytics'; break;
+                case 'analytics': permissionNeeded = 'view_reports'; break;
                 case 'spa': permissionNeeded = 'view_records'; break;
                 case 'adjustments': permissionNeeded = 'record_stock_out'; break;
                 case 'customers': permissionNeeded = 'view_customers'; break;
                 case 'suppliers': permissionNeeded = 'manage_suppliers'; break;
-                case 'store': permissionNeeded = 'manage_settings'; break;
+                case 'store': permissionNeeded = 'manage_staff'; break;
             }
             
             if (permissionNeeded && !checkPermission(permissionNeeded)) {
                 item.style.display = 'none';
             } else {
                 item.style.display = 'block';
+            }
+        });
+
+        // Gate specific UI elements
+        const addProductBtn = document.querySelector('button[onclick="toggleForm()"]');
+        if (addProductBtn) addProductBtn.style.display = checkPermission('add_product') ? 'block' : 'none';
+
+        const importBtn = document.getElementById('importBtn');
+        if (importBtn) importBtn.style.display = (checkPermission('add_product') && checkPermission('manage_settings')) ? 'block' : 'none';
+
+        const storeManagementCards = document.querySelectorAll('#store-module .admin-card');
+        storeManagementCards.forEach(card => {
+            const h2 = card.querySelector('h2');
+            const h3 = card.querySelector('h3');
+            const title = (h2 || h3)?.innerText || '';
+            
+            if (title.includes('Role')) {
+                card.style.display = checkPermission('create_store_role') ? 'block' : 'none';
+            } else if (title.includes('Staff')) {
+                card.style.display = checkPermission('manage_staff') ? 'block' : 'none';
+            } else if (title.includes('Category')) {
+                card.style.display = checkPermission('manage_settings') ? 'block' : 'none';
             }
         });
     }
@@ -96,6 +120,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (deletedIds.includes(order._id)) return; // SKIP DELETED
 
                     const exists = localSales.find(s => s.apiId === order._id || s.id === order._id);
+                    const newStatus = order.paymentStatus === 'paid' ? 'Paid' : (order.paymentStatus === 'partly paid' ? 'Partly Paid' : 'Unpaid');
+                    
                     if (!exists) {
                         localSales.push({
                             id: order._id,
@@ -111,12 +137,16 @@ document.addEventListener('DOMContentLoaded', () => {
                                 total: i.quantity * i.price
                             })),
                             total: order.totalAmount,
-                            status: order.paymentStatus === 'paid' ? 'Paid' : (order.paymentStatus === 'partly paid' ? 'Partly Paid' : 'Unpaid'),
+                            status: newStatus,
                             paymentMethod: order.paymentMethod,
                             amountPaid: order.paymentStatus === 'paid' ? order.totalAmount : 0,
                             platform: order.platform || 'Web Store',
                             type: 'product'
                         });
+                        modified = true;
+                    } else if (exists.status !== newStatus) {
+                        exists.status = newStatus;
+                        if (order.paymentStatus === 'paid') exists.amountPaid = order.totalAmount;
                         modified = true;
                     }
                 });
@@ -280,6 +310,56 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    // --- SALES PRODUCT SEARCH LOGIC ---
+    const saleProductSearch = document.getElementById('saleProductSearch');
+    if (saleProductSearch) {
+        saleProductSearch.addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            const resultsDiv = document.getElementById('saleProductResults');
+            if (term.length < 2) {
+                resultsDiv.classList.add('hidden');
+                return;
+            }
+
+            // Filter and sort alphabetically
+            const matches = inventory
+                .filter(p => p.name.toLowerCase().includes(term))
+                .sort((a, b) => a.name.localeCompare(b.name));
+
+            if (matches.length > 0) {
+                resultsDiv.innerHTML = matches.map(p => `
+                    <div class="search-item" onclick="selectSaleProduct('${p._id}', '${p.name.replace(/'/g, "\\'")}')">
+                        <div style="display: flex; flex-direction: column;">
+                            <span style="font-weight: bold;">${p.name}</span>
+                            <span style="font-size: 0.8rem; color: #666;">₦${p.price.toLocaleString()}</span>
+                        </div>
+                        <span style="font-size: 0.85rem; color: ${p.stock <= 5 ? 'var(--out-of-stock)' : 'var(--in-stock)'};">
+                            ${p.stock} left
+                        </span>
+                    </div>
+                `).join('');
+                resultsDiv.classList.remove('hidden');
+            } else {
+                resultsDiv.classList.add('hidden');
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            const resultsDiv = document.getElementById('saleProductResults');
+            if (resultsDiv && !saleProductSearch.contains(e.target) && !resultsDiv.contains(e.target)) {
+                resultsDiv.classList.add('hidden');
+            }
+        });
+    }
+
+    window.selectSaleProduct = function(id, name) {
+        document.getElementById('saleProduct').value = id;
+        document.getElementById('saleProductSearch').value = name;
+        document.getElementById('saleProductResults').classList.add('hidden');
+        updateSalePrice(); // Re-use existing function
+    };
 
     async function addToCartByBarcode(barcode) {
         // Find product in LOCAL inventory (products added to your store)
@@ -1011,13 +1091,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const date = new Date(order.createdAt).toLocaleDateString();
             const items = order.items.map(i => `${i.productName} (x${i.quantity})`).join('<br>');
             
+            const pStatus = order.paymentStatus || 'unpaid';
+            const pStatusClass = pStatus === 'paid' ? 'status-paid' : 'status-unpaid';
+
             body.innerHTML += `
                 <tr>
                     <td>${date}</td>
                     <td><strong>${order.customerName}</strong><br><small>${order.customerPhone}</small></td>
                     <td>${items}</td>
                     <td>₦${order.totalAmount.toLocaleString()}</td>
-                    <td><span class="badge ${order.paymentStatus === 'paid' ? 'badge-in' : 'badge-out'}">${order.paymentStatus}</span></td>
+                    <td>
+                        <select onchange="updateWebPaymentStatus('${order._id}', this.value)" class="status-select ${pStatusClass}">
+                            <option value="paid" ${pStatus === 'paid' ? 'selected' : ''}>Paid</option>
+                            <option value="unpaid" ${pStatus === 'unpaid' ? 'selected' : ''}>Unpaid</option>
+                            <option value="partly paid" ${pStatus === 'partly paid' ? 'selected' : ''}>Partly Paid</option>
+                            <option value="pending" ${pStatus === 'pending' ? 'selected' : ''}>Pending</option>
+                        </select>
+                    </td>
                     <td>
                         <select onchange="updateOrderStatus('${order._id}', this.value)" class="status-select">
                             <option value="pending" ${order.orderStatus === 'pending' ? 'selected' : ''}>Pending</option>
@@ -1039,7 +1129,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.updateOrderStatus = async function(id, status) {
         const token = getAdminToken();
         try {
-            const res = await fetch(`${API_BASE}/orders/${id}`, {
+            const res = await fetch(`${API_BASE}/orders/${id}/status`, {
                 method: 'PATCH',
                 headers: { 
                     'Content-Type': 'application/json',
@@ -1053,6 +1143,34 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (err) {
             console.error("Status update failed:", err);
+        }
+    };
+
+    window.updateWebPaymentStatus = async function(id, status) {
+        const token = getAdminToken();
+        try {
+            const res = await fetch(`${API_BASE}/orders/${id}/status`, {
+                method: 'PATCH',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ paymentStatus: status })
+            });
+            if (res.ok) {
+                alert('Payment status updated!');
+                // Update local sales too if it exists there
+                const sale = sales.find(s => s.apiId === id || s.id === id);
+                if (sale) {
+                    sale.status = status.charAt(0).toUpperCase() + status.slice(1);
+                    if (status === 'paid') sale.amountPaid = sale.total;
+                    localStorage.setItem('shayorsSales', JSON.stringify(sales));
+                    renderSalesHistory();
+                }
+                fetchOrders();
+            }
+        } catch (err) {
+            console.error("Payment status update failed:", err);
         }
     };
 
@@ -1211,8 +1329,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
                 <td><span class="badge ${badgeClass}">${status}</span></td>
                 <td>
-                    <button class="btn secondary" onclick="editProduct('${p._id}')">Edit</button>
-                    <button class="btn danger" onclick="deleteProduct('${p._id}')">Del</button>
+                    ${checkPermission('edit_product') ? `<button class="btn secondary" onclick="editProduct('${p._id}')">Edit</button>` : ''}
+                    ${checkPermission('delete_product') ? `<button class="btn danger" onclick="deleteProduct('${p._id}')">Del</button>` : ''}
                 </td>
             `;
             inventoryBody.appendChild(row);
@@ -1726,16 +1844,15 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('saleDiscount').value = 0;
             document.getElementById('saleCharges').value = 0;
             document.getElementById('saleAmountPaid').value = '';
+            document.getElementById('saleProduct').value = '';
+            document.getElementById('saleProductSearch').value = '';
+            document.getElementById('saleQty').value = 1;
+            document.getElementById('salePrice').value = '';
         }
     };
 
     function updateSaleProductDropdown() {
-        const select = document.getElementById('saleProduct');
-        if (!select) return;
-        select.innerHTML = '<option value="">Select Product...</option>';
-        inventory.forEach(p => {
-            select.innerHTML += `<option value="${p._id}">${p.name} (${p.stock} left)</option>`;
-        });
+        // No longer needed as we use searchable input
     }
 
     window.updateSalePrice = function() {
@@ -1772,6 +1889,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         renderCurrentSaleList();
+
+        // Reset selection
+        document.getElementById('saleProduct').value = '';
+        document.getElementById('saleProductSearch').value = '';
+        document.getElementById('saleQty').value = 1;
+        document.getElementById('salePrice').value = '';
     };
 
     function renderCurrentSaleList() {
@@ -2041,7 +2164,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <td style="padding: 10px; text-align: center; font-size: 12px; color: #666; vertical-align: top;">${index + 1}</td>
                                 <td style="padding: 10px; font-size: 12px; vertical-align: top; word-wrap: break-word;">
                                     <div style="font-weight: 600; color: #000;">${item.name || item.productName || 'Unnamed Product'}</div>
-                                    <div style="font-size: 10px; color: #777; margin-top: 3px; line-height: 1.4;">${item.description || ''}</div>
                                 </td>
                                 <td style="padding: 10px; text-align: center; font-size: 12px; vertical-align: top;">${item.qty || item.quantity || 0}.00</td>
                                 <td style="padding: 10px; text-align: right; font-size: 12px; vertical-align: top;">${(item.price || 0).toLocaleString()}.00</td>
@@ -2108,10 +2230,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.downloadInvoice = function(id) {
+    window.downloadInvoice = async function(id) {
         const sale = sales.find(s => s.apiId === id || s.id === id);
         if (!sale) return;
         
+        // Mark as Paid if not already
+        if (sale.status !== 'Paid') {
+            sale.status = 'Paid';
+            sale.amountPaid = sale.total;
+            localStorage.setItem('shayorsSales', JSON.stringify(sales));
+            
+            // Sync to backend if it has an apiId
+            const apiId = sale.apiId || (sale.id.length > 20 ? sale.id : null);
+            if (apiId) {
+                const token = getAdminToken();
+                let endpoint = '';
+                if (sale.platform === 'Web Store') endpoint = `${API_BASE}/orders/${apiId}/status`;
+                else if (sale.platform === 'POS') endpoint = `${API_BASE}/sales/${apiId}`;
+                else if (sale.platform === 'WhatsApp') endpoint = `${API_BASE}/bookings/${apiId}`;
+
+                if (endpoint) {
+                    try {
+                        await fetch(endpoint, {
+                            method: 'PATCH',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ paymentStatus: 'paid' })
+                        });
+                    } catch (err) { console.error("Failed to sync payment status:", err); }
+                }
+            }
+            renderSalesHistory();
+        }
+
         // Render it first WITHOUT scrolling to avoid capturing blank area during scroll
         renderInvoice(sale, false);
         const invoiceNo = `INV-${(sale.apiId || sale.id).toString().slice(-6).toUpperCase()}`;
@@ -2138,6 +2291,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 500);
     };
 
+    async function syncStatusToSalesAndOrders(invoiceNo, status) {
+        if (!invoiceNo || !invoiceNo.startsWith('INV-')) return;
+        const shortId = invoiceNo.replace('INV-', '').toUpperCase();
+        
+        // Find matching sale in local array
+        const sale = sales.find(s => {
+            const saleId = (s.apiId || s.id || '').toString().toUpperCase();
+            return saleId.endsWith(shortId);
+        });
+
+        if (sale) {
+            sale.status = status;
+            localStorage.setItem('shayorsSales', JSON.stringify(sales));
+            
+            // Sync to backend
+            const apiId = sale.apiId || (sale.id.length > 20 ? sale.id : null);
+            if (apiId) {
+                const token = getAdminToken();
+                let endpoint = '';
+                const backendStatus = status.toLowerCase(); // Map 'Paid' to 'paid', etc.
+                
+                if (sale.platform === 'Web Store') endpoint = `${API_BASE}/orders/${apiId}/status`;
+                else if (sale.platform === 'POS') endpoint = `${API_BASE}/sales/${apiId}`; // Note: Backend POS status update might not exist yet
+                else if (sale.platform === 'WhatsApp') endpoint = `${API_BASE}/bookings/${apiId}`;
+
+                if (endpoint) {
+                    try {
+                        await fetch(endpoint, {
+                            method: 'PATCH',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ paymentStatus: backendStatus })
+                        });
+                    } catch (err) { console.error("Sync failed:", err); }
+                }
+            }
+            renderSalesHistory();
+        }
+    }
+
     async function renderSalesHistory() {
         const body = document.getElementById('salesHistoryBody');
         if (!body) return;
@@ -2158,7 +2353,8 @@ document.addEventListener('DOMContentLoaded', () => {
         filteredSales.forEach(s => {
             const date = new Date(s.date || s.createdAt).toLocaleDateString();
             const itemCount = Array.isArray(s.items) ? s.items.length : 1;
-            const badgeClass = s.status === 'Paid' ? 'badge-in' : 'badge-out';
+            const status = s.status || 'Paid';
+            const statusClass = status === 'Paid' ? 'status-paid' : 'status-unpaid';
             
             const displayId = (s.apiId || s.id || s._id || '').toString().slice(-6).toUpperCase();
             const orderId = s.apiId || s.id || s._id;
@@ -2170,11 +2366,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${s.customer || 'Walk-in'}</td>
                     <td>${itemCount} items (${s.type || 'product'})</td>
                     <td>₦${parseFloat(s.total || s.totalAmount || 0).toLocaleString()}</td>
-                    <td><span class="badge ${badgeClass}">${s.status || 'Paid'}</span></td>
+                    <td>
+                        <select onchange="updateSalePaymentStatus('${orderId}', this.value)" class="status-select ${statusClass}">
+                            <option value="Paid" ${status === 'Paid' ? 'selected' : ''}>Paid</option>
+                            <option value="Unpaid" ${status === 'Unpaid' ? 'selected' : ''}>Unpaid</option>
+                            <option value="Partly Paid" ${status === 'Partly Paid' ? 'selected' : ''}>Partly Paid</option>
+                            <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>Pending</option>
+                        </select>
+                    </td>
                     <td>
                         <button class="btn secondary" onclick='viewOrder("${orderId}")'>View</button>
-                        <button class="btn primary" onclick='downloadInvoice("${orderId}")'>Inv</button>
-                        <button class="btn danger" onclick='deleteOrder("${orderId}")'>Del</button>
+                        ${checkPermission('export_data') ? `<button class="btn primary" onclick='downloadInvoice("${orderId}")'>Inv</button>` : ''}
+                        ${checkPermission('delete_records') ? `<button class="btn danger" onclick='deleteOrder("${orderId}")'>Del</button>` : ''}
                     </td>
                 </tr>
             `;
@@ -2184,6 +2387,42 @@ document.addEventListener('DOMContentLoaded', () => {
             body.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px; color: #888;">No orders found ${dateFilter ? 'for ' + dateFilter : ''}.</td></tr>`;
         }
     }
+
+    window.updateSalePaymentStatus = async function(id, status) {
+        const sale = sales.find(s => s.apiId === id || s.id === id);
+        if (!sale) return;
+        
+        sale.status = status;
+        if (status === 'Paid') sale.amountPaid = sale.total;
+        localStorage.setItem('shayorsSales', JSON.stringify(sales));
+        
+        // Sync to backend
+        const apiId = sale.apiId || (sale.id.length > 20 ? sale.id : null);
+        if (apiId) {
+            const token = getAdminToken();
+            let endpoint = '';
+            const backendStatus = status.toLowerCase();
+            
+            if (sale.platform === 'Web Store') endpoint = `${API_BASE}/orders/${apiId}/status`;
+            else if (sale.platform === 'POS') endpoint = `${API_BASE}/sales/${apiId}`;
+            else if (sale.platform === 'WhatsApp') endpoint = `${API_BASE}/bookings/${apiId}`;
+
+            if (endpoint) {
+                try {
+                    await fetch(endpoint, {
+                        method: 'PATCH',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ paymentStatus: backendStatus })
+                    });
+                } catch (err) { console.error("Sync failed:", err); }
+            }
+        }
+        renderSalesHistory();
+        if (sale.platform === 'Web Store') fetchOrders(); // Update web orders module if visible
+    };
 
     window.clearSalesDateFilter = function() {
         const filter = document.getElementById('salesDateFilter');
@@ -2767,6 +3006,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.ok) {
+                    // Propagate status change to Sales and Web Orders
+                    await syncStatusToSalesAndOrders(custData.invoiceNo, custData.status);
+                    
                     await fetchCustomers();
                     customerForm.reset();
                     toggleCustomerForm();
@@ -2951,8 +3193,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <small>${s.role} ${s.isActivated ? '' : '(Pending)'}</small>
                     </div>
                     <div class="zuru-item-actions">
-                        ${!s.isActivated ? `<button class="btn primary btn-xs" onclick="resendInvite('${s.email}', '${s.role}')" style="margin-right: 5px;">Resend</button>` : ''}
-                        ${!isMaster ? `<button class="btn danger btn-xs" onclick="deleteStaff('${s._id}')">Remove</button>` : ''}
+                        ${(!s.isActivated && checkPermission('add_store_staff')) ? `<button class="btn primary btn-xs" onclick="resendInvite('${s.email}', '${s.role}')" style="margin-right: 5px;">Resend</button>` : ''}
+                        ${(!isMaster && checkPermission('remove_store_staff')) ? `<button class="btn danger btn-xs" onclick="deleteStaff('${s._id}')">Remove</button>` : ''}
                     </div>
                 </li>`;
         });
@@ -3013,7 +3255,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <strong>${r.name}</strong>
                         <p><small>${r.permissions.join(', ')}</small></p>
                     </div>
-                    ${r.name !== 'Admin' ? `<button class="btn danger btn-xs" onclick="deleteRole(${idx})">Delete</button>` : ''}
+                    ${(r.name !== 'Admin' && checkPermission('create_store_role')) ? `<button class="btn danger btn-xs" onclick="deleteRole(${idx})">Delete</button>` : ''}
                 </li>`;
         });
     }

@@ -666,6 +666,21 @@ nav {
     display: none;
 }
 
+.searchable-select-container {
+    position: relative;
+    width: 100%;
+}
+
+.searchable-select-container input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: inherit;
+    background-color: #fff;
+    color: #333;
+}
+
 .highlight-row {
     background-color: #fff9c4 !important;
     transition: background-color 0.5s ease;
@@ -1983,6 +1998,16 @@ footer {
         min-width: 500px;
     }
 
+    .zuru-item {
+        background: #000000;
+        padding: 15px;
+        border-radius: 12px;
+        margin-bottom: 10px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+    }
     /* Touch friendly keypad */
     .pos-keypad {
         grid-template-columns: repeat(3, 1fr);

@@ -5,6 +5,13 @@ const { validateAdminLogin } = require('../utils/validation');
 const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
 
+const getBaseUrl = (req) => {
+  if (process.env.FRONTEND_URL && process.env.FRONTEND_URL !== 'undefined') {
+    return process.env.FRONTEND_URL;
+  }
+  return req.get('origin') || 'https://www.shayorscosmestics.com';
+};
+
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d',
@@ -82,7 +89,7 @@ const inviteStaff = async (req, res) => {
   staff.invitationExpires = invitationExpires;
   await staff.save();
 
-  const baseUrl = process.env.FRONTEND_URL || 'https://www.shayorscosmestics.com';
+  const baseUrl = getBaseUrl(req);
   const inviteUrl = `${baseUrl}/Inventory/inventory.html?inviteToken=${invitationToken}`;
 
   const message = `You've been invited to join Shayors Cosmetics as ${role}. 
@@ -162,7 +169,7 @@ const forgotPassword = async (req, res) => {
   user.resetPasswordExpires = Date.now() + 1 * 60 * 60 * 1000; // 1 hour
   await user.save();
 
-  const baseUrl = process.env.FRONTEND_URL || 'https://www.shayorscosmestics.com';
+  const baseUrl = getBaseUrl(req);
   const resetUrl = `${baseUrl}/Inventory/inventory.html?resetToken=${resetToken}`;
   const message = `You requested a password reset. Click the link below to reset your password:
                    \n\n ${resetUrl}`;
@@ -256,6 +263,7 @@ const resendAllInvites = async (req, res) => {
     return res.status(200).json({ message: 'No pending invitations to resend' });
   }
 
+  const baseUrl = getBaseUrl(req);
   let successCount = 0;
   for (const staff of pendingStaff) {
     try {
@@ -266,7 +274,6 @@ const resendAllInvites = async (req, res) => {
       staff.invitationExpires = invitationExpires;
       await staff.save();
 
-      const baseUrl = process.env.FRONTEND_URL || 'https://www.shayorscosmestics.com';
       const inviteUrl = `${baseUrl}/Inventory/inventory.html?inviteToken=${invitationToken}`;
       const message = `You've been invited to join Shayors Cosmetics as ${staff.role}. Please click the link below to set your password: \n\n ${inviteUrl}`;
       

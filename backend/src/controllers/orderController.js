@@ -23,6 +23,7 @@ const sendEmailAlert = async (order) => {
         <p><strong>Phone:</strong> ${order.customerPhone || 'N/A'}</p>
         <p><strong>Total Amount:</strong> ₦${order.totalAmount.toLocaleString()}</p>
         <p><strong>Platform:</strong> ${order.platform}</p>
+        <p><strong>Receipt Info:</strong> ${order.receiptInfo || 'N/A'}</p>
         <h3>Order Items:</h3>
         <ul>
           ${order.items.map(item => `<li>${item.productName} x ${item.quantity} - ₦${item.price.toLocaleString()}</li>`).join('')}

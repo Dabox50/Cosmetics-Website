@@ -146,6 +146,22 @@
                     <option value="">Select Payment Method...</option>
                     <option value="Bank Transfer">Bank Transfer</option>
                 </select>
+
+                <div id="bankDetails" style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.6;">
+                    <p><strong>Payment Instructions:</strong></p>
+                    <p>Please make payment to the account below and provide the receipt link or upload a file.</p>
+                    <p><strong>Bank Name:</strong> Sterling</p>
+                    <p><strong>Account Name:</strong> Shayors Cosmetics</p>
+                    <p><strong>Account Number:</strong> 0089883643</p>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 0.85rem; color: #555; display: block; margin-bottom: 5px;">Receipt Link (URL) *</label>
+                    <input type="url" id="checkReceiptLink" placeholder="https://example.com/receipt.jpg">
+                    <p style="font-size: 0.75rem; color: #888; margin-top: 5px;">OR Upload Receipt</p>
+                    <input type="file" id="checkReceiptFile" accept="image/*,.pdf">
+                </div>
+
                 <textarea id="checkCustNote" placeholder="Additional Notes (Optional)"></textarea>
                 <div class="modal-actions">
                     <button type="submit" class="btn primary">Complete Order</button>

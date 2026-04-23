@@ -448,7 +448,11 @@
                         <div class="sale-form-box">
                             <h3>Sales Records</h3>
                             <div class="form-grid">
-                                <select id="saleProduct" onchange="updateSalePrice()"></select>
+                                <div class="searchable-select-container">
+                                    <input type="text" id="saleProductSearch" placeholder="Select Product..." autocomplete="off">
+                                    <div id="saleProductResults" class="search-results-dropdown hidden"></div>
+                                    <input type="hidden" id="saleProduct">
+                                </div>
                                 <select id="saleUnitType">
                                     <option value="Pieces">Pieces</option>
                                     <option value="Dozen">Dozen</option>
@@ -807,6 +811,7 @@
                             <option value="Paid">Paid</option>
                             <option value="Not Paid">Not Paid</option>
                             <option value="Partly Paid">Partly Paid</option>
+                            <option value="Pending">Pending</option>
                         </select>
                     </div>
                     <div class="form-actions">
@@ -1010,6 +1015,86 @@
                                         <span class="zuru-permission-icon">📊</span>
                                         <span class="zuru-permission-name">View Analytics</span>
                                         <input type="checkbox" value="view_store_analytics">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">👤</span>
+                                        <span class="zuru-permission-name">View Customers</span>
+                                        <input type="checkbox" value="view_customers">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">🚛</span>
+                                        <span class="zuru-permission-name">Manage Suppliers</span>
+                                        <input type="checkbox" value="manage_suppliers">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">🔔</span>
+                                        <span class="zuru-permission-name">Receive Sales Alerts</span>
+                                        <input type="checkbox" value="receive_sales_alerts">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">🧾</span>
+                                        <span class="zuru-permission-name">Edit Invoice Style</span>
+                                        <input type="checkbox" value="edit_invoice_style">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">📜</span>
+                                        <span class="zuru-permission-name">View Records</span>
+                                        <input type="checkbox" value="view_records">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">📅</span>
+                                        <span class="zuru-permission-name">View Weekly Sales Summary</span>
+                                        <input type="checkbox" value="view_weekly_sales_summary">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">⏰</span>
+                                        <span class="zuru-permission-name">Set Payment Reminder Time</span>
+                                        <input type="checkbox" value="set_payment_reminder_time">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">📤</span>
+                                        <span class="zuru-permission-name">Export Data</span>
+                                        <input type="checkbox" value="export_data">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">📈</span>
+                                        <span class="zuru-permission-name">View Reports</span>
+                                        <input type="checkbox" value="view_reports">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">👥</span>
+                                        <span class="zuru-permission-name">Manage Staff</span>
+                                        <input type="checkbox" value="manage_staff">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">➕</span>
+                                        <span class="zuru-permission-name">Create Store Role</span>
+                                        <input type="checkbox" value="create_store_role">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">🏷️</span>
+                                        <span class="zuru-permission-name">Assign Role</span>
+                                        <input type="checkbox" value="assign_role">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">👤</span>
+                                        <span class="zuru-permission-name">Add Store Staff</span>
+                                        <input type="checkbox" value="add_store_staff">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">➖</span>
+                                        <span class="zuru-permission-name">Remove Store Staff</span>
+                                        <input type="checkbox" value="remove_store_staff">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">🗑️</span>
+                                        <span class="zuru-permission-name">Delete Records</span>
+                                        <input type="checkbox" value="delete_records">
+                                    </label>
+                                    <label class="zuru-permission-item">
+                                        <span class="zuru-permission-icon">🖥️</span>
+                                        <span class="zuru-permission-name">POS Checkout</span>
+                                        <input type="checkbox" value="pos_checkout">
                                     </label>
                                 </div>
                             </div>

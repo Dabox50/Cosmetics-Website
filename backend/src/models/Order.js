@@ -16,7 +16,7 @@ const orderSchema = mongoose.Schema({
   paymentMethod: { type: String, required: true },
   paymentStatus: {
     type: String,
-    enum: ['unpaid', 'paid', 'failed', 'partly paid'],
+    enum: ['unpaid', 'paid', 'failed', 'partly paid', 'pending'],
     default: 'unpaid'
   },
   orderStatus: {
@@ -25,6 +25,7 @@ const orderSchema = mongoose.Schema({
     default: 'pending'
   },
   platform: { type: String, default: 'In-Store' },
+  receiptInfo: { type: String },
   notes: { type: String }
 }, {
   timestamps: true

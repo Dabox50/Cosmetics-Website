@@ -273,6 +273,16 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.innerText = "Processing Order...";
             submitBtn.disabled = true;
 
+            const receiptLink = document.getElementById('checkReceiptLink').value.trim();
+            const receiptFile = document.getElementById('checkReceiptFile').files[0];
+
+            if (!receiptLink && !receiptFile) {
+                alert("Please provide a payment receipt (Link or File) before completing your order.");
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+                return;
+            }
+
             const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
             
             const orderData = {
@@ -282,6 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 shippingAddress: document.getElementById('checkCustAddress').value,
                 paymentMethod: document.getElementById('checkPaymentMethod').value,
                 notes: document.getElementById('checkCustNote').value,
+                receiptInfo: receiptLink || (receiptFile ? `File: ${receiptFile.name}` : 'N/A'),
                 items: cart.map(item => ({
                     productId: item.id,
                     productName: item.name,
@@ -316,7 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // 2. Open WhatsApp (Now that we know it's saved)
                     const itemsList = cart.map(item => `${item.name} (x${item.qty})`).join(', ');
-                    const waMessage = `New Order from ${orderData.customerName}:\nOrder ID: ${createdOrder._id}\nItems: ${itemsList}\nTotal: ₦${total.toLocaleString()}\nAddress: ${orderData.shippingAddress}\nPhone: ${orderData.customerPhone}\nPayment: ${orderData.paymentMethod}`;
+                    const waMessage = `New Order from ${orderData.customerName}:\nOrder ID: ${createdOrder._id}\nItems: ${itemsList}\nTotal: ₦${total.toLocaleString()}\nAddress: ${orderData.shippingAddress}\nPhone: ${orderData.customerPhone}\nPayment: ${orderData.paymentMethod}\nReceipt: ${orderData.receiptInfo}`;
                     window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
 
                     // 3. Update Local Records

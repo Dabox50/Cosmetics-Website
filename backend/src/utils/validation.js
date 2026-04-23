@@ -20,6 +20,7 @@ const validateOrder = (order) => {
     paymentStatus: Joi.string().valid('unpaid', 'paid', 'failed', 'partly paid').optional(),
     orderStatus: Joi.string().valid('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'completed').optional(),
     platform: Joi.string().optional(),
+    receiptInfo: Joi.string().allow('').optional(),
     notes: Joi.string().allow('')
   });
 
