@@ -3152,25 +3152,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (res.ok) {
                 const backendStaff = await res.json();
                 
-                // Reconciliation: If we have local staff not in backend, try to re-invite them
-                // This handles cases like alaminlamina5@gmail.com if it was local-only
-                const localStaff = JSON.parse(localStorage.getItem('shayorsStaff')) || [];
-                for (const ls of localStaff) {
-                    const exists = backendStaff.find(bs => bs.email.toLowerCase() === ls.email.toLowerCase());
-                    if (!exists && ls.email && ls.role) {
-                        console.log(`Syncing local staff to backend: ${ls.email}`);
-                        // Silent re-invite to sync
-                        fetch(`${API_BASE}/admin/invite`, {
-                            method: 'POST',
-                            headers: { 
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify({ email: ls.email, role: ls.role })
-                        }).catch(err => console.error("Sync failed for", ls.email));
-                    }
-                }
-
                 staff = backendStaff;
                 localStorage.setItem('shayorsStaff', JSON.stringify(staff));
                 renderStaff();
@@ -3363,18 +3344,24 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm('Delete this staff member?')) {
             const token = getAdminToken();
             try {
+                // Optimistic UI update
+                staff = staff.filter(s => s._id !== id);
+                localStorage.setItem('shayorsStaff', JSON.stringify(staff));
+                renderStaff();
+
                 const res = await fetch(`${API_BASE}/admin/staff/${id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                if (res.ok) {
-                    await fetchStaff();
-                } else {
+                if (!res.ok) {
                     const data = await res.json();
                     alert(data.message || 'Failed to delete staff');
+                    // Rollback if failed
+                    await fetchStaff();
                 }
             } catch (err) {
                 console.error("Delete failed:", err);
+                await fetchStaff();
             }
         }
     };
