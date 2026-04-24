@@ -25,6 +25,13 @@ const orderSchema = mongoose.Schema({
     default: 'pending'
   },
   platform: { type: String, default: 'In-Store' },
+  charges: [{
+    name: String,
+    value: Number,
+    type: { type: String, enum: ['fixed', 'percent'] },
+    isProfit: Boolean,
+    isHidden: Boolean
+  }],
   receiptInfo: { type: String },
   notes: { type: String }
 }, {

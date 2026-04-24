@@ -508,9 +508,83 @@
 
                                 <textarea id="saleNote" placeholder="Note/Remarks" class="full-width"></textarea>
 
+                                <div class="charges-section">
+                                    <h4 class="section-label">IDENTIFICATION</h4>
+                                    <div class="charge-form">
+                                        <input type="text" id="chargeName" placeholder="Name (e.g. Delivery Fee)">
+                                        
+                                        <h4 class="section-label">CONFIGURATION</h4>
+                                        <div class="charge-value-row">
+                                            <input type="number" id="chargeValue" placeholder="0.00" value="0">
+                                            <div class="charge-type-toggle">
+                                                <button type="button" class="type-btn active" onclick="setChargeType('fixed', this)">₦</button>
+                                                <button type="button" class="type-btn" onclick="setChargeType('percent', this)">%</button>
+                                                <input type="hidden" id="chargeType" value="fixed">
+                                            </div>
+                                        </div>
+                                        <div class="charge-options">
+                                            <div class="toggle-row">
+                                                <span>Count as Profit</span>
+                                                <label class="switch">
+                                                    <input type="checkbox" id="chargeIsProfit">
+                                                    <span class="slider round"></span>
+                                                </label>
+                                            </div>
+                                            <div class="toggle-row">
+                                                <span>Hidden from Customer</span>
+                                                <label class="switch">
+                                                    <input type="checkbox" id="chargeIsHidden">
+                                                    <span class="slider round"></span>
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        <h4 class="section-label">AUTOMATION</h4>
+                                        <div class="automation-toggle">
+                                            <button type="button" class="auto-btn active" onclick="setAutomation('auto', this)">⚡ Auto-Apply</button>
+                                            <button type="button" class="auto-btn" onclick="setAutomation('manual', this)">✋ Manual Selection</button>
+                                            <input type="hidden" id="chargeAutomation" value="auto">
+                                        </div>
+
+                                        <h4 class="section-label">APPLICATION SCOPE</h4>
+                                        <div class="scope-options">
+                                            <label class="scope-item">
+                                                <input type="radio" name="chargeScope" value="all" checked>
+                                                <div class="scope-content">
+                                                    <span class="scope-title">All Items</span>
+                                                    <span class="scope-desc">Apply to all items in your store</span>
+                                                </div>
+                                                <i class="fas fa-check check-icon"></i>
+                                            </label>
+                                            <label class="scope-item">
+                                                <input type="radio" name="chargeScope" value="specific">
+                                                <div class="scope-content">
+                                                    <span class="scope-title">Specific Items</span>
+                                                    <span class="scope-desc">Apply only to selected items</span>
+                                                </div>
+                                                <i class="fas fa-check check-icon"></i>
+                                            </label>
+                                            <label class="scope-item">
+                                                <input type="radio" name="chargeScope" value="exclude">
+                                                <div class="scope-content">
+                                                    <span class="scope-title">Exclude Items</span>
+                                                    <span class="scope-desc">Apply to all except selected items</span>
+                                                </div>
+                                                <i class="fas fa-check check-icon"></i>
+                                            </label>
+                                        </div>
+
+                                        <div class="charge-discount-row" style="margin-top: 20px;">
+                                            <input type="number" id="saleDiscount" placeholder="Discount (₦)" value="0">
+                                            <button class="btn primary full-width" onclick="addChargeToList()">Create Charge</button>
+                                        </div>
+                                    </div>
+                                    <div id="appliedChargesList" class="applied-charges">
+                                        <!-- Charges will appear here -->
+                                    </div>
+                                </div>
+
                                 <div class="adjustment-controls">
-                                    <input type="number" id="saleDiscount" placeholder="Discount (₦)" value="0">
-                                    <input type="number" id="saleCharges" placeholder="Charges (₦)" value="0">
                                     <button class="btn secondary" onclick="applyCustomPricing()">Custom Pricing</button>
                                     <button class="btn danger" onclick="clearAllSale()">Clear All</button>
                                 </div>

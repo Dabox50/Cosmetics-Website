@@ -6,7 +6,7 @@ const Product = require('../models/Product');
 // @access  Private/Admin
 const createSale = async (req, res, next) => {
   try {
-    const { items, totalAmount, totalItems, paymentMethod, customerName, customerContact } = req.body;
+    const { items, totalAmount, totalItems, paymentMethod, customerName, customerContact, charges, paymentStatus } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ message: 'No items in sale' });
@@ -31,6 +31,8 @@ const createSale = async (req, res, next) => {
       paymentMethod,
       customerName,
       customerContact,
+      charges,
+      paymentStatus: paymentStatus || 'paid',
       platform: 'POS'
     });
 

@@ -19,6 +19,18 @@ const saleSchema = mongoose.Schema({
   paymentMethod: { type: String, required: true, enum: ['Cash', 'Transfer', 'Card'] },
   customerName: { type: String },
   customerContact: { type: String },
+  paymentStatus: {
+    type: String,
+    enum: ['unpaid', 'paid', 'partly paid', 'pending'],
+    default: 'paid'
+  },
+  charges: [{
+    name: String,
+    value: Number,
+    type: { type: String, enum: ['fixed', 'percent'] },
+    isProfit: Boolean,
+    isHidden: Boolean
+  }],
   platform: { type: String, default: 'POS' },
   saleDate: { type: Date, default: Date.now }
 }, {

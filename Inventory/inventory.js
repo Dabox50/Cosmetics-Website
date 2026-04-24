@@ -313,6 +313,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- SALES PRODUCT SEARCH LOGIC ---
     const saleProductSearch = document.getElementById('saleProductSearch');
+    const saleDiscountInput = document.getElementById('saleDiscount');
+    
+    if (saleDiscountInput) {
+        saleDiscountInput.addEventListener('input', updateSaleTotal);
+    }
+
     if (saleProductSearch) {
         saleProductSearch.addEventListener('input', function() {
             const term = this.value.toLowerCase();
@@ -990,6 +996,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentOrders = [];
     let currentSaleItems = [];
+    let currentCharges = [];
+
+    window.setChargeType = function(type, btn) {
+        document.getElementById('chargeType').value = type;
+        const container = btn.closest('.charge-type-toggle');
+        container.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        updateSaleTotal();
+    };
+
+    window.setAutomation = function(type, btn) {
+        document.getElementById('chargeAutomation').value = type;
+        const container = btn.closest('.automation-toggle');
+        container.querySelectorAll('.auto-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    };
+
+    window.addChargeToList = function() {
+        const name = document.getElementById('chargeName').value.trim();
+        const value = parseFloat(document.getElementById('chargeValue').value) || 0;
+        const type = document.getElementById('chargeType').value;
+        const isProfit = document.getElementById('chargeIsProfit').checked;
+        const isHidden = document.getElementById('chargeIsHidden').checked;
+        const automation = document.getElementById('chargeAutomation').value;
+        const scope = document.querySelector('input[name="chargeScope"]:checked').value;
+
+        if (!name) return alert('Enter charge name');
+        if (value <= 0) return alert('Enter valid charge value');
+
+        const charge = {
+            id: Date.now(),
+            name,
+            value,
+            type,
+            isProfit,
+            isHidden,
+            automation,
+            scope
+        };
+
+        currentCharges.push(charge);
+        renderCharges();
+        
+        // Reset inputs
+        document.getElementById('chargeName').value = '';
+        document.getElementById('chargeValue').value = 0;
+        document.getElementById('chargeIsProfit').checked = false;
+        document.getElementById('chargeIsHidden').checked = false;
+        // Keep automation and scope as default
+    };
+
+    window.removeCharge = function(id) {
+        currentCharges = currentCharges.filter(c => c.id !== id);
+        renderCharges();
+    };
+
+    function renderCharges() {
+        const list = document.getElementById('appliedChargesList');
+        if (!list) return;
+
+        list.innerHTML = currentCharges.map(c => `
+            <div class="charge-pill">
+                <span>${c.name}: ${c.type === 'fixed' ? '₦' : ''}${c.value}${c.type === 'percent' ? '%' : ''}</span>
+                <span class="remove-charge" onclick="removeCharge(${c.id})">&times;</span>
+            </div>
+        `).join('');
+        
+        updateSaleTotal(); // Make sure total updates
+    }
     let lastPendingCount = 0;
 
     // POS State
@@ -1139,6 +1214,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (res.ok) {
                 alert('Order status updated!');
+
+                if (status === 'confirmed') {
+                    const order = currentOrders.find(o => o._id === id);
+                    if (order) {
+                        await removeDebtorByOrderInfo(order.customerName, id, 'Web Store');
+                    }
+                }
+
                 fetchOrders();
             }
         } catch (err) {
@@ -1159,6 +1242,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (res.ok) {
                 alert('Payment status updated!');
+
+                if (status === 'paid') {
+                    const order = currentOrders.find(o => o._id === id);
+                    if (order) {
+                        await removeDebtorByOrderInfo(order.customerName, id, 'Web Store');
+                    }
+                }
+
                 // Update local sales too if it exists there
                 const sale = sales.find(s => s.apiId === id || s.id === id);
                 if (sale) {
@@ -1837,12 +1928,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.clearAllSale = function() {
         if (confirm("Clear all items and customer info?")) {
             currentSaleItems = [];
+            currentCharges = [];
             renderCurrentSaleList();
+            renderCharges();
             document.getElementById('saleCustomerName').value = '';
             document.getElementById('saleCustomerContact').value = '';
             document.getElementById('saleNote').value = '';
             document.getElementById('saleDiscount').value = 0;
-            document.getElementById('saleCharges').value = 0;
+            if (document.getElementById('saleCharges')) document.getElementById('saleCharges').value = 0;
             document.getElementById('saleAmountPaid').value = '';
             document.getElementById('saleProduct').value = '';
             document.getElementById('saleProductSearch').value = '';
@@ -1901,9 +1994,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const body = document.getElementById('saleListBody');
         if (!body) return;
         body.innerHTML = '';
-        let total = 0;
         currentSaleItems.forEach((item, index) => {
-            total += item.total;
             body.innerHTML += `
                 <tr>
                     <td>${item.name} (${item.unitType})</td>
@@ -1914,7 +2005,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>
             `;
         });
-        document.getElementById('currentSaleTotal').innerText = `₦${total.toLocaleString()}`;
+        updateSaleTotal();
+    }
+
+    function updateSaleTotal() {
+        const subtotal = currentSaleItems.reduce((sum, item) => sum + item.total, 0);
+        let totalCharges = 0;
+        
+        currentCharges.forEach(c => {
+            if (c.type === 'percent') {
+                totalCharges += (subtotal * c.value) / 100;
+            } else {
+                totalCharges += c.value;
+            }
+        });
+
+        const discount = parseFloat(document.getElementById('saleDiscount').value) || 0;
+        const grandTotal = subtotal + totalCharges - discount;
+        
+        const display = document.getElementById('currentSaleTotal');
+        if (display) {
+            display.innerText = `₦${grandTotal.toLocaleString()}`;
+        }
+        return grandTotal;
     }
 
     window.removeFromSale = function(index) {
@@ -1934,11 +2047,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const deliveryStatus = document.getElementById('saleDeliveryStatus').value;
         const note = document.getElementById('saleNote').value;
         const discount = parseFloat(document.getElementById('saleDiscount').value) || 0;
-        const charges = parseFloat(document.getElementById('saleCharges').value) || 0;
         
         let subtotal = currentSaleItems.reduce((sum, item) => sum + item.total, 0);
         let totalUnits = currentSaleItems.reduce((sum, item) => sum + (item.qty || 0), 0);
-        const grandTotal = subtotal - discount + charges;
+        const grandTotal = updateSaleTotal();
+        const charges = grandTotal - subtotal + discount;
 
         const orderData = {
             customerName,
@@ -1957,6 +2070,7 @@ document.addEventListener('DOMContentLoaded', () => {
             paymentStatus: paymentStatus.toLowerCase() === 'paid' ? 'paid' : (paymentStatus.toLowerCase() === 'partly paid' ? 'partly paid' : 'unpaid'),
             orderStatus: 'completed',
             platform: platform || 'In-Store',
+            charges: currentCharges,
             notes: note
         };
 
@@ -2240,6 +2354,9 @@ document.addEventListener('DOMContentLoaded', () => {
             sale.amountPaid = sale.total;
             localStorage.setItem('shayorsSales', JSON.stringify(sales));
             
+            // Remove from debtors
+            await removeDebtorByOrderInfo(sale.customer, id, sale.platform);
+            
             // Sync to backend if it has an apiId
             const apiId = sale.apiId || (sale.id.length > 20 ? sale.id : null);
             if (apiId) {
@@ -2367,12 +2484,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${itemCount} items (${s.type || 'product'})</td>
                     <td>₦${parseFloat(s.total || s.totalAmount || 0).toLocaleString()}</td>
                     <td>
-                        <select onchange="updateSalePaymentStatus('${orderId}', this.value)" class="status-select ${statusClass}">
-                            <option value="Paid" ${status === 'Paid' ? 'selected' : ''}>Paid</option>
-                            <option value="Unpaid" ${status === 'Unpaid' ? 'selected' : ''}>Unpaid</option>
-                            <option value="Partly Paid" ${status === 'Partly Paid' ? 'selected' : ''}>Partly Paid</option>
-                            <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>Pending</option>
-                        </select>
+                        ${status === 'Paid' ? `
+                            <div style="background: #e6f4ea; color: #1e7e34; padding: 4px 12px; border-radius: 12px; font-weight: bold; border: 1px solid #c3e6cb; display: inline-block; font-size: 0.8rem;">
+                                PAID
+                            </div>
+                        ` : `
+                            <select onchange="updateSalePaymentStatus('${orderId}', this.value)" class="status-select ${statusClass}">
+                                <option value="Paid" ${status === 'Paid' ? 'selected' : ''}>Paid</option>
+                                <option value="Unpaid" ${status === 'Unpaid' ? 'selected' : ''}>Unpaid</option>
+                                <option value="Partly Paid" ${status === 'Partly Paid' ? 'selected' : ''}>Partly Paid</option>
+                                <option value="Pending" ${status === 'Pending' ? 'selected' : ''}>Pending</option>
+                            </select>
+                        `}
                     </td>
                     <td>
                         <button class="btn secondary" onclick='viewOrder("${orderId}")'>View</button>
@@ -2388,12 +2511,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    async function removeDebtorByOrderInfo(customerName, orderId, platform) {
+        const token = getAdminToken();
+        if (!token) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/customers`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const customers = await res.json();
+                const shortId = orderId.toString().slice(-6).toUpperCase();
+                const possibleInvoiceNos = [
+                    `WEB-${shortId}`,
+                    `INV-${shortId}`,
+                    `POS-${shortId}`
+                ];
+
+                const debtorsToRemove = customers.filter(c => 
+                    (possibleInvoiceNos.includes(c.invoiceNo) || (c.name === customerName)) && 
+                    (c.status === 'Unpaid' || c.status === 'Partly Paid')
+                );
+
+                for (const debtor of debtorsToRemove) {
+                    await fetch(`${API_BASE}/customers/${debtor._id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
+            }
+        } catch (err) {
+            console.error("Failed to remove debtor:", err);
+        }
+    }
+
     window.updateSalePaymentStatus = async function(id, status) {
         const sale = sales.find(s => s.apiId === id || s.id === id);
         if (!sale) return;
         
         sale.status = status;
-        if (status === 'Paid') sale.amountPaid = sale.total;
+        if (status === 'Paid') {
+            sale.amountPaid = sale.total;
+            await removeDebtorByOrderInfo(sale.customer, id, sale.platform);
+        }
         localStorage.setItem('shayorsSales', JSON.stringify(sales));
         
         // Sync to backend

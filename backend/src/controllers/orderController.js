@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const Customer = require('../models/Customer');
 const { validateOrder } = require('../utils/validation');
 const nodemailer = require('nodemailer');
 
@@ -65,6 +66,19 @@ const createOrder = async (req, res, next) => {
     }
 
     const createdOrder = await order.save();
+
+    // Create debtor entry if not paid
+    if (createdOrder.paymentStatus !== 'paid') {
+      await Customer.create({
+        name: createdOrder.customerName,
+        contact: createdOrder.customerPhone || createdOrder.customerEmail || 'N/A',
+        totalAmount: createdOrder.totalAmount,
+        status: createdOrder.paymentStatus === 'partly paid' ? 'Partly Paid' : 'Unpaid',
+        invoiceNo: `WEB-${createdOrder._id.toString().slice(-6).toUpperCase()}`,
+        product: createdOrder.items.map(i => i.productName).join(', ')
+      });
+    }
+
     sendEmailAlert(createdOrder);
     res.status(201).json(createdOrder);
   } catch (error) {
@@ -112,6 +126,18 @@ const updateOrderStatus = async (req, res, next) => {
       if (orderStatus) order.orderStatus = orderStatus;
       if (paymentStatus) order.paymentStatus = paymentStatus;
       const updatedOrder = await order.save();
+
+      // If marked as paid or confirmed, remove from debtors
+      if (updatedOrder.paymentStatus === 'paid' || updatedOrder.orderStatus === 'confirmed') {
+        const invoiceNo = `WEB-${updatedOrder._id.toString().slice(-6).toUpperCase()}`;
+        await Customer.deleteMany({ 
+          $or: [
+            { invoiceNo: invoiceNo },
+            { name: updatedOrder.customerName, status: { $ne: 'Paid' } }
+          ]
+        });
+      }
+
       res.json(updatedOrder);
     } else {
       res.status(404).json({ message: 'Order not found' });

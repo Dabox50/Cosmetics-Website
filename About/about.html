@@ -156,35 +156,35 @@
                 <h2>Complete Your Order</h2>
                 <span class="close-btn" onclick="closeModal('checkoutModal')">&times;</span>
             </div>
-            <form id="checkoutForm" class="booking-form">
-                <div class="form-group">
-                    <label>Full Name</label>
-                    <input type="text" id="checkCustName" required placeholder="Enter your full name">
+            <form id="checkoutForm">
+                <input type="text" id="checkCustName" placeholder="Your Full Name" required>
+                <input type="email" id="checkCustEmail" placeholder="Email Address" required>
+                <input type="text" id="checkCustPhone" placeholder="Phone Number" required>
+                <input type="text" id="checkCustAddress" placeholder="Shipping Address" required>
+                <select id="checkPaymentMethod" required>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                </select>
+
+                <div id="bankDetails" style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.6;">
+                    <p><strong>Payment Instructions:</strong></p>
+                    <p>Please make payment to the account below and provide the receipt link or upload a file.</p>
+                    <p><strong>Bank Name:</strong> Sterling</p>
+                    <p><strong>Account Name:</strong> Shayors Cosmetics</p>
+                    <p><strong>Account Number:</strong> 0089883643</p>
                 </div>
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="checkCustEmail" required placeholder="Enter your email">
+
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 0.85rem; color: #555; display: block; margin-bottom: 5px;">Receipt Link (URL) *</label>
+                    <input type="url" id="checkReceiptLink" placeholder="https://example.com/receipt.jpg">
+                    <p style="font-size: 0.75rem; color: #888; margin-top: 5px;">OR Upload Receipt</p>
+                    <input type="file" id="checkReceiptFile" accept="image/*,.pdf">
                 </div>
-                <div class="form-group">
-                    <label>Phone Number</label>
-                    <input type="tel" id="checkCustPhone" required placeholder="Enter your phone number">
+
+                <textarea id="checkCustNote" placeholder="Additional Notes (Optional)"></textarea>
+                <div class="modal-actions">
+                    <button type="submit" class="btn primary">Complete Order</button>
+                    <button type="button" class="btn secondary" onclick="closeModal('checkoutModal')">Back to Cart</button>
                 </div>
-                <div class="form-group">
-                    <label>Shipping Address</label>
-                    <textarea id="checkCustAddress" required placeholder="Enter your full shipping address"></textarea>
-                </div>
-                <div class="form-group">
-                    <label>Payment Method</label>
-                    <select id="checkPaymentMethod" class="selective-bar" style="width: 100%; height: 45px;">
-                        <option value="Cash on Delivery">Cash on Delivery</option>
-                        <option value="Bank Transfer">Bank Transfer (WhatsApp for details)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Order Notes (Optional)</label>
-                    <textarea id="checkCustNote" placeholder="Any special instructions?"></textarea>
-                </div>
-                <button type="submit" class="btn primary w-100">Order Now via WhatsApp</button>
             </form>
         </div>
     </div>
