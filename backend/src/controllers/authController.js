@@ -135,18 +135,60 @@ const inviteStaff = async (req, res) => {
 const acceptInvitation = async (req, res) => {
   const { token, password } = req.body;
 
+  if (!token) {
+    return res.status(400).json({ message: 'Invitation token is missing' });
+  }
+
+  const trimmedToken = token.trim();
+
   const staff = await Staff.findOne({
-    invitationToken: token,
-    invitationExpires: { $gt: Date.now() }
+    invitationToken: trimmedToken
   });
 
-  if (!staff) return res.status(400).json({ message: 'Invalid or expired invitation token' });
+  if (!staff) {
+    return res.status(400).json({ message: 'Invalid invitation token' });
+  }
+
+  if (staff.invitationExpires && staff.invitationExpires < new Date()) {
+    return res.status(400).json({ message: 'Invitation token has expired' });
+  }
 
   staff.password = password;
   staff.isActivated = true;
   staff.invitationToken = undefined;
   staff.invitationExpires = undefined;
   await staff.save();
+
+  // Notify Admins
+  try {
+    const admins = await Admin.find({});
+    const adminEmails = admins.map(a => a.email);
+    
+    if (adminEmails.length > 0) {
+      await sendEmail({
+        email: adminEmails.join(','),
+        subject: 'New Staff Joined - Shayors Cosmetics',
+        message: `New staff member ${staff.email} has accepted the invitation and joined as ${staff.role}.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #d4af37; border-radius: 10px; max-width: 600px; background-color: #000; color: #fff;">
+            <h2 style="color: #d4af37; text-align: center;">New Staff Member Joined</h2>
+            <p style="font-size: 16px;">Hello Admin,</p>
+            <p style="font-size: 16px;">A new staff member has successfully activated their account:</p>
+            <ul style="font-size: 16px; color: #d4af37;">
+              <li><strong>Email:</strong> ${staff.email}</li>
+              <li><strong>Role:</strong> ${staff.role}</li>
+              <li><strong>Join Date:</strong> ${new Date().toLocaleString()}</li>
+            </ul>
+            <p style="font-size: 14px; color: #aaa; margin-top: 20px; border-top: 1px solid #333; padding-top: 15px;">
+              This is an automated notification from the Shayors Cosmetics Inventory System.
+            </p>
+          </div>
+        `
+      });
+    }
+  } catch (error) {
+    console.error('Failed to send joining notification to admins:', error);
+  }
 
   res.status(200).json({ message: 'Account activated successfully. You can now login.' });
 };
