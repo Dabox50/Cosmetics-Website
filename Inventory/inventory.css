@@ -1899,6 +1899,64 @@ footer {
 }
 
 @media screen and (max-width: 980px) {
+    .app-wrapper {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .sidebar-header {
+        padding: 5px 15px;
+        margin-bottom: 5px;
+        border-bottom: none;
+    }
+
+    .sidebar-header h3 {
+        font-size: 1rem;
+    }
+
+    .sidebar-nav {
+        display: flex;
+        overflow-x: auto;
+        padding: 5px 10px;
+        gap: 10px;
+        scrollbar-width: none; /* Firefox */
+    }
+
+    .sidebar-nav::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+
+    .sidebar-nav li {
+        display: flex !important; /* Ensure they are visible as flex items in the row */
+        padding: 8px 15px;
+        border-radius: 20px;
+        white-space: nowrap;
+        background: rgba(255,255,255,0.05);
+        font-size: 0.8rem;
+        flex-shrink: 0;
+    }
+
+    .sidebar-nav li[style*="display: none"] {
+        display: none !important; /* Allow JS to still hide unauthorized ones */
+    }
+
+    .sidebar-nav li:hover, .sidebar-nav li.active {
+        background-color: var(--primary-color);
+    }
+
+    .content-area {
+        padding: 15px;
+    }
+
     .nav-links {
         position: absolute;
         right: 30px;

@@ -767,7 +767,10 @@ document.addEventListener('DOMContentLoaded', () => {
             showLoginModal();
         } else {
             toggleAuthVisibility(true);
-            enforcePermissions(); // Call immediately to hide unauthorized buttons
+            
+            // Sync staff data FIRST so enforcePermissions has the right role info
+            await fetchStaff(); 
+            enforcePermissions(); 
             
             await fetchInventory();
             await fetchSpaCategories();
