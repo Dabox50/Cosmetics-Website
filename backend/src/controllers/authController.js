@@ -120,6 +120,35 @@ const inviteStaff = async (req, res) => {
       message,
       html
     });
+
+    // Notify Admins about the invitation sent
+    try {
+      const admins = await Admin.find({});
+      const adminEmails = admins.map(a => a.email);
+      if (adminEmails.length > 0) {
+        await sendEmail({
+          email: adminEmails.join(','),
+          subject: 'New Staff Invitation Sent',
+          message: `An invitation has been sent to ${staff.email} to join as ${role}.`,
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #d4af37; border-radius: 10px; max-width: 600px; background-color: #000; color: #fff;">
+              <h2 style="color: #d4af37; text-align: center;">Staff Invitation Sent</h2>
+              <p>Hello Admin,</p>
+              <p>A new invitation has been sent:</p>
+              <ul style="color: #d4af37;">
+                <li><strong>Recipient:</strong> ${staff.email}</li>
+                <li><strong>Role:</strong> ${role}</li>
+                <li><strong>Sent Date:</strong> ${new Date().toLocaleString()}</li>
+              </ul>
+              <p>You will be notified once they activate their account.</p>
+            </div>
+          `
+        });
+      }
+    } catch (adminNotifyError) {
+      console.error('Failed to notify admins about invitation:', adminNotifyError);
+    }
+
     res.status(200).json({ message: 'Invitation email sent successfully' });
   } catch (error) {
     staff.invitationToken = undefined;
@@ -344,6 +373,31 @@ const resendAllInvites = async (req, res) => {
   }
 
   res.json({ message: 'Successfully resent ' + successCount + ' invitations.' });
+
+  // Notify Master Admin about bulk resend
+  if (successCount > 0) {
+    try {
+      const admins = await Admin.find({});
+      const adminEmails = admins.map(a => a.email);
+      if (adminEmails.length > 0) {
+        await sendEmail({
+          email: adminEmails.join(','),
+          subject: 'Staff Invitation Reminders Sent',
+          message: `Bulk invitation reminders were resent to ${successCount} pending staff members.`,
+          html: `
+            <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #d4af37; border-radius: 10px; max-width: 600px; background-color: #000; color: #fff;">
+              <h2 style="color: #d4af37; text-align: center;">Bulk Reminders Sent</h2>
+              <p>Hello Admin,</p>
+              <p>You have successfully resent invitation reminders to <strong>${successCount}</strong> staff member(s) who haven't activated their accounts yet.</p>
+              <p style="color: #aaa; font-size: 12px; margin-top: 20px;">Sent Date: ${new Date().toLocaleString()}</p>
+            </div>
+          `
+        });
+      }
+    } catch (err) {
+      console.error('Failed to notify admins about bulk resend:', err);
+    }
+  }
 };
 
 // @desc    Delete staff

@@ -484,12 +484,12 @@ footer {
     }
     
     .footer-content {
-        
+
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        padding: 5px 20px;
+        padding: 5px 20px;     
     }
 
     .footer-bottom {

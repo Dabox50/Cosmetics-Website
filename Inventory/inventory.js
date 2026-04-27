@@ -44,6 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function enforcePermissions() {
         const sidebarItems = document.querySelectorAll('.sidebar-nav li');
+        let firstAllowedModule = '';
+        let currentModuleIsAllowed = false;
+        const activeModule = document.querySelector('.module.active')?.id?.replace('-module', '');
         
         sidebarItems.forEach(item => {
             const module = item.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
@@ -64,12 +67,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'store': permissionNeeded = 'manage_staff'; break;
             }
             
-            if (permissionNeeded && !checkPermission(permissionNeeded)) {
-                item.style.display = 'none';
-            } else {
+            const isAllowed = !permissionNeeded || checkPermission(permissionNeeded);
+            
+            if (isAllowed) {
                 item.style.display = 'block';
+                if (!firstAllowedModule) firstAllowedModule = module;
+                if (module === activeModule) currentModuleIsAllowed = true;
+            } else {
+                item.style.display = 'none';
             }
         });
+
+        // If current active module is not allowed, switch to the first allowed one
+        if (!currentModuleIsAllowed && firstAllowedModule) {
+            showModule(firstAllowedModule);
+        }
 
         // Gate specific UI elements
         const addProductBtn = document.querySelector('button[onclick="toggleForm()"]');
@@ -92,6 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.style.display = checkPermission('manage_settings') ? 'block' : 'none';
             }
         });
+
+        // FINALLY reveal the app wrapper once permissions are set
+        document.getElementById('adminAppWrapper')?.classList.remove('auth-hidden');
     }
 
     // reconciliation between API and localStorage
@@ -730,27 +745,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 0. Admin Authentication
     async function init() {
+        let token = getAdminToken();
+
         // Handle URL tokens for Invitations or Password Resets
         const urlParams = new URLSearchParams(window.location.search);
         const inviteToken = urlParams.get('inviteToken');
         const resetToken = urlParams.get('resetToken');
 
-        if (inviteToken) {
+        // If we have an invite/reset token AND no active session, show the modal
+        if (inviteToken && !token) {
             showAcceptInviteModal(inviteToken);
             return;
         }
-        if (resetToken) {
+        if (resetToken && !token) {
             showResetPasswordModal(resetToken);
             return;
         }
-
-        let token = getAdminToken();
         
         if (!token) {
             toggleAuthVisibility(false);
             showLoginModal();
         } else {
             toggleAuthVisibility(true);
+            enforcePermissions(); // Call immediately to hide unauthorized buttons
+            
             await fetchInventory();
             await fetchSpaCategories();
             await fetchExpenseCategories();
@@ -787,7 +805,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const loginContainer = document.getElementById('loginModalContainer');
 
         if (isLoggedIn) {
-            appWrapper?.classList.remove('auth-hidden');
+            // We don't remove auth-hidden immediately from appWrapper 
+            // to prevent flickering before permissions are enforced
             brandsBar?.classList.remove('auth-hidden');
             statusContainer?.classList.remove('auth-hidden');
             if (loginContainer) loginContainer.innerHTML = '';
@@ -855,7 +874,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!data.isStaff) localStorage.setItem('inventoryLoggedIn', 'true');
                     }
                     toggleAuthVisibility(true);
-                    location.reload(); // Reload to apply all changes and load data
+                    await init(); // Apply permissions and load data
                 } else {
                     alert(data.message || "Login failed. Please check your credentials.");
                 }
@@ -925,7 +944,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await res.json();
                 alert(data.message);
-                if (res.ok) showLoginModal();
+                if (res.ok) {
+                    // Clear reset token from URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    showLoginModal();
+                }
             } catch (err) { alert("Reset failed."); }
         });
     };
@@ -957,7 +980,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await res.json();
                 alert(data.message);
-                if (res.ok) showLoginModal();
+                if (res.ok) {
+                    // Clear the invitation token from URL so it doesn't pop up again
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    showLoginModal();
+                }
             } catch (err) { alert("Activation failed."); }
         });
     };
