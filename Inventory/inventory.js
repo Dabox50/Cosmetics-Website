@@ -138,10 +138,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Analytics Module Gating
         const topMetrics = document.querySelector('.dashboard-summary-row.top-metrics');
+        const bottomMetrics = document.querySelector('.dashboard-summary-row.bottom-metrics');
         const compMetrics = document.querySelector('.dashboard-summary-row.comparative-metrics');
         const hasAnalyticsSummaryAccess = checkPermission('view_weekly_sales_summary') || checkPermission('view_reports');
-        if (topMetrics) topMetrics.style.display = (hasAnalyticsSummaryAccess || checkPermission('view_analytics')) ? 'flex' : 'none';
-        if (compMetrics) compMetrics.style.display = (hasAnalyticsSummaryAccess || checkPermission('view_analytics')) ? 'flex' : 'none';
+        
+        if (topMetrics) topMetrics.style.display = (hasAnalyticsSummaryAccess || checkPermission('view_analytics')) ? '' : 'none';
+        if (bottomMetrics) bottomMetrics.style.display = (hasAnalyticsSummaryAccess || checkPermission('view_analytics')) ? '' : 'none';
+        if (compMetrics) compMetrics.style.display = (hasAnalyticsSummaryAccess || checkPermission('view_analytics')) ? '' : 'none';
 
         const dashboardMainContent = document.querySelector('#analytics-module .dashboard-main-content');
         if (dashboardMainContent) {
