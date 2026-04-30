@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 const Admin = require('./src/models/Admin');
 const Product = require('./src/models/Product');
 const Category = require('./src/models/Category');
+const Role = require('./src/models/Role');
 const connectDB = require('./src/config/db');
 
 dotenv.config();
@@ -47,6 +48,15 @@ const seedData = async () => {
     
     const categoryObjects = initialCategories.map(cat => ({ name: cat }));
     await Category.insertMany(categoryObjects);
+
+    const initialRoles = [
+      { name: 'Admin', permissions: ['all'] },
+      { name: 'Sales Boy', permissions: ['pos_checkout', 'view_inventory', 'record_sale'] },
+      { name: 'Store Manager', permissions: ['view_inventory', 'add_product', 'view_records', 'record_sale', 'manage_suppliers', 'view_reports'] }
+    ];
+    for (const role of initialRoles) {
+      await Role.findOneAndUpdate({ name: role.name }, role, { upsert: true });
+    }
 
     console.log('Data Seeded Successfully!');
     await mongoose.connection.close();

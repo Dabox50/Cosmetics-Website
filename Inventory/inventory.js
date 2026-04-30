@@ -52,22 +52,42 @@ document.addEventListener('DOMContentLoaded', () => {
             const module = item.getAttribute('onclick')?.match(/'([^']+)'/)?.[1];
             if (!module) return;
             
-            let permissionNeeded = '';
+            let isAllowed = false;
             switch(module) {
-                case 'inventory': permissionNeeded = 'view_inventory'; break;
-                case 'pos': permissionNeeded = 'pos_checkout'; break;
-                case 'orders': permissionNeeded = 'view_records'; break;
-                case 'sales': permissionNeeded = 'record_sale'; break;
-                case 'expenses': permissionNeeded = 'view_records'; break;
-                case 'analytics': permissionNeeded = 'view_reports'; break;
-                case 'spa': permissionNeeded = 'view_records'; break;
-                case 'adjustments': permissionNeeded = 'record_stock_out'; break;
-                case 'customers': permissionNeeded = 'view_customers'; break;
-                case 'suppliers': permissionNeeded = 'manage_suppliers'; break;
-                case 'store': permissionNeeded = 'manage_staff'; break;
+                case 'inventory': 
+                    isAllowed = checkPermission('add_product') || checkPermission('edit_product') || checkPermission('delete_product'); 
+                    break;
+                case 'pos': 
+                    isAllowed = checkPermission('view_inventory'); 
+                    break;
+                case 'orders': 
+                    isAllowed = checkPermission('record_sale'); 
+                    break;
+                case 'sales': 
+                    isAllowed = checkPermission('record_sale') || checkPermission('confirm_sales_payment') || checkPermission('edit_invoice_style') || checkPermission('view_records') || checkPermission('view_reports') || checkPermission('export_data') || checkPermission('delete_records'); 
+                    break;
+                case 'expenses': 
+                    isAllowed = checkPermission('view_records'); 
+                    break;
+                case 'analytics': 
+                    isAllowed = checkPermission('view_analytics') || checkPermission('view_reports'); 
+                    break;
+                case 'spa': 
+                    isAllowed = checkPermission('Add_and_edit_spa'); 
+                    break;
+                case 'adjustments': 
+                    isAllowed = checkPermission('manage_settings'); 
+                    break;
+                case 'customers': 
+                    isAllowed = checkPermission('view_customers'); 
+                    break;
+                case 'suppliers': 
+                    isAllowed = checkPermission('manage_suppliers'); 
+                    break;
+                case 'store': 
+                    isAllowed = checkPermission('manage_staff') || checkPermission('create_store_role') || checkPermission('add_store_staff') || checkPermission('remove_store_staff'); 
+                    break;
             }
-            
-            const isAllowed = !permissionNeeded || checkPermission(permissionNeeded);
             
             if (isAllowed) {
                 item.style.display = 'block';
@@ -83,13 +103,56 @@ document.addEventListener('DOMContentLoaded', () => {
             showModule(firstAllowedModule);
         }
 
-        // Gate specific UI elements
-        const addProductBtn = document.querySelector('button[onclick="toggleForm()"]');
-        if (addProductBtn) addProductBtn.style.display = checkPermission('add_product') ? 'block' : 'none';
+        // --- MODULE SPECIFIC GATING ---
 
-        const importBtn = document.getElementById('importBtn');
-        if (importBtn) importBtn.style.display = (checkPermission('add_product') && checkPermission('manage_settings')) ? 'block' : 'none';
+        // Inventory Module Gating
+        const inventoryAddBtn = document.querySelector('#inventory-module button[onclick="toggleForm()"]');
+        if (inventoryAddBtn) inventoryAddBtn.style.display = checkPermission('add_product') ? 'block' : 'none';
+        
+        const inventorySearchWrapper = document.querySelector('#inventory-module .search-wrapper');
+        const hasInventoryAccess = checkPermission('add_product') || checkPermission('edit_product') || checkPermission('delete_product');
+        if (inventorySearchWrapper) inventorySearchWrapper.style.display = hasInventoryAccess ? 'block' : 'none';
 
+        // Inventory Table Columns (Image, Product Info)
+        const inventoryTable = document.getElementById('inventoryTable');
+        if (inventoryTable) {
+            const hasInfoAccess = hasInventoryAccess; // As per user request: "add, edit and delete product should only give access to... search, InventoryTable Image and product info"
+            // We handle this in renderInventory generally, but can hide headers here if needed
+        }
+
+        // Notification Bell Gating
+        const notificationBell = document.querySelector('.notification-bell');
+        if (notificationBell) {
+            notificationBell.style.display = checkPermission('record_sale') ? 'flex' : 'none';
+        }
+
+        // Sales Module Gating
+        const newSaleBtn = document.querySelector('#sales-module button[onclick="showNewSaleForm()"]');
+        if (newSaleBtn) newSaleBtn.style.display = checkPermission('record_sale') ? 'block' : 'none';
+
+        const salesHistoryTable = document.getElementById('salesHistoryTable');
+        if (salesHistoryTable) {
+            const hasSalesTableAccess = checkPermission('confirm_sales_payment') || checkPermission('record_sale') || checkPermission('edit_invoice_style') || checkPermission('view_records') || checkPermission('view_reports') || checkPermission('export_data') || checkPermission('delete_records');
+            salesHistoryTable.closest('.table-container').style.display = hasSalesTableAccess ? 'block' : 'none';
+        }
+
+        // Analytics Module Gating
+        const topMetrics = document.querySelector('.dashboard-summary-row.top-metrics');
+        const compMetrics = document.querySelector('.dashboard-summary-row.comparative-metrics');
+        const hasAnalyticsSummaryAccess = checkPermission('view_weekly_sales_summary') || checkPermission('view_reports');
+        if (topMetrics) topMetrics.style.display = (hasAnalyticsSummaryAccess || checkPermission('view_analytics')) ? 'flex' : 'none';
+        if (compMetrics) compMetrics.style.display = (hasAnalyticsSummaryAccess || checkPermission('view_analytics')) ? 'flex' : 'none';
+
+        const dashboardMainContent = document.querySelector('#analytics-module .dashboard-main-content');
+        if (dashboardMainContent) {
+            dashboardMainContent.style.display = checkPermission('view_analytics') ? 'grid' : 'none';
+        }
+
+        // Customers Module Gating
+        const addCustomerBtn = document.querySelector('#customers-module button[onclick="toggleCustomerForm()"]');
+        if (addCustomerBtn) addCustomerBtn.style.display = 'none'; // User said "should not be able to add customers"
+
+        // Store Module Gating
         const storeManagementCards = document.querySelectorAll('#store-module .admin-card');
         storeManagementCards.forEach(card => {
             const h2 = card.querySelector('h2');
@@ -99,11 +162,35 @@ document.addEventListener('DOMContentLoaded', () => {
             if (title.includes('Role')) {
                 card.style.display = checkPermission('create_store_role') ? 'block' : 'none';
             } else if (title.includes('Staff')) {
-                card.style.display = checkPermission('manage_staff') ? 'block' : 'none';
-            } else if (title.includes('Category')) {
-                card.style.display = checkPermission('manage_settings') ? 'block' : 'none';
+                const hasStaffAccess = checkPermission('manage_staff') || checkPermission('add_store_staff') || checkPermission('remove_store_staff');
+                card.style.display = hasStaffAccess ? 'block' : 'none';
+                
+                // Gate "Resend All Invites" and "Add New Staff" buttons specifically
+                const resendBtn = card.querySelector('button[onclick="resendAllPendingInvites()"]');
+                const addStaffBtn = card.querySelector('button[onclick="toggleStaffForm()"]');
+                
+                if (resendBtn) resendBtn.style.display = checkPermission('manage_staff') ? 'block' : 'none';
+                if (addStaffBtn) addStaffBtn.style.display = (checkPermission('manage_staff') || checkPermission('add_store_staff')) ? 'block' : 'none';
             }
         });
+
+        // Update status bar
+        const statusContainer = document.getElementById('adminStatusContainer');
+        if (statusContainer) {
+            const loggedInStaffEmail = sessionStorage.getItem('shayorsStaffEmail') || localStorage.getItem('shayorsStaffEmail');
+            const isMasterAdmin = sessionStorage.getItem('shayorsIsAdmin') === 'true' || localStorage.getItem('shayorsIsAdmin') === 'true' || localStorage.getItem('inventoryLoggedIn') === 'true';
+            
+            let statusHTML = '';
+            if (isMasterAdmin) {
+                statusHTML = `<span>👨‍💻 Admin Logged In</span>`;
+            } else if (loggedInStaffEmail) {
+                const currentStaff = staff.find(s => s.email === loggedInStaffEmail);
+                const roleName = currentStaff ? currentStaff.role : 'Staff';
+                statusHTML = `<span>🧑‍💼 ${roleName} (${loggedInStaffEmail})</span>`;
+            }
+            statusHTML += `<button class="logout-btn" onclick="logoutAdmin()">Logout</button>`;
+            statusContainer.innerHTML = statusHTML;
+        }
 
         // FINALLY reveal the app wrapper once permissions are set
         document.getElementById('adminAppWrapper')?.classList.remove('auth-hidden');
@@ -768,8 +855,9 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             toggleAuthVisibility(true);
             
-            // Sync staff data FIRST so enforcePermissions has the right role info
+            // Sync staff and roles data FIRST so enforcePermissions has the right info
             await fetchStaff(); 
+            await fetchRoles();
             enforcePermissions(); 
             
             await fetchInventory();
@@ -1012,7 +1100,12 @@ document.addEventListener('DOMContentLoaded', () => {
     let customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
     let suppliers = JSON.parse(localStorage.getItem('shayorsSuppliers')) || [];
     let staff = JSON.parse(localStorage.getItem('shayorsStaff')) || [];
-    let roles = JSON.parse(localStorage.getItem('shayorsRoles')) || [{name: 'Admin', permissions: ['all']}];
+    const initialRoles = [
+        { name: 'Admin', permissions: ['all'] },
+        { name: 'Sales Boy', permissions: ['pos_checkout', 'view_inventory', 'record_sale'] },
+        { name: 'Store Manager', permissions: ['view_inventory', 'add_product', 'view_records', 'record_sale', 'manage_suppliers', 'view_reports'] }
+    ];
+    let roles = JSON.parse(localStorage.getItem('shayorsRoles')) || initialRoles;
     let adjustments = JSON.parse(localStorage.getItem('shayorsAdjustments')) || [];
     let spaServices = JSON.parse(localStorage.getItem('shayorsSpaServices')) || [];
     let costAnalysis = JSON.parse(localStorage.getItem('shayorsCostAnalysis')) || [];
@@ -1342,6 +1435,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const activeLi = Array.from(document.querySelectorAll('.sidebar-nav li')).find(li => li.innerText.toLowerCase().includes(moduleId.split('-')[0]));
         if (activeLi) activeLi.classList.add('active');
 
+        // Update Header for Mobile
+        const headerTitle = document.querySelector('.sidebar-header h3');
+        if (headerTitle) {
+            let title = 'Admin Panel';
+            if (moduleId === 'pos') title = 'POS Checkout';
+            else if (moduleId === 'inventory') title = 'Inventory';
+            else if (moduleId === 'orders') title = 'Web Orders';
+            else if (moduleId === 'sales') title = 'Sales';
+            else if (moduleId === 'spa') title = 'Spa Services';
+            headerTitle.innerText = title;
+        }
+
         if (moduleId === 'inventory') renderInventory();
         if (moduleId === 'pos') {
             renderPOSCart();
@@ -1415,6 +1520,24 @@ document.addEventListener('DOMContentLoaded', () => {
         let totalItems = 0;
         let lowStockCount = 0;
 
+        // Permissions for column visibility
+        const canSeeFullInventory = sessionStorage.getItem('shayorsIsAdmin') === 'true' || localStorage.getItem('shayorsIsAdmin') === 'true' || localStorage.getItem('inventoryLoggedIn') === 'true';
+        const hasAddEditDelete = checkPermission('add_product') || checkPermission('edit_product') || checkPermission('delete_product');
+        
+        // User said: "add, edit and delete product should only give access to the inventory add new products, search, InventoryTable Image and product info any thing else should not be accessible"
+        // This implies if they ONLY have these, they shouldn't see Cost/Retail, Stock, Value, Status.
+        // If they are master admin, they see everything.
+        const showFinancialsAndStock = canSeeFullInventory || checkPermission('manage_settings'); 
+
+        // Update headers visibility
+        const headers = document.querySelectorAll('#inventoryTable thead th');
+        if (headers.length >= 7) {
+            headers[2].style.display = showFinancialsAndStock ? 'table-cell' : 'none'; // Cost/Retail
+            headers[3].style.display = showFinancialsAndStock ? 'table-cell' : 'none'; // Stock
+            headers[4].style.display = showFinancialsAndStock ? 'table-cell' : 'none'; // Value
+            headers[5].style.display = showFinancialsAndStock ? 'table-cell' : 'none'; // Status
+        }
+
         filterData.forEach(p => {
             const threshold = p.threshold || 5;
             const status = p.stock === 0 ? 'Out of Stock' : (p.stock <= threshold ? 'Low Stock' : 'In Stock');
@@ -1434,21 +1557,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p>${p.brand} | ${p.size} ${p.shade && p.shade !== 'N/A' ? '| ' + p.shade : ''}</p>
                     <p><small>${p.primaryUnit || ''} ${p.secondaryUnit ? '(' + p.secondaryUnit + ')' : ''} | Barcode: ${p.barcode || 'N/A'}</small></p>
                 </td>
-                <td>
+                <td style="display: ${showFinancialsAndStock ? 'table-cell' : 'none'}">
                     <small>Cost: ₦${(p.costPrice || 0).toLocaleString()}</small><br>
                     <strong>Retail: ₦${(p.price || 0).toLocaleString()}</strong>
                 </td>
-                <td>
+                <td style="display: ${showFinancialsAndStock ? 'table-cell' : 'none'}">
                     <div class="stock-control">
                         <button class="btn-stock-out" title="Stock Out" onclick="updateStock('${p._id}', -1)">-</button>
                         <input type="number" value="${p.stock}" onchange="setStock('${p._id}', this.value)">
                         <button class="btn-stock-in" title="Stock In" onclick="updateStock('${p._id}', 1)">+</button>
                     </div>
                 </td>
-                <td>
+                <td style="display: ${showFinancialsAndStock ? 'table-cell' : 'none'}">
                     <strong>₦${productValue.toLocaleString()}</strong>
                 </td>
-                <td><span class="badge ${badgeClass}">${status}</span></td>
+                <td style="display: ${showFinancialsAndStock ? 'table-cell' : 'none'}"><span class="badge ${badgeClass}">${status}</span></td>
                 <td>
                     ${checkPermission('edit_product') ? `<button class="btn secondary" onclick="editProduct('${p._id}')">Edit</button>` : ''}
                     ${checkPermission('delete_product') ? `<button class="btn danger" onclick="deleteProduct('${p._id}')">Del</button>` : ''}
@@ -2495,6 +2618,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 return saleDate === dateFilter;
             });
         }
+
+        // Permissions for column visibility
+        const canSeeFullSales = sessionStorage.getItem('shayorsIsAdmin') === 'true' || localStorage.getItem('shayorsIsAdmin') === 'true' || localStorage.getItem('inventoryLoggedIn') === 'true';
+        const canConfirmPayment = checkPermission('confirm_sales_payment');
+        const canDeleteRecords = checkPermission('delete_records');
+        const canExportData = checkPermission('export_data');
+        const isReportOnly = checkPermission('view_reports') || checkPermission('view_weekly_sales_summary');
+        
+        // "view_weekly_sales_summary and view_reports can only have access to... sales and invoice history(id, date, customer, items, total, type) alone"
+        // This means they should NOT see Status or Actions.
+        const showStatus = canSeeFullSales || canConfirmPayment || checkPermission('record_sale');
+        const showActions = canSeeFullSales || canDeleteRecords || canExportData || checkPermission('edit_invoice_style') || checkPermission('view_records') || checkPermission('record_sale');
+
+        // Update headers visibility
+        const headers = document.querySelectorAll('#salesHistoryTable thead th');
+        if (headers.length >= 7) {
+            headers[5].style.display = showStatus ? 'table-cell' : 'none'; // Status
+            headers[6].style.display = showActions ? 'table-cell' : 'none'; // Actions
+        }
         
         body.innerHTML = '';
         filteredSales.forEach(s => {
@@ -2513,7 +2655,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${s.customer || 'Walk-in'}</td>
                     <td>${itemCount} items (${s.type || 'product'})</td>
                     <td>₦${parseFloat(s.total || s.totalAmount || 0).toLocaleString()}</td>
-                    <td>
+                    <td style="display: ${showStatus ? 'table-cell' : 'none'}">
                         ${status === 'Paid' ? `
                             <div style="background: #e6f4ea; color: #1e7e34; padding: 4px 12px; border-radius: 12px; font-weight: bold; border: 1px solid #c3e6cb; display: inline-block; font-size: 0.8rem;">
                                 PAID
@@ -2527,7 +2669,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </select>
                         `}
                     </td>
-                    <td>
+                    <td style="display: ${showActions ? 'table-cell' : 'none'}">
                         <button class="btn secondary" onclick='viewOrder("${orderId}")'>View</button>
                         ${checkPermission('export_data') ? `<button class="btn primary" onclick='downloadInvoice("${orderId}")'>Inv</button>` : ''}
                         ${checkPermission('delete_records') ? `<button class="btn danger" onclick='deleteOrder("${orderId}")'>Del</button>` : ''}
@@ -3203,8 +3345,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     customerForm.reset();
                     toggleCustomerForm();
                     alert(id ? 'Customer updated' : 'Customer added');
+                } else {
+                    const errorData = await response.json();
+                    alert("Save failed: " + (errorData.message || response.statusText));
                 }
-            } catch (err) { alert("Save failed"); }
+            } catch (err) { 
+                console.error("Customer Save Error:", err);
+                alert("Save failed due to a network or connection error"); 
+            }
         });
     }
 
@@ -3231,12 +3379,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><span class="badge ${c.status === 'Paid' ? 'badge-in' : 'badge-out'}">${c.status}</span></td>
                 <td>
                     <button class="btn secondary" onclick="editCustomer('${c.id}')">Edit</button>
+                    ${balance > 0 ? `<button class="btn primary" style="background: #25D366; border: none;" onclick="sendPaymentReminder('${c.id}')">Remind</button>` : ''}
                     <button class="btn danger" onclick="deleteCustomer('${c.id}')">Del</button>
                 </td>
             `;
             body.appendChild(row);
         });
     }
+
+    window.sendPaymentReminder = function(id) {
+        const c = customers.find(cust => cust.id === id);
+        if (!c) return;
+        
+        const balance = (c.totalAmount || 0) - (c.partlyPaid || 0);
+        if (balance <= 0) return;
+
+        const message = `Hello ${c.name}, this is a friendly reminder from Shayors Cosmetics regarding your outstanding balance of ₦${balance.toLocaleString()} for Invoice ${c.invoiceNo || 'N/A'}. Kindly make payment at your earliest convenience. Thank you!`;
+        const encodedMessage = encodeURIComponent(message);
+        
+        // Try to open WhatsApp
+        window.open(`https://wa.me/${c.contact.replace(/\D/g,'')}?text=${encodedMessage}`, '_blank');
+    };
 
     window.editCustomer = function(id) {
         const c = customers.find(cust => cust.id === id);
@@ -3364,7 +3527,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <small>${s.role} ${s.isActivated ? '' : '(Pending)'}</small>
                     </div>
                     <div class="zuru-item-actions">
-                        ${(!s.isActivated && checkPermission('add_store_staff')) ? `<button class="btn primary btn-xs" onclick="resendInvite('${s.email}', '${s.role}')" style="margin-right: 5px;">Resend</button>` : ''}
+                        ${(!s.isActivated && checkPermission('manage_staff')) ? `<button class="btn primary btn-xs" onclick="resendInvite('${s.email}', '${s.role}')" style="margin-right: 5px;">Resend</button>` : ''}
                         ${(!isMaster && checkPermission('remove_store_staff')) ? `<button class="btn danger btn-xs" onclick="deleteStaff('${s._id}')">Remove</button>` : ''}
                     </div>
                 </li>`;
@@ -3415,18 +3578,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    async function fetchRoles() {
+        const token = getAdminToken();
+        if (!token) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/admin/roles`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const backendRoles = await res.json();
+                if (backendRoles.length > 0) {
+                    roles = backendRoles;
+                    localStorage.setItem('shayorsRoles', JSON.stringify(roles));
+                    renderRoles();
+                    updateStaffRoleDropdown();
+                }
+            }
+        } catch (err) {
+            console.error("Failed to fetch roles:", err);
+        }
+    }
+
     function renderRoles() {
         const list = document.getElementById('rolesList');
         if (!list) return;
         list.innerHTML = '';
-        roles.forEach((r, idx) => {
+        roles.forEach((r) => {
             list.innerHTML += `
                 <li class="zuru-item">
                     <div class="zuru-item-info">
                         <strong>${r.name}</strong>
                         <p><small>${r.permissions.join(', ')}</small></p>
                     </div>
-                    ${(r.name !== 'Admin' && checkPermission('create_store_role')) ? `<button class="btn danger btn-xs" onclick="deleteRole(${idx})">Delete</button>` : ''}
+                    ${(r.name !== 'Admin' && checkPermission('create_store_role')) ? `<button class="btn danger btn-xs" onclick="deleteRole('${r._id || r.name}')">Delete</button>` : ''}
                 </li>`;
         });
     }
@@ -3440,19 +3625,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const roleForm = document.getElementById('roleForm');
     if (roleForm) {
-        roleForm.addEventListener('submit', (e) => {
+        roleForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const checked = Array.from(roleForm.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
-            const r = {
-                name: document.getElementById('roleName').value,
-                permissions: checked
-            };
-            roles.push(r);
-            localStorage.setItem('shayorsRoles', JSON.stringify(roles));
-            renderRoles();
-            updateStaffRoleDropdown();
-            roleForm.reset();
-            toggleRoleForm();
+            const name = document.getElementById('roleName').value;
+            const r = { name, permissions: checked };
+            
+            const adminToken = getAdminToken();
+            try {
+                const response = await fetch(`${API_BASE}/admin/roles`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify(r)
+                });
+                if (response.ok) {
+                    await fetchRoles();
+                    roleForm.reset();
+                    toggleRoleForm();
+                } else {
+                    const data = await response.json();
+                    alert(data.message || "Failed to create role");
+                    roles.push(r);
+                    localStorage.setItem('shayorsRoles', JSON.stringify(roles));
+                    renderRoles();
+                    updateStaffRoleDropdown();
+                }
+            } catch (err) {
+                console.error("Role creation error:", err);
+                roles.push(r);
+                localStorage.setItem('shayorsRoles', JSON.stringify(roles));
+                renderRoles();
+                updateStaffRoleDropdown();
+            }
         });
     }
 
@@ -3556,13 +3763,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    window.deleteRole = function(idx) {
-        if (confirm('Delete this role?')) {
-            roles.splice(idx, 1);
-            localStorage.setItem('shayorsRoles', JSON.stringify(roles));
-            renderRoles();
-            updateStaffRoleDropdown();
+    window.deleteRole = async function(idOrName) {
+        if (!confirm('Delete this role?')) return;
+
+        const adminToken = getAdminToken();
+        // If it's a MongoDB ID
+        if (idOrName && idOrName.length === 24) {
+            try {
+                const res = await fetch(`${API_BASE}/admin/roles/${idOrName}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                if (res.ok) {
+                    await fetchRoles();
+                    return;
+                }
+            } catch (err) {
+                console.error("Role deletion error:", err);
+            }
         }
+        
+        // Fallback or Local-only deletion
+        roles = roles.filter(r => (r._id !== idOrName && r.name !== idOrName));
+        localStorage.setItem('shayorsRoles', JSON.stringify(roles));
+        renderRoles();
+        updateStaffRoleDropdown();
     };
 
     // 10. Stock Adjustments logic

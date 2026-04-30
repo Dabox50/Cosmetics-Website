@@ -1214,33 +1214,47 @@ input:checked + .slider:before {
 
 /* Receipt Modal Styles */
 .receipt-content {
-    max-width: 400px !important;
+    max-width: 320px !important;
+    margin: 10px auto;
 }
 
 #receiptPrintArea {
     font-family: 'Courier New', Courier, monospace;
-    padding: 10px;
+    padding: 1px;
     color: #000;
     box-sizing: border-box;
+    width: 100%;
 }
 
-.receipt-header {
-    text-align: center;
-    margin-bottom: 15px;
+.receipt-header h2 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.receipt-header p {
+    margin: 2px 0;
+    font-size: 0.8rem;
 }
 
 .receipt-table {
     width: 100%;
     border-collapse: collapse;
-    margin: 15px 0;
+    margin: 10px 0;
     min-width: auto;
+    table-layout: fixed;
 }
 
 .receipt-table th {
     text-align: left;
     border-bottom: 1px dashed #000;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
+    padding: 2px 0;
 }
+
+.receipt-table th:nth-child(1) { width: 45%; }
+.receipt-table th:nth-child(2) { width: 10%; }
+.receipt-table th:nth-child(3) { width: 22%; }
+.receipt-table th:nth-child(4) { width: 23%; }
 
 .receipt-table th:nth-child(2),
 .receipt-table th:nth-child(3),
@@ -1253,19 +1267,22 @@ input:checked + .slider:before {
 
 .receipt-table td {
     padding: 5px 0;
-    font-size: 0.9rem;
+    font-size: 0.75rem;
+    word-wrap: break-word;
+    vertical-align: top;
 }
 
 .receipt-summary {
     text-align: right;
     margin-top: 10px;
+    font-size: 0.85rem;
 }
 
 .receipt-footer {
     text-align: center;
     margin-top: 20px;
     font-style: italic;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
 }
 
 .btn-text {

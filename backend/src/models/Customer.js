@@ -10,7 +10,7 @@ const customerSchema = mongoose.Schema({
   totalAmount: { type: Number, default: 0 },
   partlyPaid: { type: Number, default: 0 },
   dueDate: String,
-  status: { type: String, enum: ['Paid', 'Partly Paid', 'Unpaid'], default: 'Unpaid' },
+  status: { type: String, enum: ['Paid', 'Partly Paid', 'Unpaid', 'Pending'], default: 'Unpaid' },
   email: String,
   address: String,
 }, {
