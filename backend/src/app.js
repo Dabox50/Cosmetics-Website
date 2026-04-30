@@ -13,6 +13,7 @@ const saleRoutes = require('./routes/saleRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const adjustmentRoutes = require('./routes/adjustmentRoutes');
 const expenseCategoryRoutes = require('./routes/expenseCategoryRoutes');
+const roleRoutes = require('./routes/roleRoutes');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use(express.urlencoded({ limit: '200mb', extended: true }));
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/admin', authRoutes);
+app.use('/api/admin/roles', roleRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/services', serviceRoutes);
