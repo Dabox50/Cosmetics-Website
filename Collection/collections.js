@@ -398,8 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         html += `
                             <div class="row-container animate-on-scroll spa-services-section" style="margin-top: 50px; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                                    <h2 class="row-title" style="display: flex; padding: 0; margin: 10px 0px 10px 0; font-size: 2rem;">🧖‍♀️ Spa and Wellness</h2>
-                                    <button class="btn primary" onclick="openModal('spaManagementModal')">+ Add New Service</button>
+                                    <h2 class="row-title" style="display: flex; padding: 0; margin: 10px 0px 10px 0; font-size: 2rem;">🧖‍♀️ ${cat}</h2>
                                 </div>
                                 <p style="color: #000000; font-size: 1rem; margin-bottom: 30px; font-style: italic;">Rejuvenated your body and refresh your natural glow.</p>
                                 <div class="product-grid">
@@ -409,15 +408,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                     });
                 } else {
-                    // Always show the section with an add button so services can be added
+                    // Always show the section
                     html += `
                         <div class="row-container animate-on-scroll spa-services-section" style="margin-top: 50px; background: #fff; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                                 <h2 class="row-title" style="display: flex; padding: 0; margin: 10px 0px 10px 0; font-size: 2rem;">🧖‍♀️ Spa and Wellness</h2>
-                                <button class="btn primary" onclick="openModal('spaManagementModal')" style>+ Add New Service</button>
                             </div>
                             <p style="color: #000000; font-size: 1rem; margin-bottom: 20px; font-style: italic;">Rejuvenated your body and refresh your natural glow.</p>
-                            <p class="no-results">No services found. Add some services for customers to book!</p>
+                            <p class="no-results">No services found.</p>
                         </div>
                     `;
                 }
@@ -636,11 +634,79 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const bookingForm = document.getElementById('bookingForm');
     if (bookingForm) {
+        const bookingDateInput = document.getElementById('bookingDate');
+        const bookingTimeInput = document.getElementById('bookingTime');
+        const availabilityInfo = document.getElementById('bookingAvailabilityInfo');
+
+        const businessHours = {
+            0: null, // Sunday: Closed
+            1: { open: "09:00", close: "19:00" }, // Monday
+            2: { open: "09:00", close: "19:00" }, // Tuesday
+            3: { open: "09:00", close: "19:00" }, // Wednesday
+            4: { open: "10:00", close: "19:00" }, // Thursday
+            5: { open: "09:00", close: "19:00" }, // Friday
+            6: { open: "09:00", close: "19:00" }  // Saturday
+        };
+
+        const checkAvailability = async () => {
+            const date = bookingDateInput.value;
+            const time = bookingTimeInput.value;
+            if (!date) return;
+
+            const selectedDate = new Date(date);
+            const day = selectedDate.getDay();
+            const hours = businessHours[day];
+
+            if (!hours) {
+                availabilityInfo.innerHTML = `<span style="color: #d9534f;">⚠️ We are Closed on Sundays. Please choose another day.</span>`;
+                return false;
+            }
+
+            if (time) {
+                if (time < hours.open || time >= hours.close) {
+                    availabilityInfo.innerHTML = `<span style="color: #d9534f;">⚠️ Selected time is outside business hours (${hours.open} - ${hours.close}).</span>`;
+                    return false;
+                }
+
+                try {
+                    const res = await fetch(`${API_BASE}/bookings/availability?date=${date}`);
+                    const { bookedTimes } = await res.json();
+                    if (bookedTimes.includes(time)) {
+                        availabilityInfo.innerHTML = `<span style="color: #d9534f;">⚠️ This time slot is already booked. Please choose another hour.</span>`;
+                        return false;
+                    }
+
+                    // Calculate remaining hours
+                    const now = new Date();
+                    const isToday = now.toISOString().split('T')[0] === date;
+                    const closeHour = parseInt(hours.close.split(':')[0]);
+                    const currentHour = isToday ? now.getHours() : parseInt(hours.open.split(':')[0]);
+                    const remaining = closeHour - currentHour;
+
+                    availabilityInfo.innerHTML = `<span style="color: #5cb85c;">✅ Slot available! ${remaining > 0 ? `We have ${remaining} hours left for today's bookings.` : 'We are closing soon.'}</span>`;
+                    return true;
+                } catch (err) {
+                    console.error("Availability check failed", err);
+                }
+            } else {
+                availabilityInfo.innerHTML = `Business hours for this day: ${hours.open} - ${hours.close}. Please select a time.`;
+            }
+            return true;
+        };
+
+        bookingDateInput.addEventListener('change', checkAvailability);
+        bookingTimeInput.addEventListener('change', checkAvailability);
+
         bookingForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const isAvailable = await checkAvailability();
+            if (!isAvailable) return;
+
             const serviceId = document.getElementById('bookingServiceId').value;
             const name = document.getElementById('custName').value;
             const contact = document.getElementById('custContact').value;
+            const date = bookingDateInput.value;
+            const time = bookingTimeInput.value;
             const note = document.getElementById('bookingNote').value;
             
             const service = spaServices.find(s => s._id == serviceId || s.id == serviceId);
@@ -651,10 +717,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 serviceName: service.name,
                 customerName: name,
                 customerContact: contact,
+                date,
+                time,
+                price: service.price,
+                totalAmount: service.price,
                 note
             };
 
-            const waMsg = `Hello Shayors, I want to book a spa service:\nService: ${service.name}\nName: ${name}\nContact: ${contact}\nNote: ${note}`;
+            const waMsg = `Hello Shayors, I want to book a spa service:\nService: ${service.name}\nDate: ${date}\nTime: ${time}\nName: ${name}\nContact: ${contact}\nNote: ${note}`;
             window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMsg)}`, '_blank');
 
             try {
@@ -666,11 +736,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (response.ok) {
                     console.log('Booking recorded in database');
-                    // Also update local sales history for consistency if needed
+                    // Also update local sales history for consistency
                     const sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
                     const newSale = {
                         id: 'SPA' + Date.now(),
-                        date: new Date().toLocaleDateString(),
+                        date: date,
                         customer: name,
                         items: `${service.name} (spa)`,
                         total: service.price,
@@ -684,9 +754,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     closeModal('bookingModal');
                     alert('Booking request sent and recorded!');
                 } else {
-                    console.error('Database booking recording failed');
-                    closeModal('bookingModal');
-                    alert('Booking request sent via WhatsApp!');
+                    const err = await response.json();
+                    alert(err.message || 'Booking failed');
                 }
             } catch (error) {
                 console.error('Database booking connection error:', error);

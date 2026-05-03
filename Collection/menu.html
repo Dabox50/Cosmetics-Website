@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>In-Store Menu | Shayors Cosmetics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="menu.css">
+    <link rel="shortcut icon" href="../Image/Shayor's Logo.png" type="image/x-icon">
+</head>
+
+<body>
+    <!-- Simple Header -->
+    <nav class="menu-nav">
+        <div class="logo">
+            <img src="../Image/Shayor's Cosmetics .png" alt="Logo" width="80px">
+        </div>
+        <div class="menu-title">
+            <h1>Our Product Menu</h1>
+            <p>Premium Beauty & Skincare</p>
+        </div>
+        <div class="offline-badge" id="offlineBadge">
+            Offline Mode Ready
+        </div>
+    </nav>
+
+    <!-- Categories Filter -->
+    <div class="categories-wrapper">
+        <button class="scroll-btn left" id="scrollLeft">&lt;</button>
+        <div class="menu-categories" id="menuCategories">
+            <!-- Injected by JS -->
+        </div>
+        <button class="scroll-btn right" id="scrollRight">&gt;</button>
+    </div>
+
+    <!-- Product Menu List -->
+    <main class="menu-container" id="menuContainer">
+        <div class="loader">Loading our collections...</div>
+        <!-- Products will be injected by JavaScript -->
+    </main>
+
+    <footer>
+        <p>Shayors Cosmetics &copy; 2026. All rights reserved.</p>
+    </footer>
+
+    <!-- Product Info Modal (for reviews and description) -->
+    <div id="infoModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal" id="closeModal">&times;</span>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="menu.js"></script>
+</body>
+</html>

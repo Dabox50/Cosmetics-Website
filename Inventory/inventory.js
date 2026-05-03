@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     isAllowed = checkPermission('manage_settings'); 
                     break;
                 case 'customers': 
-                    isAllowed = checkPermission('view_customers'); 
+                    isAllowed = checkPermission('view_customers') || checkPermission('manage_customers'); 
                     break;
                 case 'suppliers': 
                     isAllowed = checkPermission('manage_suppliers'); 
@@ -153,7 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Customers Module Gating
         const addCustomerBtn = document.querySelector('#customers-module button[onclick="toggleCustomerForm()"]');
-        if (addCustomerBtn) addCustomerBtn.style.display = 'none'; // User said "should not be able to add customers"
+        if (addCustomerBtn) addCustomerBtn.style.display = checkPermission('manage_customers') ? 'block' : 'none';
 
         // Store Module Gating
         const storeManagementCards = document.querySelectorAll('#store-module .admin-card');
@@ -270,8 +270,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             date: booking.createdAt,
                             customer: booking.customerName,
                             contact: booking.customerContact,
-                            items: [{ name: booking.serviceName, qty: 1, price: 0, type: 'spa' }], 
-                            total: 0, 
+                            items: [{ name: booking.serviceName, qty: 1, price: booking.totalAmount || booking.price || 0, type: 'spa' }], 
+                            total: booking.totalAmount || booking.price || 0, 
                             status: 'Paid',
                             platform: 'WhatsApp',
                             type: 'spa'
@@ -1106,7 +1106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialRoles = [
         { name: 'Admin', permissions: ['all'] },
         { name: 'Sales Boy', permissions: ['pos_checkout', 'view_inventory', 'record_sale'] },
-        { name: 'Store Manager', permissions: ['view_inventory', 'add_product', 'view_records', 'record_sale', 'manage_suppliers', 'view_reports'] }
+        { name: 'Store Manager', permissions: ['view_inventory', 'add_product', 'view_records', 'record_sale', 'manage_suppliers', 'view_reports', 'view_customers', 'manage_customers'] }
     ];
     let roles = JSON.parse(localStorage.getItem('shayorsRoles')) || initialRoles;
     let adjustments = JSON.parse(localStorage.getItem('shayorsAdjustments')) || [];
@@ -3381,9 +3381,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${c.dueDate || 'N/A'}</td>
                 <td><span class="badge ${c.status === 'Paid' ? 'badge-in' : 'badge-out'}">${c.status}</span></td>
                 <td>
-                    <button class="btn secondary" onclick="editCustomer('${c.id}')">Edit</button>
+                    ${checkPermission('manage_customers') ? `<button class="btn secondary" onclick="editCustomer('${c.id}')">Edit</button>` : ''}
                     ${balance > 0 ? `<button class="btn primary" style="background: #25D366; border: none;" onclick="sendPaymentReminder('${c.id}')">Remind</button>` : ''}
-                    <button class="btn danger" onclick="deleteCustomer('${c.id}')">Del</button>
+                    ${checkPermission('manage_customers') ? `<button class="btn danger" onclick="deleteCustomer('${c.id}')">Del</button>` : ''}
                 </td>
             `;
             body.appendChild(row);
@@ -3967,9 +3967,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const bookings = await bRes.json();
                 bookingsBody.innerHTML = '';
                 bookings.forEach(b => {
+                    const bookingDateTime = b.date && b.time ? `${b.date} at ${b.time}` : new Date(b.createdAt).toLocaleDateString();
                     bookingsBody.innerHTML += `
                         <tr>
-                            <td>${new Date(b.createdAt).toLocaleDateString()}</td>
+                            <td>${bookingDateTime}</td>
                             <td>${b.serviceName}</td>
                             <td>${b.customerName}</td>
                             <td>${b.customerContact}</td>

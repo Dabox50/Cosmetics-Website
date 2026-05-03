@@ -1,4 +1,28 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Register Service Worker for Offline Access
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            const swPath = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
+                ? '/service-worker.js' 
+                : '/service-worker.js'; // Adjust path if needed for subdirectories
+            
+            // Check if we are in a subdirectory like /Collection/
+            const isSubDir = window.location.pathname.includes('/Collection/') || 
+                             window.location.pathname.includes('/About/') || 
+                             window.location.pathname.includes('/Contact/');
+            
+            const finalPath = isSubDir ? '../service-worker.js' : './service-worker.js';
+
+            navigator.serviceWorker.register(finalPath)
+                .then(registration => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('Service Worker registration failed:', error);
+                });
+        });
+    }
+
     // Mobile Navigation Toggle
     const navSlide = () => {
         const burger = document.querySelector('.burger');

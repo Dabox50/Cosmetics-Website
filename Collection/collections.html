@@ -106,6 +106,20 @@
                 <input type="hidden" id="bookingServiceId">
                 <input type="text" id="custName" placeholder="Your Name" required>
                 <input type="text" id="custContact" placeholder="Phone/Email" required>
+                <div class="booking-time-group" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label for="bookingDate" style="font-size: 0.8rem; color: #666; display: block; margin-bottom: 5px;">Preferred Date</label>
+                        <input type="date" id="bookingDate" required style="width: 100%;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="bookingTime" style="font-size: 0.8rem; color: #666; display: block; margin-bottom: 5px;">Preferred Time</label>
+                        <input type="time" id="bookingTime" required style="width: 100%;">
+                    </div>
+                </div>
+                <div id="bookingAvailabilityInfo" style="font-size: 0.8rem; margin-bottom: 15px; padding: 10px; border-radius: 5px; background: #f9f9f9; border: 1px solid #eee;">
+                    <!-- Availability alerts will appear here -->
+                    Select a date and time to check availability.
+                </div>
                 <textarea id="bookingNote" placeholder="Special Requests/Notes"></textarea>
                 <div class="modal-actions">
                     <button type="submit" class="btn primary">Confirm Booking</button>
