@@ -3273,8 +3273,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 9. Customers Module
     window.toggleCustomerForm = function() {
-        document.getElementById('customerForm').classList.toggle('hidden');
-        if (!document.getElementById('customerForm').classList.contains('hidden')) {
+        const form = document.getElementById('customerForm');
+        form.classList.toggle('hidden');
+        if (!form.classList.contains('hidden')) {
+            document.getElementById('cId').value = ''; // Ensure ID is cleared for new entries
+            form.reset();
             document.getElementById('cDate').value = new Date().toISOString().split('T')[0];
         }
     };
