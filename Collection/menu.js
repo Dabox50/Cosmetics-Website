@@ -13,8 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLocal = window.location.hostname === "localhost" || 
                     window.location.hostname === "127.0.0.1";
     
-    const API_BASE = isLocal 
-        ? "https://cosmetics-website.fly.dev/api" // Use live API even locally for menu usually, or switch as needed
+    // SET THIS TO FALSE to use the LOCAL server data while working locally
+    const USE_LIVE_DATA_LOCALLY = false;
+
+    const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
+        ? `http://${window.location.hostname}:5000/api` 
         : "https://cosmetics-website.fly.dev/api";
 
     // Update offline status
@@ -34,11 +37,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Fetch Products and Categories
     const fetchData = async () => {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
         try {
             const [prodRes, catRes] = await Promise.all([
-                fetch(`${API_BASE}/products`),
-                fetch(`${API_BASE}/categories`)
+                fetch(`${API_BASE}/products`, { signal: controller.signal }),
+                fetch(`${API_BASE}/categories`, { signal: controller.signal })
             ]);
+
+            clearTimeout(timeoutId);
 
             productData = await prodRes.json();
             categories = await catRes.json();

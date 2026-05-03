@@ -9,9 +9,9 @@ const app = require('./src/app');
 const startServer = async () => {
   const PORT = process.env.PORT || 5000;
   
-  const server = app.listen(PORT, '::', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    console.log('App is listening on all interfaces (IPv6 and IPv4 via mapped addresses)');
+    console.log('App is listening on all interfaces (0.0.0.0)');
   });
 
   server.on('error', (err) => {

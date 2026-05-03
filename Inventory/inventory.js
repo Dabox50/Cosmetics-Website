@@ -22,6 +22,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return token;
     }
 
+    // Standardized fetch with 10s timeout
+    async function fetchWithTimeout(resource, options = {}) {
+        const { timeout = 10000 } = options;
+        const controller = new AbortController();
+        const id = setTimeout(() => controller.abort(), timeout);
+        try {
+            const response = await fetch(resource, {
+                ...options,
+                signal: controller.signal
+            });
+            clearTimeout(id);
+            return response;
+        } catch (error) {
+            clearTimeout(id);
+            throw error;
+        }
+    }
+
     function checkPermission(perm) {
         const loggedInStaffEmail = sessionStorage.getItem('shayorsStaffEmail') || localStorage.getItem('shayorsStaffEmail');
         const isMasterAdmin = sessionStorage.getItem('shayorsIsAdmin') === 'true' || localStorage.getItem('shayorsIsAdmin') === 'true' || localStorage.getItem('inventoryLoggedIn') === 'true';
@@ -209,9 +227,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const [ordersRes, bookingsRes, salesRes] = await Promise.all([
-                fetch(`${API_BASE}/orders?limit=1000`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${API_BASE}/bookings`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${API_BASE}/sales`, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetchWithTimeout(`${API_BASE}/orders?limit=1000`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetchWithTimeout(`${API_BASE}/bookings`, { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetchWithTimeout(`${API_BASE}/sales`, { headers: { 'Authorization': `Bearer ${token}` } })
             ]);
 
             let localSales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
@@ -333,17 +351,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (localCustomers.length === 0) return;
 
         try {
-            for (const cust of localCustomers) {
-                delete cust.id; // Let MongoDB generate ID
-                await fetch(`${API_BASE}/customers`, {
+            await Promise.all(localCustomers.map(cust => {
+                const c = { ...cust };
+                delete c.id; // Let MongoDB generate ID
+                return fetch(`${API_BASE}/customers`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify(cust)
+                    body: JSON.stringify(c)
                 });
-            }
+            }));
             // Clear local storage to avoid double sync
             localStorage.removeItem('shayorsCustomers');
             console.log("Local customers synced to API");
@@ -360,17 +379,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (localAdjustments.length === 0) return;
 
         try {
-            for (const adj of localAdjustments) {
-                delete adj.id;
-                await fetch(`${API_BASE}/adjustments`, {
+            await Promise.all(localAdjustments.map(adj => {
+                const a = { ...adj };
+                delete a.id;
+                return fetch(`${API_BASE}/adjustments`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify(adj)
+                    body: JSON.stringify(a)
                 });
-            }
+            }));
             localStorage.removeItem('shayorsAdjustments');
             console.log("Local adjustments synced to API");
         } catch (error) {
@@ -859,18 +879,26 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleAuthVisibility(true);
             
             // Sync staff and roles data FIRST so enforcePermissions has the right info
-            await fetchStaff(); 
-            await fetchRoles();
+            await Promise.all([
+                fetchStaff(),
+                fetchRoles()
+            ]);
             enforcePermissions(); 
             
-            await fetchInventory();
-            await fetchSpaCategories();
-            await fetchExpenseCategories();
-            await syncCustomersWithAPI();
-            await syncAdjustmentsWithAPI();
-            await fetchCustomers();
-            await fetchAdjustments();
-            const syncModified = await syncSalesWithAPI();
+            const [syncModified] = await Promise.all([
+                syncSalesWithAPI(),
+                fetchInventory(),
+                fetchSpaCategories(),
+                fetchExpenseCategories(),
+                (async () => {
+                    await syncCustomersWithAPI();
+                    await fetchCustomers();
+                })(),
+                (async () => {
+                    await syncAdjustmentsWithAPI();
+                    await fetchAdjustments();
+                })()
+            ]);
             enforcePermissions();
 
             // Request permission for system notifications
@@ -1230,7 +1258,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const status = document.getElementById('orderStatusFilter').value;
         const token = getAdminToken();
         try {
-            const res = await fetch(`${API_BASE}/orders?status=${status}`, {
+            const res = await fetchWithTimeout(`${API_BASE}/orders?status=${status}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -1253,7 +1281,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = getAdminToken();
         if (!token) return;
         try {
-            const res = await fetch(`${API_BASE}/orders?status=pending`, {
+            const res = await fetchWithTimeout(`${API_BASE}/orders?status=pending`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -1411,10 +1439,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch Inventory from Backend
     async function fetchInventory() {
         try {
-            await fetchCategories(); // Also fetch categories
-            const response = await fetch(`${API_BASE}/products`);
-            if (response.ok) {
-                const apiData = await response.json();
+            const [prodRes] = await Promise.all([
+                fetchWithTimeout(`${API_BASE}/products`),
+                fetchCategories() // fetchCategories already handles its own response
+            ]);
+
+            if (prodRes.ok) {
+                const apiData = await prodRes.json();
                 inventory = apiData || []; // Use live data
                 renderInventory();
             } else {
@@ -1554,7 +1585,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const row = document.createElement('tr');
             row.id = `product-${p._id}`;
             row.innerHTML = `
-                <td><img src="${p.image || '../Image/Shayor\'s Logo.png'}" class="prod-img-small"></td>
+                <td><img src="${p.image || '../Image/Shayor\'s Logo.png'}" class="prod-img-small" loading="lazy"></td>
                 <td class="prod-info-cell">
                     <h4>${p.name}</h4>
                     <p>${p.brand} | ${p.size} ${p.shade && p.shade !== 'N/A' ? '| ' + p.shade : ''}</p>
@@ -3505,7 +3536,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!token) return;
 
         try {
-            const res = await fetch(`${API_BASE}/admin/staff`, {
+            const res = await fetchWithTimeout(`${API_BASE}/admin/staff`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -3941,7 +3972,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Fetch Services
-            const sRes = await fetch(`${API_BASE}/services`);
+            const sRes = await fetchWithTimeout(`${API_BASE}/services`);
             if (sRes.ok) {
                 const services = await sRes.json();
                 spaBody.innerHTML = '';
@@ -3963,7 +3994,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             // Fetch Bookings
-            const bRes = await fetch(`${API_BASE}/bookings`, {
+            const bRes = await fetchWithTimeout(`${API_BASE}/bookings`, {
                 headers: { 'Authorization': `Bearer ${getAdminToken()}` }
             });
             if (bRes.ok) {
@@ -4070,7 +4101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!token || token === "null" || token === "undefined" || token.length < 20) return;
 
         try {
-            const response = await fetch(`${API_BASE}/orders`, {
+            const response = await fetchWithTimeout(`${API_BASE}/orders`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -4124,7 +4155,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchCategories() {
         console.log("Fetching categories...");
         try {
-            const response = await fetch(`${API_BASE}/categories`);
+            const response = await fetchWithTimeout(`${API_BASE}/categories`);
             if (response.ok) {
                 const data = await response.json();
                 if (Array.isArray(data) && data.length > 0) {
@@ -4327,7 +4358,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchExpenseCategories() {
         const token = getAdminToken();
         try {
-            const res = await fetch(`${API_BASE}/expense-categories`, {
+            const res = await fetchWithTimeout(`${API_BASE}/expense-categories`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {

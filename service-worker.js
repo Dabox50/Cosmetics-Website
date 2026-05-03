@@ -53,7 +53,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // Special handling for API requests (Cache-first, then network update)
-  if (url.origin === 'https://cosmetics-website.fly.dev' && url.pathname.startsWith('/api/')) {
+  if (event.request.method === 'GET' && url.origin === 'https://cosmetics-website.fly.dev' && url.pathname.startsWith('/api/')) {
     event.respondWith(
       caches.open('api-cache').then((cache) => {
         return cache.match(event.request).then((cachedResponse) => {

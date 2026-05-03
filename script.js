@@ -110,20 +110,29 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.location.hostname.startsWith('10.') || 
                         window.location.hostname.startsWith('172.');
 
-        // SET THIS TO TRUE to use the LIVE server data while working locally
-        const USE_LIVE_DATA_LOCALLY = true;
+        // SET THIS TO FALSE to use the LOCAL server data while working locally
+        const USE_LIVE_DATA_LOCALLY = false;
 
         const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
             ? `http://${window.location.hostname}:5000/api` 
             : "https://cosmetics-website.fly.dev/api";
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
         // Fetch products for search
-        fetch(`${API_BASE}/products`)
-            .then(res => res.json())
+        fetch(`${API_BASE}/products`, { signal: controller.signal })
+            .then(res => {
+                clearTimeout(timeoutId);
+                return res.json();
+            })
             .then(data => {
                 allProducts = data;
             })
-            .catch(err => console.error("Search fetch failed:", err));
+            .catch(err => {
+                clearTimeout(timeoutId);
+                console.error("Search fetch failed or timed out:", err);
+            });
 
         homeSearch.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase().trim();

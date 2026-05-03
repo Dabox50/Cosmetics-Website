@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.hostname.startsWith('10.') || 
                     window.location.hostname.startsWith('172.');
 
-    // SET THIS TO TRUE to use the LIVE server data while working locally
-    const USE_LIVE_DATA_LOCALLY = true;
+    // SET THIS TO FALSE to use the LOCAL server data while working locally
+    const USE_LIVE_DATA_LOCALLY = false;
 
     const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
         ? `http://${window.location.hostname}:5000/api` 
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Fetch Data from API (Appends or replaces static data)
     const fetchProducts = async () => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for faster responsiveness
 
         try {
             // Parallel fetching with timeout

@@ -6,7 +6,11 @@ const Product = require('../models/Product');
 const getProducts = async (req, res, next) => {
   try {
     const category = req.query.category ? { category: req.query.category } : {};
-    const products = await Product.find({ ...category });
+    // Exclude heavy text fields for faster list fetching
+    // Use .lean() for faster read-only query
+    const products = await Product.find({ ...category })
+      .select('-description -howToUse -ingredients -reviews')
+      .lean();
     res.json(products);
   } catch (error) {
     next(error);
