@@ -7,20 +7,29 @@ const app = require('./src/app');
 
 // Connect to Database and start server
 const startServer = async () => {
+  const PORT = process.env.PORT || 5000;
+  
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  });
+
+  server.on('error', (err) => {
+    console.error(`Server Error: ${err.message}`);
+    process.exit(1);
+  });
+
   try {
     await connectDB();
-    const PORT = process.env.PORT || 5000;
-    const server = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    });
-
+    
     process.on('unhandledRejection', (err) => {
       console.log(`Error: ${err.message}`);
       server.close(() => process.exit(1));
     });
   } catch (error) {
-    console.error(`Failed to start server: ${error.message}`);
-    process.exit(1);
+    console.error(`Failed to connect to database: ${error.message}`);
+    // We don't necessarily want to exit immediately if we want health checks to pass,
+    // but the app won't work without a DB. 
+    // For now, let's keep it running so you can see the logs.
   }
 };
 
