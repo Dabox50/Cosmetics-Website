@@ -3,37 +3,25 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
   try {
     if (!process.env.MONGO_URI) {
-      console.error('CRITICAL: MONGO_URI is not defined in environment variables');
-      throw new Error('MONGO_URI is not defined in environment variables');
+      console.error('CRITICAL: MONGO_URI is not defined');
+      throw new Error('MONGO_URI is not defined');
     }
 
-    console.log('Attempting to connect to MongoDB Atlas...');
+    console.log('📡 Connecting to MongoDB Atlas...');
     
-    // Disable buffering so queries fail immediately if not connected
-    mongoose.set('bufferCommands', false);
+    // Re-enable buffering so requests wait for connection instead of crashing
+    mongoose.set('bufferCommands', true);
+    mongoose.set('bufferTimeoutMS', 10000); // Wait max 10s for connection before failing
 
     const conn = await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 15000, // 15 seconds
-      socketTimeoutMS: 45000,          // 45 seconds
-      connectTimeoutMS: 15000,         // 15 seconds
+      serverSelectionTimeoutMS: 15000,
+      socketTimeoutMS: 45000,
     });
 
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-    
-    mongoose.connection.on('error', err => {
-      console.error(`MongoDB Runtime Error: ${err.message}`);
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      console.warn('MongoDB Disconnected. Mongoose will try to reconnect automatically.');
-    });
-
+    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error(`MongoDB Connection Error: ${error.message}`);
-    console.error('ACTION REQUIRED: Ensure your MongoDB Atlas IP Whitelist includes 0.0.0.0/0 for Fly.io');
-    // Don't throw here if we want the server to stay up for health checks, 
-    // but the app won't function.
-    throw error; 
+    console.error(`❌ MongoDB Error: ${error.message}`);
+    // Do not exit process, let the server stay up for Fly.io health checks
   }
 };
 
