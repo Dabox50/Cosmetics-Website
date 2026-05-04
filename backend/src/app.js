@@ -17,27 +17,43 @@ const roleRoutes = require('./routes/roleRoutes');
 
 const app = express();
 
+// --- CRITICAL: HEALTH CHECK FIRST ---
+app.get('/health', (req, res) => res.status(200).send('OK'));
+
+app.get('/api/health/db', async (req, res) => {
+  const mongoose = require('mongoose');
+  const status = {
+    connected: mongoose.connection.readyState === 1,
+    state: mongoose.connection.readyState,
+    host: mongoose.connection.host,
+    db: mongoose.connection.name
+  };
+  res.status(status.connected ? 200 : 503).json(status);
+});
+
+// --- LOGGING & SECURITY ---
 app.use((req, res, next) => {
-  const origin = req.get('origin') || req.get('referer') || 'Unknown Origin';
+  const origin = req.get('origin') || 'No Origin';
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - From: ${origin}`);
   next();
 });
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Simplified CORS for better compatibility
 app.use(cors({
-  origin: true, // Reflect request origin back (allows any origin in the allowed list)
+  origin: true, // Reflects the request origin
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   optionsSuccessStatus: 200
 }));
+
 app.use(express.json({ limit: '200mb' }));
 app.use(express.urlencoded({ limit: '200mb', extended: true }));
 
+// --- ROUTES ---
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/admin', authRoutes);
@@ -49,24 +65,6 @@ app.use('/api/sales', saleRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/adjustments', adjustmentRoutes);
 app.use('/api/expense-categories', expenseCategoryRoutes);
-
-app.get('/health', (req, res) => res.status(200).send('OK'));
-
-app.get('/api/health/db', async (req, res) => {
-  const mongoose = require('mongoose');
-  const status = {
-    connected: mongoose.connection.readyState === 1,
-    state: mongoose.connection.readyState, // 0: disconnected, 1: connected, 2: connecting, 3: disconnecting
-    host: mongoose.connection.host,
-    db: mongoose.connection.name
-  };
-  
-  if (status.connected) {
-    res.status(200).json(status);
-  } else {
-    res.status(503).json(status);
-  }
-});
 
 app.get('/', (req, res) => {
   res.send('API is running...');
