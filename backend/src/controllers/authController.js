@@ -22,39 +22,44 @@ const generateToken = (id) => {
 // @route   POST /api/auth/login
 // @access  Public
 const login = async (req, res) => {
-  const { email, password } = req.body;
-  
-  // 1. Try to find Admin
-  let user;
-  let isStaff = false;
+  try {
+    const { email, password } = req.body;
+    
+    // 1. Try to find Admin
+    let user;
+    let isStaff = false;
 
-  if (!email) {
-    user = await Admin.findOne();
-  } else {
-    user = await Admin.findOne({ email });
-  }
-
-  // 2. If no admin, try staff
-  if (!user && email) {
-    user = await Staff.findOne({ email });
-    isStaff = true;
-  }
-
-  if (user && (await user.matchPassword(password))) {
-    // Check if staff is activated
-    if (isStaff && !user.isActivated) {
-      return res.status(401).json({ message: 'Account not activated. Check your email for invitation.' });
+    if (!email) {
+      user = await Admin.findOne();
+    } else {
+      user = await Admin.findOne({ email });
     }
 
-    res.json({
-      _id: user._id,
-      email: user.email,
-      role: isStaff ? user.role : 'Admin',
-      token: generateToken(user._id),
-      isStaff
-    });
-  } else {
-    res.status(401).json({ message: 'Invalid email or password' });
+    // 2. If no admin, try staff
+    if (!user && email) {
+      user = await Staff.findOne({ email });
+      isStaff = true;
+    }
+
+    if (user && (await user.matchPassword(password))) {
+      // Check if staff is activated
+      if (isStaff && !user.isActivated) {
+        return res.status(401).json({ message: 'Account not activated. Check your email for invitation.' });
+      }
+
+      res.json({
+        _id: user._id,
+        email: user.email,
+        role: isStaff ? user.role : 'Admin',
+        token: generateToken(user._id),
+        isStaff
+      });
+    } else {
+      res.status(401).json({ message: 'Invalid email or password' });
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error during login. Please try again later.' });
   }
 };
 

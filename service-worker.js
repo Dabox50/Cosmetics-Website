@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shayors-cosmetics-v1';
+const CACHE_NAME = 'shayors-cosmetics-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -23,6 +23,7 @@ const ASSETS_TO_CACHE = [
 
 // Install Event
 self.addEventListener('install', (event) => {
+  console.log('SW: Installing v2...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
@@ -33,11 +34,13 @@ self.addEventListener('install', (event) => {
 
 // Activate Event
 self.addEventListener('activate', (event) => {
+  console.log('SW: Activated v2');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
+          if (cache !== CACHE_NAME && cache !== 'api-cache') {
+            console.log('SW: Clearing old cache', cache);
             return caches.delete(cache);
           }
         })
@@ -64,20 +67,31 @@ self.addEventListener('fetch', (event) => {
           }
           return networkResponse;
         })
-        .catch(async () => {
+        .catch(async (error) => {
+          console.error('SW: API Fetch Failed:', error);
+          
           // Fallback to cache for GET requests
           if (event.request.method === 'GET') {
             const cachedResponse = await caches.match(event.request);
-            if (cachedResponse) return cachedResponse;
+            if (cachedResponse) {
+              console.log('SW: Returning cached data for', url.pathname);
+              return cachedResponse;
+            }
           }
           
           // Return a proper error response instead of failing the promise
           return new Response(JSON.stringify({ 
             message: 'Network error or server unreachable. Please check your connection.',
-            error: true 
+            error: true,
+            details: error.message
           }), {
             status: 503,
-            headers: { 'Content-Type': 'application/json' }
+            statusText: 'Service Unavailable (via SW)',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Access-Control-Allow-Origin': event.request.headers.get('Origin') || '*',
+              'Access-Control-Allow-Credentials': 'true'
+            }
           });
         })
     );
@@ -87,7 +101,8 @@ self.addEventListener('fetch', (event) => {
   // Standard static assets (Cache-first)
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request).catch(() => {
+      if (response) return response;
+      return fetch(event.request).catch(() => {
         // Fallback for static assets if fetch fails
         return new Response('Network error. Asset not found in cache.', { status: 408 });
       });
