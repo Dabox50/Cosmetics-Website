@@ -18,27 +18,21 @@ const roleRoutes = require('./routes/roleRoutes');
 const app = express();
 
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  const origin = req.get('origin') || req.get('referer') || 'Unknown Origin';
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - From: ${origin}`);
   next();
 });
 
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === 'production') {
   app.use(morgan('dev'));
 }
 
+// Simplified CORS for better compatibility
 app.use(cors({
-  origin: [
-    'https://www.shayorscosmestics.com', 
-    'https://shayorscosmestics.com', 
-    'https://www.shayorscosmetics.com', 
-    'https://shayorscosmetics.com', 
-    'http://localhost:5500', 
-    'http://127.0.0.1:5500',
-    'https://cosmetics-website.fly.dev'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  origin: true, // Reflect request origin back (allows any origin in the allowed list)
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   optionsSuccessStatus: 200
 }));
 app.use(express.json({ limit: '200mb' }));
@@ -57,6 +51,22 @@ app.use('/api/adjustments', adjustmentRoutes);
 app.use('/api/expense-categories', expenseCategoryRoutes);
 
 app.get('/health', (req, res) => res.status(200).send('OK'));
+
+app.get('/api/health/db', async (req, res) => {
+  const mongoose = require('mongoose');
+  const status = {
+    connected: mongoose.connection.readyState === 1,
+    state: mongoose.connection.readyState, // 0: disconnected, 1: connected, 2: connecting, 3: disconnecting
+    host: mongoose.connection.host,
+    db: mongoose.connection.name
+  };
+  
+  if (status.connected) {
+    res.status(200).json(status);
+  } else {
+    res.status(503).json(status);
+  }
+});
 
 app.get('/', (req, res) => {
   res.send('API is running...');
