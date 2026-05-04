@@ -50,20 +50,35 @@ self.addEventListener('activate', (event) => {
 // Fetch Event
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  const isApiRequest = url.pathname.startsWith('/api/') || url.href.includes('fly.dev/api');
 
-  // Special handling for API requests (Network-first, then fallback to cache)
-  if (event.request.method === 'GET' && (url.pathname.startsWith('/api/') || url.href.includes('fly.dev/api'))) {
+  // Special handling for API requests
+  if (isApiRequest) {
     event.respondWith(
       fetch(event.request)
         .then((networkResponse) => {
-          if (networkResponse.ok) {
+          // Cache only successful GET requests
+          if (event.request.method === 'GET' && networkResponse.ok) {
             const clone = networkResponse.clone();
             caches.open('api-cache').then((cache) => cache.put(event.request, clone));
           }
           return networkResponse;
         })
-        .catch(() => {
-          return caches.match(event.request);
+        .catch(async () => {
+          // Fallback to cache for GET requests
+          if (event.request.method === 'GET') {
+            const cachedResponse = await caches.match(event.request);
+            if (cachedResponse) return cachedResponse;
+          }
+          
+          // Return a proper error response instead of failing the promise
+          return new Response(JSON.stringify({ 
+            message: 'Network error or server unreachable. Please check your connection.',
+            error: true 
+          }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          });
         })
     );
     return;
@@ -72,7 +87,10 @@ self.addEventListener('fetch', (event) => {
   // Standard static assets (Cache-first)
   event.respondWith(
     caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+      return response || fetch(event.request).catch(() => {
+        // Fallback for static assets if fetch fails
+        return new Response('Network error. Asset not found in cache.', { status: 408 });
+      });
     })
   );
 });

@@ -27,8 +27,19 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.use(cors({
-  origin: ['https://www.shayorscosmestics.com', 'https://shayorscosmestics.com', 'http://localhost:5500', 'http://127.0.0.1:5500'],
-  credentials: true
+  origin: [
+    'https://www.shayorscosmestics.com', 
+    'https://shayorscosmestics.com', 
+    'https://www.shayorscosmetics.com', 
+    'https://shayorscosmetics.com', 
+    'http://localhost:5500', 
+    'http://127.0.0.1:5500',
+    'https://cosmetics-website.fly.dev'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 app.use(express.json({ limit: '200mb' }));
 app.use(express.urlencoded({ limit: '200mb', extended: true }));
