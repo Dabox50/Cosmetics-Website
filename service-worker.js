@@ -51,27 +51,20 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Special handling for API requests (Cache-first, then network update)
-  if (event.request.method === 'GET' && url.pathname.startsWith('/api/')) {
+  // Special handling for API requests (Network-first, then fallback to cache)
+  if (event.request.method === 'GET' && (url.pathname.startsWith('/api/') || url.href.includes('fly.dev/api'))) {
     event.respondWith(
-      caches.open('api-cache').then((cache) => {
-        return cache.match(event.request).then((cachedResponse) => {
-          const fetchedResponse = fetch(event.request).then((networkResponse) => {
-            // Only cache if the response is valid and has data
-            if (networkResponse.ok && networkResponse.status !== 204) {
-              cache.put(event.request, networkResponse.clone());
-            }
-            return networkResponse;
-          }).catch((err) => {
-             // If network fails, return the cached version if we have it
-             if (cachedResponse) return cachedResponse;
-             // Otherwise throw error so frontend catch block triggers
-             throw err;
-          });
-
-          return cachedResponse || fetchedResponse;
-        });
-      })
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse.ok) {
+            const clone = networkResponse.clone();
+            caches.open('api-cache').then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(event.request);
+        })
     );
     return;
   }
