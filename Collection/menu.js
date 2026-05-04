@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.hostname === "127.0.0.1";
     
     // SET THIS TO FALSE to use the LOCAL server data while working locally
-    const USE_LIVE_DATA_LOCALLY = false;
+    const USE_LIVE_DATA_LOCALLY = true;
 
     const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
         ? `http://${window.location.hostname}:5000/api` 
@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fetch Products and Categories
     const fetchData = async () => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout for Fly.io cold starts
 
         try {
             const [prodRes, catRes] = await Promise.all([
@@ -49,15 +49,24 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTimeout(timeoutId);
 
             productData = await prodRes.json();
-            categories = await catRes.json();
+            const cats = await catRes.json();
+            if (cats && cats.length > 0) categories = cats;
+
+            // Only update cache if we have products
+            if (productData && productData.length > 0) {
+                localStorage.setItem('shayorsInventory', JSON.stringify(productData));
+            } else {
+                const cached = localStorage.getItem('shayorsInventory');
+                if (cached) productData = JSON.parse(cached);
+            }
 
             renderCategories();
             renderMenu();
         } catch (error) {
             console.error("Fetch error:", error);
-            // Try to load from localStorage as fallback if SW didn't catch it
-            const cachedProds = localStorage.getItem('shayorsProductsCache');
-            const cachedCats = localStorage.getItem('shayorsCategoriesCache');
+            // Try to load from standardized inventory cache
+            const cachedProds = localStorage.getItem('shayorsInventory');
+            const cachedCats = localStorage.getItem('shayorsCategories');
             
             if (cachedProds) productData = JSON.parse(cachedProds);
             if (cachedCats) categories = JSON.parse(cachedCats);
@@ -118,9 +127,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 `).join('')}
             </div>
         `;
-
-        // Cache for hard offline fallback
-        localStorage.setItem('shayorsProductsCache', JSON.stringify(productData));
     }
 
     window.showDetails = (id) => {

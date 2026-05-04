@@ -6,10 +6,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? '/service-worker.js' 
                 : '/service-worker.js'; // Adjust path if needed for subdirectories
             
-            // Check if we are in a subdirectory like /Collection/
+            // Check if we are in a subdirectory like /Collection/ or /Inventory/
             const isSubDir = window.location.pathname.includes('/Collection/') || 
                              window.location.pathname.includes('/About/') || 
-                             window.location.pathname.includes('/Contact/');
+                             window.location.pathname.includes('/Contact/') ||
+                             window.location.pathname.includes('/Inventory/');
             
             const finalPath = isSubDir ? '../service-worker.js' : './service-worker.js';
 
@@ -117,8 +118,14 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `http://${window.location.hostname}:5000/api` 
             : "https://cosmetics-website.fly.dev/api";
 
+        // Don't fetch products here if we're on the Inventory or Collections page (handled by their respective JS)
+        if (window.location.pathname.includes('inventory.html') || window.location.pathname.includes('collections.html')) {
+            console.log("Skipping product fetch in script.js (page has its own fetch)");
+            return;
+        }
+
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout for Fly.io
 
         // Fetch products for search
         fetch(`${API_BASE}/products`, { signal: controller.signal })
@@ -342,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             window.location.hostname.startsWith('10.') || 
                             window.location.hostname.startsWith('172.');
 
-            const USE_LIVE_DATA_LOCALLY = true;
+            const USE_LIVE_DATA_LOCALLY = false;
             const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
                 ? `http://${window.location.hostname}:5000/api` 
                 : "https://cosmetics-website.fly.dev/api";

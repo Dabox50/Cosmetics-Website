@@ -17,7 +17,6 @@ const ASSETS_TO_CACHE = [
   '/Contact/contact.css',
   '/Image/Shayor\'s Cosmetics .png',
   '/Image/Shayor\'s Logo.png',
-  '/Image/placeholder.png',
   '/Image/menus.png',
   '/Image/grocery-store.png'
 ];
@@ -53,16 +52,21 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
   // Special handling for API requests (Cache-first, then network update)
-  if (event.request.method === 'GET' && url.origin === 'https://cosmetics-website.fly.dev' && url.pathname.startsWith('/api/')) {
+  if (event.request.method === 'GET' && url.pathname.startsWith('/api/')) {
     event.respondWith(
       caches.open('api-cache').then((cache) => {
         return cache.match(event.request).then((cachedResponse) => {
           const fetchedResponse = fetch(event.request).then((networkResponse) => {
-            cache.put(event.request, networkResponse.clone());
+            // Only cache if the response is valid and has data
+            if (networkResponse.ok && networkResponse.status !== 204) {
+              cache.put(event.request, networkResponse.clone());
+            }
             return networkResponse;
-          }).catch(() => {
-             // If network fails and no cache, return empty array for products/services
-             if (!cachedResponse) return new Response('[]', { headers: { 'Content-Type': 'application/json' } });
+          }).catch((err) => {
+             // If network fails, return the cached version if we have it
+             if (cachedResponse) return cachedResponse;
+             // Otherwise throw error so frontend catch block triggers
+             throw err;
           });
 
           return cachedResponse || fetchedResponse;

@@ -22,9 +22,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return token;
     }
 
-    // Standardized fetch with 10s timeout
+    // Standardized fetch with 300s timeout
     async function fetchWithTimeout(resource, options = {}) {
-        const { timeout = 10000 } = options;
+        const { timeout = 300000 } = options;
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeout);
         try {
@@ -879,26 +879,38 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleAuthVisibility(true);
             
             // Sync staff and roles data FIRST so enforcePermissions has the right info
-            await Promise.all([
-                fetchStaff(),
-                fetchRoles()
-            ]);
+            try {
+                await Promise.all([
+                    fetchStaff(),
+                    fetchRoles()
+                ]);
+            } catch (e) { console.error("Initial fetch error:", e); }
+            
             enforcePermissions(); 
             
-            const [syncModified] = await Promise.all([
-                syncSalesWithAPI(),
-                fetchInventory(),
-                fetchSpaCategories(),
-                fetchExpenseCategories(),
-                (async () => {
-                    await syncCustomersWithAPI();
-                    await fetchCustomers();
-                })(),
-                (async () => {
-                    await syncAdjustmentsWithAPI();
-                    await fetchAdjustments();
-                })()
-            ]);
+            let syncModified = false;
+            try {
+                const results = await Promise.all([
+                    syncSalesWithAPI(),
+                    fetchInventory(),
+                    fetchSpaCategories(),
+                    fetchExpenseCategories(),
+                    (async () => {
+                        try {
+                            await syncCustomersWithAPI();
+                            await fetchCustomers();
+                        } catch (e) { console.error("Customer sync error:", e); }
+                    })(),
+                    (async () => {
+                        try {
+                            await syncAdjustmentsWithAPI();
+                            await fetchAdjustments();
+                        } catch (e) { console.error("Adjustment sync error:", e); }
+                    })()
+                ]);
+                syncModified = results[0]; 
+            } catch (e) { console.error("Main sync error:", e); }
+            
             enforcePermissions();
 
             // Request permission for system notifications
@@ -976,8 +988,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('loginPass').value;
             const remember = document.getElementById('rememberMe').checked;
 
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Connecting...";
+            submitBtn.disabled = true;
+
             try {
-                const response = await fetch(`${API_BASE}/admin/login`, {
+                // Use fetchWithTimeout for login too
+                const response = await fetchWithTimeout(`${API_BASE}/admin/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -999,10 +1017,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     await init(); // Apply permissions and load data
                 } else {
                     alert(data.message || "Login failed. Please check your credentials.");
+                    submitBtn.innerText = originalText;
+                    submitBtn.disabled = false;
                 }
             } catch (error) {
                 console.error("Login failed:", error);
-                alert("Connection error. Is the server running?");
+                if (error.name === 'AbortError') {
+                    alert("Connection timeout. The server is taking too long to respond. Please try again.");
+                } else {
+                    alert("Connection error: " + error.message + "\n\nIs the server running? Check your internet connection.");
+                }
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
             }
         });
     }
@@ -1438,22 +1464,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Fetch Inventory from Backend
     async function fetchInventory() {
+        console.log("fetchInventory called. API_BASE:", API_BASE);
         try {
-            const [prodRes] = await Promise.all([
-                fetchWithTimeout(`${API_BASE}/products`),
-                fetchCategories() // fetchCategories already handles its own response
-            ]);
+            const prodRes = await fetchWithTimeout(`${API_BASE}/products`);
+            await fetchCategories(); 
 
+            console.log("Products response status:", prodRes.status);
             if (prodRes.ok) {
                 const apiData = await prodRes.json();
-                inventory = apiData || []; // Use live data
+                console.log("Products fetched from API:", apiData ? apiData.length : 0);
+                
+                if (apiData && Array.isArray(apiData) && apiData.length > 0) {
+                    inventory = apiData; 
+                    localStorage.setItem('shayorsInventory', JSON.stringify(inventory)); 
+                } else if (apiData && Array.isArray(apiData) && apiData.length === 0) {
+                    console.warn("API returned empty product list. Keeping current inventory.");
+                }
                 renderInventory();
             } else {
-                console.error("Failed to fetch inventory from server.");
-                renderInventory();
+                throw new Error(`API Error: ${prodRes.status}`);
             }
         } catch (error) {
-            console.error("Error connecting to backend:", error);
+            console.error("Error connecting to backend, using local cache:", error);
+            const cached = localStorage.getItem('shayorsInventory');
+            if (cached) {
+                inventory = JSON.parse(cached);
+            }
             renderInventory();
         }
     }

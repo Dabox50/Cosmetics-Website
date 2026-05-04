@@ -35,44 +35,66 @@ document.addEventListener('DOMContentLoaded', () => {
     // 2. Fetch Data from API (Appends or replaces static data)
     const fetchProducts = async () => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for faster responsiveness
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout for large data sets
+
+        // Show loading state if container exists
+        if (productRowsContainer) {
+            productRowsContainer.innerHTML = `
+                <div class="loader-container">
+                    <div class="loader"></div>
+                    <div class="loader-text">Loading premium products...</div>
+                </div>`;
+        }
 
         try {
-            // Parallel fetching with timeout
-            const [catRes, prodRes, servRes, spaCatRes] = await Promise.allSettled([
+            // Parallel fetching with timeout - Promise.allSettled handles individual failures
+            const [catRes, prodRes, servRes] = await Promise.allSettled([
                 fetch(`${API_BASE}/categories`, { signal: controller.signal }),
                 fetch(`${API_BASE}/products`, { signal: controller.signal }),
-                fetch(`${API_BASE}/services`, { signal: controller.signal }),
-                fetch(`${API_BASE}/spa-categories`, { signal: controller.signal }).catch(() => ({ status: 'rejected' }))
+                fetch(`${API_BASE}/services`, { signal: controller.signal })
             ]);
 
             clearTimeout(timeoutId);
 
             if (catRes.status === 'fulfilled' && catRes.value.ok) {
-                const data = await catRes.value.json();
-                if (Array.isArray(data) && data.length > 0) {
-                    categories = data;
-                    localStorage.setItem('shayorsCategories', JSON.stringify(categories));
-                }
+                try {
+                    const data = await catRes.value.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        categories = data;
+                        try {
+                            localStorage.setItem('shayorsCategories', JSON.stringify(categories));
+                        } catch (e) { console.warn("Cache quota exceeded for categories"); }
+                    }
+                } catch (e) { console.warn("Error parsing categories:", e); }
             }
             
-            if (spaCatRes.status === 'fulfilled' && spaCatRes.value && spaCatRes.value.ok) {
-                const data = await spaCatRes.value.json();
-                if (Array.isArray(data) && data.length > 0) {
-                    spaCategories = data;
-                    localStorage.setItem('shayorsSpaCategories', JSON.stringify(spaCategories));
-                }
-            }
+            // Note: spa-categories endpoint removed as it's not supported by backend yet
 
             if (prodRes.status === 'fulfilled' && prodRes.value.ok) {
-                const apiData = await prodRes.value.json();
-                if (apiData && apiData.length > 0) {
-                    productData = apiData; 
+                try {
+                    const apiData = await prodRes.value.json();
+                    if (apiData && apiData.length > 0) {
+                        productData = apiData; 
+                        try {
+                            localStorage.setItem('shayorsInventory', JSON.stringify(productData));
+                        } catch (e) { console.warn("Cache quota exceeded for inventory. Products will not be cached for offline use."); }
+                    } else {
+                        const cached = localStorage.getItem('shayorsInventory');
+                        if (cached) productData = JSON.parse(cached);
+                    }
+                } catch (e) { console.warn("Error parsing products:", e); }
+            } else {
+                console.warn("Product fetch failed or was rejected. Using fallback data if available.");
+                const cached = localStorage.getItem('shayorsInventory');
+                if (cached) {
+                    productData = JSON.parse(cached);
                 }
             }
 
             if (servRes.status === 'fulfilled' && servRes.value.ok) {
-                spaServices = await servRes.value.json();
+                try {
+                    spaServices = await servRes.value.json();
+                } catch (e) { console.warn("Error parsing services:", e); }
             }
 
             // Check for URL parameters from homepage search
@@ -102,7 +124,20 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         } catch (error) {
             console.error('API Error or Timeout:', error);
-            renderProductRows(); // Fallback
+            if (productRowsContainer) {
+                productRowsContainer.innerHTML = '<div class="error-msg">Connection issue. Displaying cached products if available.</div>';
+                const cached = localStorage.getItem('shayorsInventory');
+                if (cached) {
+                    productData = JSON.parse(cached);
+                }
+                setTimeout(() => renderProductRows(), 2000);
+            } else {
+                const cached = localStorage.getItem('shayorsInventory');
+                if (cached) {
+                    productData = JSON.parse(cached);
+                }
+                renderProductRows(); // Fallback
+            }
         }
     };
 
@@ -128,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="product-status ${available ? 'status-available' : 'status-unavailable'}">
                     ${available ? 'In Stock' : 'Out of Stock'}
                 </span>
-                <img src="${product.image || '../Image/placeholder.png'}" alt="${product.name}">
+                <img src="${product.image || '../Image/Shayor\'s Logo.png'}" alt="${product.name}">
                 <div class="card-content">
                     <p class="brand">${product.category || 'Product'} | ${product.brand || 'Shayors'}</p>
                     <h3>${product.name}</h3>
@@ -183,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const infoHtml = `
             <div class="product-info-modal">
                 <div class="info-grid">
-                    <img src="${product.image || '../Image/placeholder.png'}" alt="${product.name}">
+                    <img src="${product.image || '../Image/Shayor\'s Logo.png'}" alt="${product.name}">
                     <div class="info-text">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <div>
@@ -286,7 +321,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return `
             <div class="product-card service-card">
                 <span class="product-status status-available">Service</span>
-                <img src="${service.image || '../Image/spa-service.png'}" alt="${service.name}" onerror="this.src='../Image/placeholder.png'">
+                <img src="${service.image || '../Image/Shayor\'s Logo.png'}" alt="${service.name}" onerror="this.src='../Image/Shayor\\'s Logo.png'">
                 <div class="card-content">
                     <p class="brand">${service.category || 'Spa & Beauty'}</p>
                     <h3>${service.name}</h3>
