@@ -52,7 +52,7 @@ self.addEventListener('activate', (event) => {
 // Fetch Event
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
-  const isApiRequest = url.pathname.includes('/api') || url.href.includes('fly.dev/api');
+  const isApiRequest = url.pathname.startsWith('/api/') || url.href.includes('fly.dev/api');
 
   // Let browser handle preflights and other complex requests directly
   if (event.request.method === 'OPTIONS' || !isApiRequest) {
