@@ -1,7 +1,6 @@
 const express = require('express');
-const cors = require('cors');
-const morgan = require('morgan');
 const mongoose = require('mongoose');
+const morgan = require('morgan');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 const productRoutes = require('./routes/productRoutes');
@@ -18,25 +17,35 @@ const roleRoutes = require('./routes/roleRoutes');
 
 const app = express();
 
-// --- 1. SECURITY & LOGGING (MUST BE FIRST) ---
-app.use(cors({
-  origin: true, 
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  optionsSuccessStatus: 200
-}));
-
+// --- 1. ABSOLUTE TOP: MANUAL CORS (Fixes lines 52-54 in collections.js) ---
 app.use((req, res, next) => {
-  const origin = req.get('origin') || 'No Origin';
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - From: ${origin}`);
+  const origin = req.get('origin');
+  const allowedOrigins = [
+    'https://www.shayorscosmestics.com', 
+    'https://shayorscosmestics.com', 
+    'http://localhost:5500', 
+    'http://127.0.0.1:5500'
+  ];
+  
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+  } else {
+    res.header('Access-Control-Allow-Origin', '*');
+  }
+  
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
   next();
 });
 
-// --- 2. PRIORITY HEALTH CHECK ---
+// --- 2. HEALTH CHECKS ---
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
-// --- 3. DATABASE STATUS CHECK ---
 app.get('/api/health/db', (req, res) => {
   const status = {
     connected: mongoose.connection.readyState === 1,
@@ -46,26 +55,25 @@ app.get('/api/health/db', (req, res) => {
   res.status(status.connected ? 200 : 503).json(status);
 });
 
-// --- 4. DATABASE GUARD MIDDLEWARE ---
-// Now protected by CORS above
+// --- 3. DATABASE GUARD (Prevents 500/503 crashes) ---
 app.use('/api', (req, res, next) => {
   if (mongoose.connection.readyState !== 1) {
     return res.status(503).json({ 
-      message: 'Database is still connecting to Atlas. Please refresh in 5 seconds.',
+      message: 'Database is still connecting. Please wait 5 seconds and refresh.',
       state: mongoose.connection.readyState
     });
   }
   next();
 });
 
+app.use(express.json({ limit: '200mb' }));
+app.use(express.urlencoded({ limit: '200mb', extended: true }));
+
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-app.use(express.json({ limit: '200mb' }));
-app.use(express.urlencoded({ limit: '200mb', extended: true }));
-
-// --- 5. ROUTES ---
+// --- 4. ROUTES ---
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/admin', authRoutes);

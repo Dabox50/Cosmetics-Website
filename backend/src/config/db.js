@@ -3,25 +3,19 @@ const mongoose = require('mongoose');
 const connectDB = async () => {
   try {
     if (!process.env.MONGO_URI) {
-      console.error('CRITICAL: MONGO_URI is not defined');
-      throw new Error('MONGO_URI is not defined');
+      console.error('CRITICAL: MONGO_URI is missing');
+      return;
     }
 
-    console.log('📡 Connecting to MongoDB Atlas...');
+    console.log('📡 Atlas: Connecting...');
     
-    // Re-enable buffering so requests wait for connection instead of crashing
-    mongoose.set('bufferCommands', true);
-    mongoose.set('bufferTimeoutMS', 10000); // Wait max 10s for connection before failing
+    // Simplest possible connection to avoid handshake bugs
+    await mongoose.connect(process.env.MONGO_URI);
 
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      serverSelectionTimeoutMS: 15000,
-      socketTimeoutMS: 45000,
-    });
-
-    console.log(`✅ MongoDB Connected: ${conn.connection.host}`);
+    console.log(`✅ Atlas: Connected to ${mongoose.connection.host}`);
   } catch (error) {
-    console.error(`❌ MongoDB Error: ${error.message}`);
-    // Do not exit process, let the server stay up for Fly.io health checks
+    console.error(`❌ Atlas: Error - ${error.message}`);
+    // Keep server up so user can see 503 instead of 500
   }
 };
 

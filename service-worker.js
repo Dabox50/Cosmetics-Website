@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shayors-cosmetics-v5';
+const CACHE_NAME = 'shayors-cosmetics-v6';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -23,7 +23,7 @@ const ASSETS_TO_CACHE = [
 
 // Install Event
 self.addEventListener('install', (event) => {
-  console.log('SW: Installing v5...');
+  console.log('SW: Installing v6 (Permissive CORS Mode)...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
@@ -34,13 +34,12 @@ self.addEventListener('install', (event) => {
 
 // Activate Event
 self.addEventListener('activate', (event) => {
-  console.log('SW: Activated v5');
+  console.log('SW: Activated v6');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cache) => {
           if (cache !== CACHE_NAME && cache !== 'api-cache') {
-            console.log('SW: Clearing old cache', cache);
             return caches.delete(cache);
           }
         })
@@ -55,67 +54,48 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   const isApiRequest = url.pathname.startsWith('/api/') || url.href.includes('fly.dev/api');
 
-  // Skip Service Worker for preflight OPTIONS requests to avoid CORS issues
-  if (event.request.method === 'OPTIONS') {
-    return;
-  }
-
-  // Special handling for API requests
-  if (isApiRequest) {
+  // Let browser handle preflights and other complex requests directly
+  if (event.request.method === 'OPTIONS' || !isApiRequest) {
     event.respondWith(
-      fetch(event.request)
-        .then((networkResponse) => {
-          // If we got a real response from the server, return it as is
-          if (event.request.method === 'GET' && networkResponse.ok) {
-            const clone = networkResponse.clone();
-            caches.open('api-cache').then((cache) => cache.put(event.request, clone));
-          }
-          return networkResponse;
-        })
-        .catch(async (error) => {
-          console.error('SW: API Fetch Failed:', error);
-          
-          // Fallback to cache for GET requests
-          if (event.request.method === 'GET') {
-            const cachedResponse = await caches.match(event.request);
-            if (cachedResponse) {
-              console.log('SW: Returning cached data for', url.pathname);
-              return cachedResponse;
-            }
-          }
-          
-          // Determine the origin to echo back for CORS
-          const requestOrigin = event.request.headers.get('Origin') || 
-                                (event.request.referrer ? new URL(event.request.referrer).origin : '*');
-          
-          // Return a structured error response with explicit CORS headers
-          return new Response(JSON.stringify({ 
-            message: 'Network error or server unreachable. Please check your internet or wait for the server to wake up.',
-            error: true,
-            details: error.message,
-            tip: 'If this persists, check MongoDB Atlas IP Whitelisting (allow 0.0.0.0/0)'
-          }), {
-            status: 503,
-            headers: { 
-              'Content-Type': 'application/json',
-              'Access-Control-Allow-Origin': requestOrigin,
-              'Access-Control-Allow-Credentials': 'true',
-              'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-              'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Requested-With, Accept, Origin'
-            }
-          });
-        })
+      caches.match(event.request).then((response) => {
+        return response || fetch(event.request);
+      }).catch(() => fetch(event.request))
     );
     return;
   }
 
-  // Standard static assets (Cache-first)
+  // API handling
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      if (response) return response;
-      return fetch(event.request).catch(() => {
-        return new Response('Network error. Asset not found in cache.', { status: 408 });
-      });
-    })
+    fetch(event.request)
+      .then((networkResponse) => {
+        if (event.request.method === 'GET' && networkResponse.ok) {
+          const clone = networkResponse.clone();
+          caches.open('api-cache').then((cache) => cache.put(event.request, clone));
+        }
+        return networkResponse;
+      })
+      .catch(async (error) => {
+        console.error('SW: API Fetch Failed:', error);
+        
+        if (event.request.method === 'GET') {
+          const cached = await caches.match(event.request);
+          if (cached) return cached;
+        }
+        
+        // Return a response that will never trigger a CORS block
+        const origin = event.request.headers.get('Origin') || '*';
+        return new Response(JSON.stringify({ 
+          message: 'Server unreachable. Check your connection or wait for Atlas.',
+          error: true,
+          details: error.message
+        }), {
+          status: 503,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': origin,
+            'Access-Control-Allow-Credentials': 'true'
+          }
+        });
+      })
   );
 });
