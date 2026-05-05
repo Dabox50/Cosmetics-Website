@@ -18,10 +18,25 @@ const roleRoutes = require('./routes/roleRoutes');
 
 const app = express();
 
-// --- 1. PRIORITY HEALTH CHECK ---
+// --- 1. SECURITY & LOGGING (MUST BE FIRST) ---
+app.use(cors({
+  origin: true, 
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  optionsSuccessStatus: 200
+}));
+
+app.use((req, res, next) => {
+  const origin = req.get('origin') || 'No Origin';
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - From: ${origin}`);
+  next();
+});
+
+// --- 2. PRIORITY HEALTH CHECK ---
 app.get('/health', (req, res) => res.status(200).send('OK'));
 
-// --- 2. DATABASE STATUS CHECK ---
+// --- 3. DATABASE STATUS CHECK ---
 app.get('/api/health/db', (req, res) => {
   const status = {
     connected: mongoose.connection.readyState === 1,
@@ -31,8 +46,8 @@ app.get('/api/health/db', (req, res) => {
   res.status(status.connected ? 200 : 503).json(status);
 });
 
-// --- 3. DATABASE GUARD MIDDLEWARE ---
-// Prevents 500 crashes by checking connection before running routes
+// --- 4. DATABASE GUARD MIDDLEWARE ---
+// Now protected by CORS above
 app.use('/api', (req, res, next) => {
   if (mongoose.connection.readyState !== 1) {
     return res.status(503).json({ 
@@ -43,24 +58,9 @@ app.use('/api', (req, res, next) => {
   next();
 });
 
-// --- 4. LOGGING & SECURITY ---
-app.use((req, res, next) => {
-  const origin = req.get('origin') || 'No Origin';
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - From: ${origin}`);
-  next();
-});
-
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
-
-app.use(cors({
-  origin: true, 
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  optionsSuccessStatus: 200
-}));
 
 app.use(express.json({ limit: '200mb' }));
 app.use(express.urlencoded({ limit: '200mb', extended: true }));
