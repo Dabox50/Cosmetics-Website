@@ -1,9 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const isLocal = window.location.hostname === "localhost" || 
-                    window.location.hostname === "127.0.0.1" || 
-                    window.location.hostname.startsWith('192.168.') || 
-                    window.location.hostname.startsWith('10.') || 
-                    window.location.hostname.startsWith('172.');
+                    window.location.hostname === "127.0.0.1";
 
     // SET THIS TO FALSE to use your LOCAL server for testing
     const USE_LIVE_DATA_LOCALLY = false;
@@ -3167,6 +3164,30 @@ document.addEventListener('DOMContentLoaded', () => {
             renderAnalytics(); 
         }
     });
+
+    // Sync Analytics Button
+    const syncBtn = document.getElementById('syncAnalyticsBtn');
+    if (syncBtn) {
+        syncBtn.addEventListener('click', async () => {
+            syncBtn.disabled = true;
+            syncBtn.innerText = "Syncing...";
+            try {
+                await Promise.all([
+                    syncSalesWithAPI(),
+                    fetchInventory(),
+                    fetchCustomers()
+                ]);
+                renderAnalytics();
+                alert("Analytics data synced successfully!");
+            } catch (err) {
+                console.error("Sync failed:", err);
+                alert("Failed to sync data. Please check your internet connection.");
+            } finally {
+                syncBtn.disabled = false;
+                syncBtn.innerText = "Refresh & Sync Data";
+            }
+        });
+    }
 
     // Reset Analytics Button
     const resetBtn = document.getElementById('resetAnalyticsBtn');
