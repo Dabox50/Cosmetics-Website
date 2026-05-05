@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
         return token;
     }
 
-    // Standardized fetch with 300s timeout
-    async function fetchWithTimeout(resource, options = {}) {
+    // Standardized fetch with 300s timeout and auto-retry for 503
+    async function fetchWithTimeout(resource, options = {}, retries = 3) {
         const { timeout = 300000 } = options;
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeout);
@@ -33,6 +33,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 signal: controller.signal
             });
             clearTimeout(id);
+
+            // AUTO-RETRY for Line 31 issue
+            if (response.status === 503 && retries > 0) {
+                console.log("Database warming up, retrying login...");
+                await new Promise(r => setTimeout(r, 3000));
+                return fetchWithTimeout(resource, options, retries - 1);
+            }
+
             return response;
         } catch (error) {
             clearTimeout(id);

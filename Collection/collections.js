@@ -33,25 +33,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 2. Fetch Data from API (Appends or replaces static data)
-    const fetchProducts = async () => {
+    const fetchProducts = async (retries = 3) => {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout for large data sets
+        const timeoutId = setTimeout(() => controller.abort(), 120000); 
 
-        // Show loading state if container exists
-        if (productRowsContainer) {
+        if (productRowsContainer && retries === 3) {
             productRowsContainer.innerHTML = `
                 <div class="loader-container">
                     <div class="loader"></div>
-                    <div class="loader-text">Loading premium products...</div>
+                    <div class="loader-text">Connecting to luxury vault...</div>
                 </div>`;
         }
 
         try {
-            // Parallel fetching with timeout - Promise.allSettled handles individual failures
+            // Updated lines 52, 53, 54 with a robust fetch helper
+            const robustFetch = async (url) => {
+                const res = await fetch(url, { signal: controller.signal });
+                if (res.status === 503 && retries > 0) {
+                    console.log(`Server waking up, retrying ${url}...`);
+                    await new Promise(r => setTimeout(r, 3000));
+                    return robustFetch(url);
+                }
+                return res;
+            };
+
             const [catRes, prodRes, servRes] = await Promise.allSettled([
-                fetch(`${API_BASE}/categories`, { signal: controller.signal }),
-                fetch(`${API_BASE}/products`, { signal: controller.signal }),
-                fetch(`${API_BASE}/services`, { signal: controller.signal })
+                robustFetch(`${API_BASE}/categories`),
+                robustFetch(`${API_BASE}/products`),
+                robustFetch(`${API_BASE}/services`)
             ]);
 
             clearTimeout(timeoutId);
