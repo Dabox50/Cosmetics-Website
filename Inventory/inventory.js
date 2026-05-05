@@ -7,7 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
         ? `http://${window.location.hostname}:5000/api` 
-        : "https://cosmetics-website.fly.dev/api";
+        : (window.location.hostname.includes("shayorscosmestics.com") 
+            ? "/api" 
+            : "https://cosmetics-website.fly.dev/api");
 
     // Helper to get token safely
     function getAdminToken() {
@@ -3172,16 +3174,16 @@ document.addEventListener('DOMContentLoaded', () => {
             syncBtn.disabled = true;
             syncBtn.innerText = "Syncing...";
             try {
-                await Promise.all([
-                    syncSalesWithAPI(),
-                    fetchInventory(),
-                    fetchCustomers()
-                ]);
+                // Run syncs individually to better isolate errors if any occur
+                await syncSalesWithAPI();
+                await fetchInventory();
+                await fetchCustomers();
+                
                 renderAnalytics();
                 alert("Analytics data synced successfully!");
             } catch (err) {
                 console.error("Sync failed:", err);
-                alert("Failed to sync data. Please check your internet connection.");
+                alert("Sync partially failed or server is unreachable. Please check your connection.");
             } finally {
                 syncBtn.disabled = false;
                 syncBtn.innerText = "Refresh & Sync Data";
