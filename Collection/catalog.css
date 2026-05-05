@@ -60,7 +60,7 @@ body {
 /* Categories */
 .categories-wrapper {
     position: sticky;
-    top: 135px;
+    top: 155px; /* Adjusted to prevent overlap with sticky header */
     z-index: 90;
     background: var(--white);
     display: flex;
@@ -124,8 +124,13 @@ body {
     }
     
     .categories-wrapper {
-        top: 110px;
+        top: 135px; /* Adjusted for mobile header height */
         padding: 0 5px;
+    }
+
+    .cat-btn {
+        padding: 8px 15px;
+        font-size: 0.85rem;
     }
 }
 

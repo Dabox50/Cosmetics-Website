@@ -927,10 +927,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             // Re-render if sync changed anything
+            const activeModule = document.querySelector('.module.active');
+            if (activeModule && activeModule.id === 'analytics-module') {
+                renderAnalytics();
+            }
+
             if (syncModified) {
                 renderRecentPosTransactions();
                 // Also update sales history if it's the active module
-                const activeModule = document.querySelector('.module.active');
                 if (activeModule && activeModule.id === 'sales-module') {
                     renderSalesHistory();
                 }
@@ -1159,7 +1163,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 1. Core Data Structures
-    let inventory = [];
+    let inventory = JSON.parse(localStorage.getItem('shayorsInventory')) || [];
     let sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
     let expenses = JSON.parse(localStorage.getItem('shayorsExpenses')) || [];
     let customers = JSON.parse(localStorage.getItem('shayorsCustomers')) || [];
@@ -4538,13 +4542,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // Initialize
-    const urlParams = new URLSearchParams(window.location.search);
-    const moduleParam = urlParams.get('module');
-    if (moduleParam) {
-        showModule(moduleParam);
-    } else {
-        renderInventory();
-    }
-
-    init();
+    init().then(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const moduleParam = urlParams.get('module');
+        if (moduleParam) {
+            showModule(moduleParam);
+        } else {
+            renderInventory();
+        }
+    });
 });

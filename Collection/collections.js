@@ -177,6 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="brand">${product.category || 'Product'} | ${product.brand || 'Shayors'}</p>
                     <h3>${product.name}</h3>
                     <p class="price">₦${parseFloat(product.price).toLocaleString()}</p>
+                    <p style="font-size: 0.75rem; color: #777; margin: 5px 0; height: 35px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                        ${product.description || product.review || 'Premium quality product.'}
+                    </p>
                     
                     <div class="product-details-mini">
                         ${product.skinTypes ? `<p><strong>Skin Type:</strong> ${product.skinTypes}</p>` : ''}
@@ -243,11 +246,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <p class="info-price">₦${parseFloat(product.price).toLocaleString()}</p>
                         <hr>
-                        ${product.description ? `<div class="info-section"><h4>Description</h4><p>${product.description}</p></div>` : ''}
+                        <div class="info-section">
+                            <h4>Description</h4>
+                            <p>${product.description || product.review || 'Premium quality product from Shayors Cosmetics.'}</p>
+                        </div>
+                        
+                        ${(product.size || (product.shade && product.shade !== 'N/A') || product.ingredients) ? `
+                        <div class="info-section">
+                            <h4>Specifications</h4>
+                            <p>
+                                ${product.size ? `<strong>Size:</strong> ${product.size}<br>` : ''}
+                                ${(product.shade && product.shade !== 'N/A') ? `<strong>Shade:</strong> ${product.shade}<br>` : ''}
+                                ${product.ingredients ? `<strong>Ingredients:</strong> ${product.ingredients}<br>` : ''}
+                            </p>
+                        </div>` : ''}
+
                         ${product.skinTypes ? `<div class="info-section"><h4>Skin Types</h4><p>${product.skinTypes}</p></div>` : ''}
                         ${product.skinConcern ? `<div class="info-section"><h4>Skin Concern</h4><p>${product.skinConcern}</p></div>` : ''}
                         ${product.howToUse ? `<div class="info-section"><h4>How to Use</h4><p>${product.howToUse}</p></div>` : ''}
-                        ${product.ingredients ? `<div class="info-section"><h4>Ingredients</h4><p>${product.ingredients}</p></div>` : ''}
                         
                         <div class="reviews-section" style="margin-top: 30px;">
                             <h3 style="margin-bottom: 15px; border-bottom: 2px solid var(--primary-color); display: inline-block;">Customer Reviews</h3>

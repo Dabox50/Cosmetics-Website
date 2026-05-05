@@ -50,14 +50,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
             productData = await prodRes.json();
             const cats = await catRes.json();
-            if (cats && cats.length > 0) categories = cats;
-
-            // Only update cache if we have products
+            
+            // Update cache for products
             if (productData && productData.length > 0) {
                 localStorage.setItem('shayorsInventory', JSON.stringify(productData));
             } else {
                 const cached = localStorage.getItem('shayorsInventory');
                 if (cached) productData = JSON.parse(cached);
+            }
+
+            // Update cache for categories
+            if (cats && cats.length > 0) {
+                categories = cats;
+                localStorage.setItem('shayorsCategories', JSON.stringify(categories));
+            } else {
+                const cachedCats = localStorage.getItem('shayorsCategories');
+                if (cachedCats) categories = JSON.parse(cachedCats);
             }
 
             renderCategories();
@@ -71,7 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cachedProds) productData = JSON.parse(cachedProds);
             if (cachedCats) categories = JSON.parse(cachedCats);
 
-            if (productData.length > 0) {
+            if (productData && productData.length > 0) {
                 renderCategories();
                 renderMenu();
             } else {
@@ -81,8 +89,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function renderCategories() {
-        const uniqueCats = ['All', ...new Set(productData.map(p => p.category))].filter(Boolean);
-        menuCategories.innerHTML = uniqueCats.map(cat => `
+        // If we have categories from API/Cache, use them, otherwise derive from products
+        let catList = [];
+        if (categories && categories.length > 0) {
+            catList = ['All', ...categories.map(c => c.name)];
+        } else {
+            catList = ['All', ...new Set(productData.map(p => p.category))].filter(Boolean);
+        }
+
+        menuCategories.innerHTML = catList.map(cat => `
             <button class="cat-btn ${cat === currentCategory ? 'active' : ''}" onclick="filterMenu('${cat}')">
                 ${cat}
             </button>
@@ -117,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <h3>${product.name}</h3>
                                 <span class="menu-item-price">₦${parseFloat(product.price).toLocaleString()}</span>
                             </div>
-                            <p class="menu-item-desc">${product.description || 'No description available.'}</p>
+                            <p class="menu-item-desc">${product.description || product.review || `${product.brand || ''} ${product.size || ''} ${product.shade && product.shade !== 'N/A' ? product.shade : ''}` || 'Premium quality product.'}</p>
                             <div class="menu-item-meta">
                                 <span>${product.category}</span>
                                 ${product.rating ? `<span style="margin-left: 10px;">★ ${product.rating.toFixed(1)}</span>` : ''}
@@ -152,8 +167,19 @@ document.addEventListener('DOMContentLoaded', () => {
             
             <div class="modal-section">
                 <h4>Description</h4>
-                <p>${product.description || 'No description available.'}</p>
+                <p>${product.description || product.review || 'Premium quality product from Shayors Cosmetics.'}</p>
             </div>
+
+            ${(product.brand || product.size || (product.shade && product.shade !== 'N/A')) ? `
+            <div class="modal-section">
+                <h4>Specifications</h4>
+                <p>
+                    ${product.brand ? `<strong>Brand:</strong> ${product.brand}<br>` : ''}
+                    ${product.size ? `<strong>Size:</strong> ${product.size}<br>` : ''}
+                    ${(product.shade && product.shade !== 'N/A') ? `<strong>Shade:</strong> ${product.shade}<br>` : ''}
+                    ${product.skinTypes ? `<strong>Skin Types:</strong> ${product.skinTypes}<br>` : ''}
+                </p>
+            </div>` : ''}
 
             ${product.howToUse ? `
             <div class="modal-section">
