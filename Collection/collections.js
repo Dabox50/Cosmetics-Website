@@ -46,13 +46,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // Updated lines 52, 53, 54 with a robust fetch helper
-            const robustFetch = async (url) => {
+            // Fixed recursive retry logic to decrement retries
+            const robustFetch = async (url, retryCount = 3) => {
                 const res = await fetch(url, { signal: controller.signal });
-                if (res.status === 503 && retries > 0) {
-                    console.log(`Server waking up, retrying ${url}...`);
+                if (res.status === 503 && retryCount > 0) {
+                    console.log(`Server warming up, retrying ${url} (${retryCount} left)...`);
                     await new Promise(r => setTimeout(r, 3000));
-                    return robustFetch(url);
+                    return robustFetch(url, retryCount - 1);
                 }
                 return res;
             };

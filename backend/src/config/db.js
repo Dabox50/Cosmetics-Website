@@ -1,22 +1,37 @@
 const mongoose = require('mongoose');
 
-const connectDB = async () => {
+// Store the last connection error to show in health checks
+let lastError = null;
+
+const connectDB = async (retryCount = 5) => {
   try {
     if (!process.env.MONGO_URI) {
       console.error('CRITICAL: MONGO_URI is missing');
+      lastError = 'MONGO_URI is missing';
       return;
     }
 
-    console.log('📡 Atlas: Connecting...');
+    console.log(`📡 Atlas: Connecting (Attempts left: ${retryCount})...`);
     
-    // Simplest possible connection to avoid handshake bugs
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGO_URI, {
+      serverSelectionTimeoutMS: 5000, 
+      connectTimeoutMS: 10000,
+      family: 4 // Force IPv4 to avoid Fly.io DNS resolution bugs
+    });
 
+    lastError = null;
     console.log(`✅ Atlas: Connected to ${mongoose.connection.host}`);
   } catch (error) {
+    lastError = error.message;
     console.error(`❌ Atlas: Error - ${error.message}`);
-    // Keep server up so user can see 503 instead of 500
+    
+    if (retryCount > 0) {
+      console.log('🔄 Retrying connection in 5 seconds...');
+      setTimeout(() => connectDB(retryCount - 1), 5000);
+    }
   }
 };
 
-module.exports = connectDB;
+const getLastError = () => lastError;
+
+module.exports = { connectDB, getLastError };

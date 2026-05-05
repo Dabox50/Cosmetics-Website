@@ -83,18 +83,23 @@ self.addEventListener('fetch', (event) => {
         }
         
         // Return a response that will never trigger a CORS block
-        const origin = event.request.headers.get('Origin') || '*';
+        const origin = event.request.headers.get('Origin');
+        const headers = { 'Content-Type': 'application/json' };
+        
+        if (origin) {
+          headers['Access-Control-Allow-Origin'] = origin;
+          headers['Access-Control-Allow-Credentials'] = 'true';
+        } else {
+          headers['Access-Control-Allow-Origin'] = '*';
+        }
+
         return new Response(JSON.stringify({ 
           message: 'Server unreachable. Check your connection or wait for Atlas.',
           error: true,
           details: error.message
         }), {
           status: 503,
-          headers: { 
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': origin,
-            'Access-Control-Allow-Credentials': 'true'
-          }
+          headers: headers
         });
       })
   );
