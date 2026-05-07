@@ -20,6 +20,28 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `http://${window.location.hostname}:5000/api` 
         : "https://cosmetics-website.fly.dev/api";
 
+    // Helper to safely save inventory to localStorage without exceeding quota
+    function safeSaveInventory(data) {
+        try {
+            localStorage.setItem('shayorsInventory', JSON.stringify(data));
+        } catch (e) {
+            if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                console.warn("LocalStorage quota exceeded, saving slimmed inventory (no images/descriptions)");
+                const slimData = data.map(p => {
+                    const { image, description, ingredients, howToUse, review, ...rest } = p;
+                    return rest;
+                });
+                try {
+                    localStorage.setItem('shayorsInventory', JSON.stringify(slimData));
+                } catch (e2) {
+                    console.error("Even slimmed inventory exceeds quota. Cache disabled.", e2);
+                }
+            } else {
+                console.error("Error saving to localStorage:", e);
+            }
+        }
+    }
+
     // 4. Render Product Rows (Default View)
     const productRowsContainer = document.getElementById('productRowsContainer');
 
@@ -84,9 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const apiData = await prodRes.value.json();
                     if (apiData && apiData.length > 0) {
                         productData = apiData; 
-                        try {
-                            localStorage.setItem('shayorsInventory', JSON.stringify(productData));
-                        } catch (e) { console.warn("Cache quota exceeded for inventory. Products will not be cached for offline use."); }
+                        safeSaveInventory(productData);
                     } else {
                         const cached = localStorage.getItem('shayorsInventory');
                         if (cached) productData = JSON.parse(cached);
@@ -802,7 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         id: 'SPA' + Date.now(),
                         date: date,
                         customer: name,
-                        items: `${service.name} (spa)`,
+                        items: [{ name: service.name, qty: 1, price: service.price, type: 'spa' }],
                         total: service.price,
                         status: 'Paid',
                         method: 'WhatsApp Booking',

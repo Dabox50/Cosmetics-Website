@@ -20,27 +20,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Standardized fetch with 300s timeout and auto-retry for 503
-    async function fetchWithTimeout(resource, options = {}, retries = 3) {
+    async function fetchWithTimeout(resource, options = {}, retries = 5) {
         const { timeout = 300000 } = options;
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeout);
         try {
+            console.log(`Attempting fetch: ${resource} (${6 - retries}/6)`);
             const response = await fetch(resource, {
                 ...options,
                 signal: controller.signal
             });
             clearTimeout(id);
 
-            // AUTO-RETRY for Line 31 issue
+            // AUTO-RETRY for 503 (Database warming up)
             if (response.status === 503 && retries > 0) {
-                console.log("Database warming up, retrying login...");
-                await new Promise(r => setTimeout(r, 3000));
+                console.log(`Database warming up (503), retrying in 5s... (${retries} retries left)`);
+                await new Promise(r => setTimeout(r, 5000));
                 return fetchWithTimeout(resource, options, retries - 1);
             }
 
             return response;
         } catch (error) {
             clearTimeout(id);
+            // If it's a network error (like what the SW might throw or actual offline), retry too
+            if (retries > 0) {
+                console.log(`Network error or SW block, retrying in 5s... (${retries} retries left)`, error);
+                await new Promise(r => setTimeout(r, 5000));
+                return fetchWithTimeout(resource, options, retries - 1);
+            }
             throw error;
         }
     }
@@ -443,10 +450,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- SALES PRODUCT SEARCH LOGIC ---
     const saleProductSearch = document.getElementById('saleProductSearch');
-    const saleDiscountInput = document.getElementById('saleDiscount');
+    const saleDiscountInput = document.getElementById('saleDiscountPercent');
+    const saleChargesInput = document.getElementById('saleChargesPercent');
     
     if (saleDiscountInput) {
         saleDiscountInput.addEventListener('input', updateSaleTotal);
+    }
+    if (saleChargesInput) {
+        saleChargesInput.addEventListener('input', updateSaleTotal);
     }
 
     if (saleProductSearch) {
@@ -1471,6 +1482,29 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     // --- END WEB ORDERS MODULE ---
 
+    // Helper to safely save inventory to localStorage without exceeding quota
+    function safeSaveInventory(data) {
+        try {
+            localStorage.setItem('shayorsInventory', JSON.stringify(data));
+        } catch (e) {
+            if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                console.warn("LocalStorage quota exceeded, saving slimmed inventory (no images/descriptions)");
+                // Create a slim version without heavy fields
+                const slimData = data.map(p => {
+                    const { image, description, ingredients, howToUse, review, ...rest } = p;
+                    return rest;
+                });
+                try {
+                    localStorage.setItem('shayorsInventory', JSON.stringify(slimData));
+                } catch (e2) {
+                    console.error("Even slimmed inventory exceeds quota. Cache disabled.", e2);
+                }
+            } else {
+                console.error("Error saving to localStorage:", e);
+            }
+        }
+    }
+
     // Fetch Inventory from Backend
     async function fetchInventory() {
         console.log("fetchInventory called. API_BASE:", API_BASE);
@@ -1485,7 +1519,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (apiData && Array.isArray(apiData) && apiData.length > 0) {
                     inventory = apiData; 
-                    localStorage.setItem('shayorsInventory', JSON.stringify(inventory)); 
+                    safeSaveInventory(inventory); 
                 } else if (apiData && Array.isArray(apiData) && apiData.length === 0) {
                     console.warn("API returned empty product list. Keeping current inventory.");
                 }
@@ -1536,7 +1570,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (moduleId === 'orders') fetchOrders();
         if (moduleId === 'sales') { syncSalesWithAPI().then(() => { renderSalesHistory(); updateSaleProductDropdown(); }); }
-        if (moduleId === 'expenses') { renderExpenses(); renderCostAnalysis(); fetchExpenseCategories(); }
+        if (moduleId === 'expenses') { fetchExpenses(); fetchCostAnalysis(); fetchExpenseCategories(); }
         if (moduleId === 'analytics') { syncSalesWithAPI().then(() => renderAnalytics()); }
         if (moduleId === 'spa') renderSpaServices();
         if (moduleId === 'adjustments') { renderAdjustments(); updateAdjustmentProductDropdown(); }
@@ -1708,7 +1742,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let response;
             if (id) {
                 // UPDATE existing product
-                response = await fetch(`${API_BASE}/products/${id}`, {
+                response = await fetchWithTimeout(`${API_BASE}/products/${id}`, {
                     method: 'PATCH',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -1718,7 +1752,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             } else {
                 // CREATE new product
-                response = await fetch(`${API_BASE}/products`, {
+                response = await fetchWithTimeout(`${API_BASE}/products`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -1776,7 +1810,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteProduct = async function(id) {
         if (confirm('Delete this product?')) {
             try {
-                const response = await fetch(`${API_BASE}/products/${id}`, {
+                const response = await fetchWithTimeout(`${API_BASE}/products/${id}`, {
                     method: 'DELETE',
                     headers: { 
                         'Authorization': `Bearer ${getAdminToken()}`
@@ -1800,7 +1834,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (p) {
             const newStock = Math.max(0, p.stock + change);
             try {
-                const response = await fetch(`${API_BASE}/products/${id}`, {
+                const response = await fetchWithTimeout(`${API_BASE}/products/${id}`, {
                     method: 'PATCH',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -1823,7 +1857,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (p) {
             const newStock = Math.max(0, parseInt(val) || 0);
             try {
-                const response = await fetch(`${API_BASE}/products/${id}`, {
+                const response = await fetchWithTimeout(`${API_BASE}/products/${id}`, {
                     method: 'PATCH',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -1842,7 +1876,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function saveAndRender() {
-        localStorage.setItem('shayorsInventory', JSON.stringify(inventory));
+        safeSaveInventory(inventory);
         renderInventory();
     }
 
@@ -1905,7 +1939,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- SMART SCANNER LOGIC ---
     let html5QrCode = null;
-
     let posScanner = null;
     let formScanner = null;
     let invScanner = null;
@@ -2107,7 +2140,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let successCount = 0;
         for (const p of samples) {
             try {
-                const response = await fetch(`${API_BASE}/products`, {
+                const response = await fetchWithTimeout(`${API_BASE}/products`, {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
@@ -2162,17 +2195,18 @@ document.addEventListener('DOMContentLoaded', () => {
             currentSaleItems = [];
             currentCharges = [];
             renderCurrentSaleList();
-            renderCharges();
+            if (typeof renderCharges === 'function') renderCharges();
             document.getElementById('saleCustomerName').value = '';
             document.getElementById('saleCustomerContact').value = '';
             document.getElementById('saleNote').value = '';
-            document.getElementById('saleDiscount').value = 0;
-            if (document.getElementById('saleCharges')) document.getElementById('saleCharges').value = 0;
+            document.getElementById('saleDiscountPercent').value = '0.00';
+            document.getElementById('saleChargesPercent').value = '0.00';
             document.getElementById('saleAmountPaid').value = '';
             document.getElementById('saleProduct').value = '';
             document.getElementById('saleProductSearch').value = '';
             document.getElementById('saleQty').value = 1;
             document.getElementById('salePrice').value = '';
+            updateSaleTotal();
         }
     };
 
@@ -2195,6 +2229,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const price = parseFloat(document.getElementById('salePrice').value);
 
         if (!productId) return alert('Select a product');
+        if (isNaN(qty) || qty <= 0) return alert('Enter valid quantity');
+        if (isNaN(price) || price < 0) return alert('Enter valid price');
+
         const product = inventory.find(p => p._id == productId);
         
         let piecesPerUnit = product.piecesPerUnit || 1;
@@ -2242,22 +2279,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateSaleTotal() {
         const subtotal = currentSaleItems.reduce((sum, item) => sum + item.total, 0);
-        let totalCharges = 0;
         
-        currentCharges.forEach(c => {
-            if (c.type === 'percent') {
-                totalCharges += (subtotal * c.value) / 100;
-            } else {
-                totalCharges += c.value;
-            }
-        });
-
-        const discount = parseFloat(document.getElementById('saleDiscount').value) || 0;
-        const grandTotal = subtotal + totalCharges - discount;
+        const discountPercent = parseFloat(document.getElementById('saleDiscountPercent').value) || 0;
+        const chargesPercent = parseFloat(document.getElementById('saleChargesPercent').value) || 0;
+        
+        const discountAmount = (subtotal * discountPercent) / 100;
+        const chargesAmount = (subtotal * chargesPercent) / 100;
+        
+        const grandTotal = subtotal + chargesAmount - discountAmount;
         
         const display = document.getElementById('currentSaleTotal');
         if (display) {
-            display.innerText = `₦${grandTotal.toLocaleString()}`;
+            display.innerText = `₦${grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         }
         return grandTotal;
     }
@@ -2278,12 +2311,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const platform = document.getElementById('salePlatform').value;
         const deliveryStatus = document.getElementById('saleDeliveryStatus').value;
         const note = document.getElementById('saleNote').value;
-        const discount = parseFloat(document.getElementById('saleDiscount').value) || 0;
+        
+        const discountPercent = parseFloat(document.getElementById('saleDiscountPercent').value) || 0;
+        const chargesPercent = parseFloat(document.getElementById('saleChargesPercent').value) || 0;
         
         let subtotal = currentSaleItems.reduce((sum, item) => sum + item.total, 0);
         let totalUnits = currentSaleItems.reduce((sum, item) => sum + (item.qty || 0), 0);
         const grandTotal = updateSaleTotal();
-        const charges = grandTotal - subtotal + discount;
+        
+        const discountAmount = (subtotal * discountPercent) / 100;
+        const chargesAmount = (subtotal * chargesPercent) / 100;
 
         const orderData = {
             customerName,
@@ -2302,7 +2339,10 @@ document.addEventListener('DOMContentLoaded', () => {
             paymentStatus: paymentStatus.toLowerCase() === 'paid' ? 'paid' : (paymentStatus.toLowerCase() === 'partly paid' ? 'partly paid' : 'unpaid'),
             orderStatus: 'completed',
             platform: platform || 'In-Store',
-            charges: currentCharges,
+            charges: [
+                { name: 'Discount', value: discountPercent, type: 'percent', isDiscount: true },
+                { name: 'Charges', value: chargesPercent, type: 'percent' }
+            ],
             notes: note
         };
 
@@ -2328,8 +2368,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     contact: contact,
                     items: [...currentSaleItems],
                     subtotal: subtotal,
-                    discount: discount,
-                    charges: charges,
+                    discount: discountAmount,
+                    charges: chargesAmount,
                     total: grandTotal,
                     status: paymentStatus, 
                     paymentMethod: paymentMethod,
@@ -2392,7 +2432,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const adminToken = getAdminToken();
             
             // Restore Stock
-            sale.items.forEach(async (item) => {
+            const itemsList = Array.isArray(sale.items) ? sale.items : [];
+            itemsList.forEach(async (item) => {
                 const p = inventory.find(p => p._id == item.productId);
                 if (p) {
                     const newStock = p.stock + item.actualQty;
@@ -2434,7 +2475,8 @@ document.addEventListener('DOMContentLoaded', () => {
         msg += `Customer: ${sale.customer}%0A`;
         msg += `Status: ${sale.status}%0A`;
         msg += `Items:%0A`;
-        sale.items.forEach(item => {
+        const itemsList = Array.isArray(sale.items) ? sale.items : [];
+        itemsList.forEach(item => {
             msg += `- ${item.name} x${item.qty} (₦${item.total.toLocaleString()})%0A`;
         });
         msg += `*Total: ₦${sale.total.toLocaleString()}*%0A`;
@@ -2505,7 +2547,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </tr>
                     </thead>
                     <tbody>
-                        ${sale.items.map((item, index) => `
+                        ${(Array.isArray(sale.items) ? sale.items : []).map((item, index) => `
                             <tr style="border-bottom: 1px solid #eee;">
                                 <td style="padding: 10px; text-align: center; font-size: 12px; color: #666; vertical-align: top;">${index + 1}</td>
                                 <td style="padding: 10px; font-size: 12px; vertical-align: top; word-wrap: break-word;">
@@ -2531,8 +2573,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="width: 40%; background: #fafafa; padding: 15px; border-radius: 4px; height: fit-content; border: 1px solid #eee;">
                         <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 12px;">
                             <span style="color: #777;">Sub Total</span>
-                            <span style="color: #444;">${(sale.total || sale.totalAmount || 0).toLocaleString()}.00</span>
+                            <span style="color: #444;">₦${(sale.subtotal || 0).toLocaleString()}.00</span>
                         </div>
+                        ${sale.discount ? `
+                        <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 12px;">
+                            <span style="color: #777;">Discount</span>
+                            <span style="color: #d32f2f;">-₦${(sale.discount).toLocaleString()}.00</span>
+                        </div>
+                        ` : ''}
+                        ${sale.charges ? `
+                        <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 12px;">
+                            <span style="color: #777;">Charges</span>
+                            <span style="color: #444;">₦${(sale.charges).toLocaleString()}.00</span>
+                        </div>
+                        ` : ''}
                         <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 2px solid #eee; font-weight: bold; font-size: 12px;">
                             <span style="color: #000;">Total</span>
                             <span style="color: #000;">₦${(sale.total || sale.totalAmount || 0).toLocaleString()}.00</span>
@@ -2951,8 +3005,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('expenseForm').classList.toggle('hidden');
     };
 
-    document.getElementById('expenseForm').addEventListener('submit', (e) => {
+    document.getElementById('expenseForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const token = getAdminToken();
         const exp = {
             date: document.getElementById('expDate').value,
             code: document.getElementById('expCode').value || 'EXP-' + Date.now().toString().slice(-4),
@@ -2963,10 +3018,35 @@ document.addEventListener('DOMContentLoaded', () => {
             amount: parseFloat(document.getElementById('expAmount').value),
             status: document.getElementById('expStatus').value
         };
-        expenses.push(exp);
+
+        if (token) {
+            try {
+                const res = await fetch(`${API_BASE}/expenses`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(exp)
+                });
+                if (res.ok) {
+                    const savedExp = await res.json();
+                    expenses.push({ ...savedExp, id: savedExp._id });
+                } else {
+                    expenses.push(exp);
+                }
+            } catch (err) {
+                console.error("Save expense to API failed:", err);
+                expenses.push(exp);
+            }
+        } else {
+            expenses.push(exp);
+        }
+
         localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
         renderExpenses();
         document.getElementById('expenseForm').reset();
+        document.getElementById('expenseForm').classList.add('hidden');
     });
 
     function renderExpenses() {
@@ -2990,7 +3070,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    window.deleteExpense = function(idx) {
+    window.deleteExpense = async function(idx) {
+        if (!confirm("Delete this expense record?")) return;
+        const exp = expenses[expenses.length - 1 - idx];
+        const token = getAdminToken();
+
+        if (token && exp.id) {
+            try {
+                const res = await fetch(`${API_BASE}/expenses/${exp.id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) console.error("Failed to delete expense from API");
+            } catch (err) { console.error("Delete expense API error:", err); }
+        }
+
         expenses.splice(expenses.length - 1 - idx, 1);
         localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
         renderExpenses();
@@ -3020,14 +3114,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const costAnalysisForm = document.getElementById('costAnalysisForm');
     if (costAnalysisForm) {
-        costAnalysisForm.addEventListener('submit', (e) => {
+        costAnalysisForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const token = getAdminToken();
             
             const totalInputRaw = document.getElementById('resTotalInput').innerText.replace('₦', '').replace(/,/g, '');
             const costPriceRaw = document.getElementById('resCostPrice').innerText.replace('₦', '').replace(/,/g, '');
 
             const analysis = {
-                id: Date.now(),
                 date: document.getElementById('costDate').value,
                 productName: document.getElementById('costProductName').value,
                 category: document.getElementById('costCategory').value,
@@ -3042,7 +3136,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 costPrice: parseFloat(costPriceRaw) || 0
             };
             
-            costAnalysis.push(analysis);
+            if (token) {
+                try {
+                    const res = await fetch(`${API_BASE}/cost-analysis`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(analysis)
+                    });
+                    if (res.ok) {
+                        const savedAnalysis = await res.json();
+                        costAnalysis.push({ ...savedAnalysis, id: savedAnalysis._id });
+                    } else {
+                        costAnalysis.push({ ...analysis, id: Date.now() });
+                    }
+                } catch (err) {
+                    console.error("Save cost analysis to API failed:", err);
+                    costAnalysis.push({ ...analysis, id: Date.now() });
+                }
+            } else {
+                costAnalysis.push({ ...analysis, id: Date.now() });
+            }
+
             localStorage.setItem('shayorsCostAnalysis', JSON.stringify(costAnalysis));
             renderCostAnalysis();
             
@@ -3075,8 +3192,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    window.deleteCostAnalysis = function(idx) {
+    window.deleteCostAnalysis = async function(idx) {
         if (!confirm("Delete this analysis record?")) return;
+        const analysis = costAnalysis[costAnalysis.length - 1 - idx];
+        const token = getAdminToken();
+
+        if (token && analysis.id) {
+            try {
+                const res = await fetch(`${API_BASE}/cost-analysis/${analysis.id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) console.error("Failed to delete cost analysis from API");
+            } catch (err) { console.error("Delete cost analysis API error:", err); }
+        }
+
         costAnalysis.splice(costAnalysis.length - 1 - idx, 1);
         localStorage.setItem('shayorsCostAnalysis', JSON.stringify(costAnalysis));
         renderCostAnalysis();
@@ -3107,7 +3237,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const totalOverallSales = sales.reduce((sum, s) => sum + (s.total || 0), 0);
         const totalUnitsSold = sales.reduce((sum, s) => {
-            return sum + (s.items || []).reduce((itemSum, item) => itemSum + (item.actualQty || item.qty || item.quantity || 0), 0);
+            const itemsList = Array.isArray(s.items) ? s.items : [];
+            return sum + itemsList.reduce((itemSum, item) => itemSum + (item.actualQty || item.qty || item.quantity || 0), 0);
         }, 0);
         const creditSalesOverall = sales.filter(s => s.status !== 'Paid').reduce((sum, s) => sum + ((s.total || 0) - (s.amountPaid || 0)), 0);
         const debtorsTotal = customers.reduce((sum, c) => sum + ((c.totalAmount || 0) - (c.partlyPaid || 0)), 0);
@@ -3175,6 +3306,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 await syncSalesWithAPI();
                 await fetchInventory();
                 await fetchCustomers();
+                await fetchExpenses();
+                await fetchCostAnalysis();
                 
                 renderAnalytics();
                 alert("Analytics data synced successfully!");
@@ -3309,7 +3442,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const productTotals = {};
         currentSales.forEach(s => {
-            (s.items || []).forEach(item => {
+            const itemsList = Array.isArray(s.items) ? s.items : [];
+            itemsList.forEach(item => {
                 productTotals[item.name] = (productTotals[item.name] || 0) + (item.total || 0);
             });
         });
@@ -3409,6 +3543,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderAdjustments();
             }
         } catch (err) { console.error("Fetch adjustments failed:", err); }
+    }
+
+    async function fetchExpenses() {
+        const token = getAdminToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/expenses`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                expenses = data.map(e => ({ ...e, id: e._id }));
+                localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
+                renderExpenses();
+            }
+        } catch (err) { console.error("Fetch expenses failed:", err); }
+    }
+
+    async function fetchCostAnalysis() {
+        const token = getAdminToken();
+        if (!token) return;
+        try {
+            const res = await fetch(`${API_BASE}/cost-analysis`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                costAnalysis = data.map(c => ({ ...c, id: c._id }));
+                localStorage.setItem('shayorsCostAnalysis', JSON.stringify(costAnalysis));
+                renderCostAnalysis();
+            }
+        } catch (err) { console.error("Fetch cost analysis failed:", err); }
     }
 
     const customerForm = document.getElementById('customerForm');

@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.hostname === "127.0.0.1";
     
     // SET THIS TO FALSE to use the LOCAL server data while working locally
-    const USE_LIVE_DATA_LOCALLY = true;
+    const USE_LIVE_DATA_LOCALLY = false;
 
     const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
         ? `http://${window.location.hostname}:5000/api` 
@@ -35,6 +35,28 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('offline', updateOnlineStatus);
     updateOnlineStatus();
 
+    // Helper to safely save inventory to localStorage without exceeding quota
+    function safeSaveInventory(data) {
+        try {
+            localStorage.setItem('shayorsInventory', JSON.stringify(data));
+        } catch (e) {
+            if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+                console.warn("LocalStorage quota exceeded, saving slimmed inventory (no images/descriptions)");
+                const slimData = data.map(p => {
+                    const { image, description, ingredients, howToUse, review, ...rest } = p;
+                    return rest;
+                });
+                try {
+                    localStorage.setItem('shayorsInventory', JSON.stringify(slimData));
+                } catch (e2) {
+                    console.error("Even slimmed inventory exceeds quota. Cache disabled.", e2);
+                }
+            } else {
+                console.error("Error saving to localStorage:", e);
+            }
+        }
+    }
+
     // Fetch Products and Categories
     const fetchData = async () => {
         const controller = new AbortController();
@@ -53,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Update cache for products
             if (productData && productData.length > 0) {
-                localStorage.setItem('shayorsInventory', JSON.stringify(productData));
+                safeSaveInventory(productData);
             } else {
                 const cached = localStorage.getItem('shayorsInventory');
                 if (cached) productData = JSON.parse(cached);
@@ -120,19 +142,37 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Helper to format image path for offline use
+        const getImagePath = (img) => {
+            if (!img) return '../Image/Shayor\'s Logo.png';
+            if (img.startsWith('data:image')) return img; // Base64 is fine offline
+            if (img.startsWith('http')) return img; // SW will handle caching this
+            
+            // If it's a relative path like "../Image/..." or "Image/..."
+            if (img.includes('Image/')) {
+                const fileName = img.split('/').pop();
+                return `../Image/${fileName}`;
+            }
+            
+            return img;
+        };
+
         // Group by sub-category if needed, or just list
         menuContainer.innerHTML = `
             <h2 class="menu-section-title">${currentCategory}</h2>
             <div class="menu-list">
                 ${filtered.map(product => `
                     <div class="menu-item" onclick="showDetails('${product._id}')">
-                        <img src="${product.image || '../Image/placeholder.png'}" alt="${product.name}" class="menu-item-img">
+                        <img src="${getImagePath(product.image)}" alt="${product.name}" class="menu-item-img" onerror="this.src='../Image/Shayor\\'s Logo.png'">
                         <div class="menu-item-info">
                             <div class="menu-item-header">
                                 <h3>${product.name}</h3>
                                 <span class="menu-item-price">₦${parseFloat(product.price).toLocaleString()}</span>
                             </div>
-                            <p class="menu-item-desc">${product.description || product.review || `${product.brand || ''} ${product.size || ''} ${product.shade && product.shade !== 'N/A' ? product.shade : ''}` || 'Premium quality product.'}</p>
+                            <div class="menu-item-meta-info">
+                                ${product.skinTypes ? `<p class="menu-item-skin"><strong>Skin Types:</strong> ${product.skinTypes}</p>` : ''}
+                                ${product.skinConcern ? `<p class="menu-item-concern"><strong>Concern:</strong> ${product.skinConcern}</p>` : ''}
+                            </div>
                             <div class="menu-item-meta">
                                 <span>${product.category}</span>
                                 ${product.rating ? `<span style="margin-left: 10px;">★ ${product.rating.toFixed(1)}</span>` : ''}
@@ -148,6 +188,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const product = productData.find(p => p._id === id);
         if (!product) return;
 
+        // Helper to format image path for offline use
+        const getImagePath = (img) => {
+            if (!img) return '../Image/Shayor\'s Logo.png';
+            if (img.startsWith('data:image')) return img;
+            if (img.startsWith('http')) return img;
+            if (img.includes('Image/')) {
+                const fileName = img.split('/').pop();
+                return `../Image/${fileName}`;
+            }
+            return img;
+        };
+
         const reviewsHtml = (product.reviews && product.reviews.length > 0)
             ? product.reviews.map(r => `
                 <div class="review-item">
@@ -161,13 +213,13 @@ document.addEventListener('DOMContentLoaded', () => {
             : '<p style="color: #999; font-size: 0.8rem;">No reviews yet.</p>';
 
         modalBody.innerHTML = `
-            <img src="${product.image || '../Image/placeholder.png'}" alt="${product.name}" class="modal-img">
+            <img src="${getImagePath(product.image)}" alt="${product.name}" class="modal-img" onerror="this.src='../Image/Shayor\\'s Logo.png'">
             <h2 class="modal-title">${product.name}</h2>
             <p class="modal-price">₦${parseFloat(product.price).toLocaleString()}</p>
             
             <div class="modal-section">
                 <h4>Description</h4>
-                <p>${product.description || product.review || 'Premium quality product from Shayors Cosmetics.'}</p>
+                <p>${product.review || 'Premium quality product from Shayors Cosmetics.'}</p>
             </div>
 
             ${(product.brand || product.size || (product.shade && product.shade !== 'N/A')) ? `
@@ -178,6 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${product.size ? `<strong>Size:</strong> ${product.size}<br>` : ''}
                     ${(product.shade && product.shade !== 'N/A') ? `<strong>Shade:</strong> ${product.shade}<br>` : ''}
                     ${product.skinTypes ? `<strong>Skin Types:</strong> ${product.skinTypes}<br>` : ''}
+                    ${product.skinConcern ? `<strong>Skin Concern:</strong> ${product.skinConcern}<br>` : ''}
                 </p>
             </div>` : ''}
 

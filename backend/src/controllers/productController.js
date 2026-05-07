@@ -9,7 +9,7 @@ const getProducts = async (req, res, next) => {
     // Exclude heavy text fields for faster list fetching
     // Use .lean() for faster read-only query
     const products = await Product.find({ ...category })
-      .select('-description -howToUse -ingredients -reviews -skinConcern -skinTypes')
+      .select('-description -howToUse -ingredients -reviews')
       .lean();
     res.json(products);
   } catch (error) {

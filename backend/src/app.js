@@ -15,6 +15,8 @@ const saleRoutes = require('./routes/saleRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const adjustmentRoutes = require('./routes/adjustmentRoutes');
 const expenseCategoryRoutes = require('./routes/expenseCategoryRoutes');
+const expenseRoutes = require('./routes/expenseRoutes');
+const costAnalysisRoutes = require('./routes/costAnalysisRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 
 const app = express();
@@ -39,7 +41,7 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 }));
 
@@ -96,6 +98,8 @@ app.use('/api/sales', saleRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/adjustments', adjustmentRoutes);
 app.use('/api/expense-categories', expenseCategoryRoutes);
+app.use('/api/expenses', expenseRoutes);
+app.use('/api/cost-analysis', costAnalysisRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
