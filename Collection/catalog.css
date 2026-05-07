@@ -124,7 +124,7 @@ body {
     }
     
     .categories-wrapper {
-        top: 135px; /* Adjusted for mobile header height */
+        top: 0px; /* Adjusted for mobile header height */
         padding: 0 5px;
     }
 
