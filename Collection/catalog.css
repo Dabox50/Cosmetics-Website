@@ -124,7 +124,7 @@ body {
     }
     
     .categories-wrapper {
-        top: 0px; /* Adjusted for mobile header height */
+        top: -1px; /* Adjusted for mobile header height */
         padding: 0 5px;
     }
 
@@ -212,6 +212,9 @@ body {
     }
 }
 
+@media (max-width:500px) {
+
+}
 .menu-item-info {
     flex: 1;
 }
