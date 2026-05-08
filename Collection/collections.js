@@ -42,6 +42,44 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Helper to format image path for offline use
+    const getImagePath = (img) => {
+        if (!img) return '../Image/Shayor\'s Logo.png';
+        if (img.startsWith('data:image')) return img;
+        if (img.startsWith('http')) return img;
+
+        // If it's a relative path to the local Image folder
+        if (img.includes('Image/')) {
+            const fileName = img.split('/').pop();
+            return `../Image/${fileName}`;
+        }
+
+        // If it's a server path (like /uploads/...), prepend the API base URL
+        const serverBase = API_BASE.replace('/api', '');
+        return `${serverBase}${img.startsWith('/') ? '' : '/'}${img}`;
+    };
+
+    // Pre-cache all product images for offline use
+    const preCacheImages = async (data) => {
+        if (!data || !('caches' in window)) return;
+        try {
+            const cache = await caches.open('shayors-images-v1');
+            const promises = data.map(product => {
+                if (product.image) {
+                    const imgPath = getImagePath(product.image);
+                    if (imgPath && !imgPath.startsWith('data:')) {
+                        return cache.add(imgPath).catch(err => console.warn("Pre-cache failed for:", imgPath));
+                    }
+                }
+                return Promise.resolve();
+            });
+            await Promise.all(promises);
+            console.log("All product images pre-cached for offline use.");
+        } catch (error) {
+            console.error("Error during pre-caching:", error);
+        }
+    };
+
     // 4. Render Product Rows (Default View)
     const productRowsContainer = document.getElementById('productRowsContainer');
 
@@ -107,6 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (apiData && apiData.length > 0) {
                         productData = apiData; 
                         safeSaveInventory(productData);
+                        preCacheImages(productData);
                     } else {
                         const cached = localStorage.getItem('shayorsInventory');
                         if (cached) productData = JSON.parse(cached);
@@ -192,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <span class="product-status ${available ? 'status-available' : 'status-unavailable'}">
                     ${available ? 'In Stock' : 'Out of Stock'}
                 </span>
-                <img src="${product.image || '../Image/Shayor\'s Logo.png'}" alt="${product.name}">
+                <img src="${getImagePath(product.image)}" alt="${product.name}" onerror="this.src='../Image/Shayor\\'s Logo.png'">
                 <div class="card-content">
                     <p class="brand">${product.category || 'Product'} | ${product.brand || 'Shayors'}</p>
                     <h3>${product.name}</h3>
@@ -250,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const infoHtml = `
             <div class="product-info-modal">
                 <div class="info-grid">
-                    <img src="${product.image || '../Image/Shayor\'s Logo.png'}" alt="${product.name}">
+                    <img src="${getImagePath(product.image)}" alt="${product.name}" onerror="this.src='../Image/Shayor\\'s Logo.png'">
                     <div class="info-text">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                             <div>

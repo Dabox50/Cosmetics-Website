@@ -57,6 +57,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Helper to format image path for offline use
+    const getImagePath = (img) => {
+        if (!img) return '../Image/Shayor\'s Logo.png';
+        if (img.startsWith('data:image')) return img;
+        if (img.startsWith('http')) return img;
+        
+        // If it's a relative path to the local Image folder
+        if (img.includes('Image/')) {
+            const fileName = img.split('/').pop();
+            return `../Image/${fileName}`;
+        }
+
+        // If it's a server path (like /uploads/...), prepend the API base URL
+        const serverBase = API_BASE.replace('/api', '');
+        return `${serverBase}${img.startsWith('/') ? '' : '/'}${img}`;
+    };
+
+    // Pre-cache all product images for offline use
+    const preCacheImages = async (data) => {
+        if (!data || !('caches' in window)) return;
+        try {
+            const cache = await caches.open('shayors-images-v1');
+            const promises = data.map(product => {
+                if (product.image) {
+                    const imgPath = getImagePath(product.image);
+                    if (imgPath && !imgPath.startsWith('data:')) {
+                        // Use { mode: 'no-cors' } for external images if needed, 
+                        // but here we just fetch to trigger SW caching
+                        return cache.add(imgPath).catch(err => console.warn("Pre-cache failed for:", imgPath));
+                    }
+                }
+                return Promise.resolve();
+            });
+            await Promise.all(promises);
+            console.log("All product images pre-cached for offline use.");
+        } catch (error) {
+            console.error("Error during pre-caching:", error);
+        }
+    };
+
     // Fetch Products and Categories
     const fetchData = async () => {
         const controller = new AbortController();
@@ -76,6 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update cache for products
             if (productData && productData.length > 0) {
                 safeSaveInventory(productData);
+                // Trigger pre-caching of images
+                preCacheImages(productData);
             } else {
                 const cached = localStorage.getItem('shayorsInventory');
                 if (cached) productData = JSON.parse(cached);
@@ -142,21 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Helper to format image path for offline use
-        const getImagePath = (img) => {
-            if (!img) return '../Image/Shayor\'s Logo.png';
-            if (img.startsWith('data:image')) return img; // Base64 is fine offline
-            if (img.startsWith('http')) return img; // SW will handle caching this
-            
-            // If it's a relative path like "../Image/..." or "Image/..."
-            if (img.includes('Image/')) {
-                const fileName = img.split('/').pop();
-                return `../Image/${fileName}`;
-            }
-            
-            return img;
-        };
-
         // Group by sub-category if needed, or just list
         menuContainer.innerHTML = `
             <h2 class="menu-section-title">${currentCategory}</h2>
@@ -187,18 +214,6 @@ document.addEventListener('DOMContentLoaded', () => {
     window.showDetails = (id) => {
         const product = productData.find(p => p._id === id);
         if (!product) return;
-
-        // Helper to format image path for offline use
-        const getImagePath = (img) => {
-            if (!img) return '../Image/Shayor\'s Logo.png';
-            if (img.startsWith('data:image')) return img;
-            if (img.startsWith('http')) return img;
-            if (img.includes('Image/')) {
-                const fileName = img.split('/').pop();
-                return `../Image/${fileName}`;
-            }
-            return img;
-        };
 
         const reviewsHtml = (product.reviews && product.reviews.length > 0)
             ? product.reviews.map(r => `

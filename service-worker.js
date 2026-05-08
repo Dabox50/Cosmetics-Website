@@ -66,7 +66,8 @@ self.addEventListener('fetch', (event) => {
 
         try {
           const networkResponse = await fetch(event.request);
-          if (networkResponse.ok) {
+          // Cache the response if it's valid or if it's an opaque (cross-origin) image
+          if (networkResponse.ok || networkResponse.type === 'opaque') {
             cache.put(event.request, networkResponse.clone());
           }
           return networkResponse;
