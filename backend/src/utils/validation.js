@@ -21,7 +21,17 @@ const validateOrder = (order) => {
     orderStatus: Joi.string().valid('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'completed').optional(),
     platform: Joi.string().optional(),
     receiptInfo: Joi.string().allow('').optional(),
-    notes: Joi.string().allow('')
+    notes: Joi.string().allow(''),
+    charges: Joi.array().items(
+      Joi.object({
+        name: Joi.string().optional(),
+        value: Joi.number().optional(),
+        type: Joi.string().valid('fixed', 'percent').optional(),
+        isDiscount: Joi.boolean().optional(),
+        isProfit: Joi.boolean().optional(),
+        isHidden: Joi.boolean().optional()
+      })
+    ).optional()
   });
 
   return schema.validate(order);
