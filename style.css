@@ -434,7 +434,7 @@ footer {
     display: none !important;
 }
 
-/* Mobile Responsiveness */
+/* Mobile Responsiveness
 @media screen and (max-width: 1024px) {
     .nav-links {
         width: 45%;
@@ -442,9 +442,6 @@ footer {
 }
 
 @media screen and (max-width: 980px) {
-    body {
-        display: none;
-    }
     .nav-links {
         width: 50%;
     }
@@ -518,7 +515,6 @@ footer {
 
 @media screen and (max-width: 768px) {
     body {
-        display: none;
         overflow-x: hidden;
     }
     
@@ -631,10 +627,6 @@ footer {
 }
 
 @media screen and (max-width: 500px) {
-    body {
-        display: none;
-    }
-    
     .brands-bar {
         display: flex;
         flex-direction: column;
@@ -719,4 +711,4 @@ footer {
         color: #777;
     }
 }
-
+ */
