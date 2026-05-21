@@ -16,7 +16,6 @@
 }
 
 body {
-    display: none;
     font-family: 'Montserrat', sans-serif;
     background-color: var(--bg-color);
     color: var(--text-color);
@@ -434,7 +433,7 @@ footer {
     display: none !important;
 }
 
-/* Mobile Responsiveness
+/* Mobile Responsiveness */
 @media screen and (max-width: 1024px) {
     .nav-links {
         width: 45%;
@@ -711,4 +710,4 @@ footer {
         color: #777;
     }
 }
- */
+

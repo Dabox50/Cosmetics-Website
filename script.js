@@ -1,4 +1,24 @@
+const MAINTENANCE_MODE = true; // Change to true to deactivate the site
+
+if (MAINTENANCE_MODE && !window.location.pathname.includes('inventory.html')) {
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.innerHTML = `
+            <div style="height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; background: #fdfbf7; font-family: 'Playfair Display', serif; padding: 20px;">
+                <img src="${window.location.pathname.includes('Collection') || window.location.pathname.includes('About') || window.location.pathname.includes('Contact') ? '../Image/Shayor\'s Logo.png' : './Image/Shayor\'s Logo.png'}" alt="Logo" width="150" style="margin-bottom: 20px;">
+                <h1 style="color: #d4af37; font-size: 2.5rem; margin-bottom: 15px;">Currently Offline</h1>
+                <p style="color: #2c2c2c; font-size: 1.2rem; max-width: 600px; line-height: 1.6;">We are currently updating our collections to bring you the best in luxury skincare. Please check back shortly!</p>
+                <div style="margin-top: 30px; display: flex; gap: 15px;">
+                    <a href="https://wa.me/+2348189085285" style="padding: 12px 25px; background: #25d366; color: white; text-decoration: none; border-radius: 30px; font-weight: bold; font-family: 'Montserrat', sans-serif;">WhatsApp Us</a>
+                    <a href="https://instagram.com/shayors_cosmetics" style="padding: 12px 25px; background: #e4405f; color: white; text-decoration: none; border-radius: 30px; font-weight: bold; font-family: 'Montserrat', sans-serif;">Instagram</a>
+                </div>
+            </div>
+        `;
+        document.body.style.display = 'block';
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    if (MAINTENANCE_MODE && !window.location.pathname.includes('inventory.html')) return;
     // Register Service Worker for Offline Access
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -355,12 +375,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 : "https://cosmetics-website.fly.dev/api";
 
             try {
-                // 1. Send to Backend First (This triggers Email & Dashboard record)
-                const response = await fetch(`${API_BASE}/orders`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(orderData)
-                });
+                let response;
+                
+                if (receiptFile) {
+                    // Use FormData for file upload
+                    const formData = new FormData();
+                    formData.append('receipt', receiptFile);
+                    
+                    // Add other fields to formData
+                    Object.keys(orderData).forEach(key => {
+                        if (key === 'items' || key === 'charges') {
+                            formData.append(key, JSON.stringify(orderData[key]));
+                        } else {
+                            formData.append(key, orderData[key]);
+                        }
+                    });
+
+                    response = await fetch(`${API_BASE}/orders`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    // Fallback to JSON if only link is provided
+                    response = await fetch(`${API_BASE}/orders`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(orderData)
+                    });
+                }
 
                 if (response.ok) {
                     const createdOrder = await response.json();

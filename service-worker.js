@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shayors-cosmetics-v7';
+const CACHE_NAME = 'shayors-cosmetics-v8';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -25,7 +25,7 @@ const IMAGE_CACHE_NAME = 'shayors-images-v1';
 
 // Install Event
 self.addEventListener('install', (event) => {
-  console.log('SW: Installing v7...');
+  console.log('SW: Installing v8...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
@@ -36,7 +36,7 @@ self.addEventListener('install', (event) => {
 
 // Activate Event
 self.addEventListener('activate', (event) => {
-  console.log('SW: Activated v7');
+  console.log('SW: Activated v8');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
