@@ -442,6 +442,9 @@ footer {
 }
 
 @media screen and (max-width: 980px) {
+    body {
+        display: none;
+    }
     .nav-links {
         width: 50%;
     }
@@ -515,6 +518,7 @@ footer {
 
 @media screen and (max-width: 768px) {
     body {
+        display: none;
         overflow-x: hidden;
     }
     
@@ -627,6 +631,10 @@ footer {
 }
 
 @media screen and (max-width: 500px) {
+    body {
+        display: none;
+    }
+    
     .brands-bar {
         display: flex;
         flex-direction: column;
