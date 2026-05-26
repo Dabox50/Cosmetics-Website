@@ -55,7 +55,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   const isApiRequest = url.pathname.startsWith('/api/') || url.href.includes('fly.dev/api');
-  const isImageRequest = /\.(png|jpg|jpeg|gif|webp|avif)$|images|uploads/.test(url.href);
+  const isImageRequest = /(?:\.(png|jpg|jpeg|gif|webp|avif)$|\/(?:images|uploads)\/)/i.test(url.pathname);
 
   // Handle Images - Cache First, then Network
   if (isImageRequest && !isApiRequest) {

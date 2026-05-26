@@ -191,9 +191,11 @@ const inviteStaff = async (req, res) => {
     res.status(200).json({ message: 'Invitation email sent successfully' });
   } catch (error) {
     console.error('Error sending invitation email:', error);
-    res.status(201).json({ 
-      message: `Staff added successfully, but there was an error sending the invitation email: ${error.message || error}.\n\nYou can manually copy and share this activation link with them:\n\n${inviteUrl}`,
-      inviteUrl 
+    // Return 500 with helpful error info
+    res.status(500).json({ 
+      message: `Error sending invitation email: ${error.message || error}.\n\n❗ Check server logs and ensure EMAIL_USER and EMAIL_PASS are set in your .env file.\n\nManual link for staff: ${inviteUrl}`,
+      inviteUrl,
+      error: error.message
     });
   }
 };
