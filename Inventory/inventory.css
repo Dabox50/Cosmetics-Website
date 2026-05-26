@@ -2482,4 +2482,61 @@ footer {
     }
 }
 
+/* --- PRINT OPTIMIZATION FOR RECEIPT PRINTERS --- */
+@media print {
+    /* Set page size to 80mm (standard receipt width) */
+    @page {
+        size: 80mm auto;
+        margin: 0;
+    }
+
+    /* Hide everything by default */
+    body * {
+        visibility: hidden;
+    }
+
+    /* Show only the receipt area or invoice being printed */
+    #receiptPrintArea, #receiptPrintArea *,
+    #invoice-template, #invoice-template * {
+        visibility: visible;
+    }
+
+    /* Position the printable content at the top left */
+    #receiptPrintArea, #invoice-template {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 5px !important;
+        background: white !important;
+        color: black !important;
+        font-family: 'Courier New', Courier, monospace !important;
+    }
+
+    /* Ensure thermal printer compatible sizing */
+    #receiptPrintArea {
+        width: 76mm !important; /* Slightly less than 80mm to avoid clipping */
+    }
+
+    #invoice-template {
+        width: 76mm !important; 
+        font-size: 10px !important;
+    }
+
+    /* Clean up receipt specific elements for print */
+    .receipt-header h2 { font-size: 16px; margin: 5px 0; }
+    .receipt-header p { font-size: 10px; margin: 2px 0; }
+    .receipt-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    .receipt-table th { border-bottom: 1px dashed #000; font-size: 10px; text-align: left; }
+    .receipt-table td { font-size: 10px; padding: 4px 0; }
+    .receipt-summary p { font-size: 11px; margin: 3px 0; text-align: right; }
+    .receipt-footer { margin-top: 15px; font-size: 9px; text-align: center; border-top: 1px dashed #000; padding-top: 5px; }
+
+    /* Hide UI components that might accidentally show */
+    .modal-actions, nav, .sidebar, .brands-bar, .notification-bell, footer, .admin-status {
+        display: none !important;
+    }
+}
+
 

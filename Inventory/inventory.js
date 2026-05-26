@@ -11,9 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper to get token safely
     function getAdminToken() {
-        // Check for both API token and local bypass token
-        const token = sessionStorage.getItem('shayorsAdminToken') || localStorage.getItem('shayorsAdminToken') || localStorage.getItem('inventoryLoggedIn');
-        if (!token || token === "undefined" || token === "null") {
+        // Only return the actual JWT string
+        const token = sessionStorage.getItem('shayorsAdminToken') || localStorage.getItem('shayorsAdminToken');
+        if (!token || token === "undefined" || token === "null" || token === "true") {
             return null;
         }
         return token;
@@ -835,38 +835,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.printReceipt = function() {
-        const printContent = document.getElementById('receiptPrintArea').innerHTML;
-        const originalContent = document.body.innerHTML;
-        
-        // Use a hidden iframe or new window for cleaner printing
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(`
-            <html>
-                <head>
-                    <title>Print Receipt</title>
-                    <style>
-                        body { font-family: 'Courier New', Courier, monospace; min-width: auto; width: 300px; margin: 0 auto; padding: 10px; box-sizing: border-box; }
-                        h2 { text-align: center; margin-bottom: 5px; }
-                        p { margin: 2px 0; font-size: 14px; }
-                        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-                        th { text-align: left; border-bottom: 1px solid #000; font-size: 14px; }
-                        td { padding: 5px 0; font-size: 14px; }
-                        th:nth-child(2), th:nth-child(3), th:nth-child(4),
-                        td:nth-child(2), td:nth-child(3), td:nth-child(4) { text-align: center; }
-                        .receipt-summary { margin-top: 10px; text-align: right; }
-                        .receipt-footer { margin-top: 20px; text-align: center; font-style: italic; }
-                        hr { border: none; border-top: 1px dashed #000; }
-                    </style>
-                </head>
-                <body>
-                    ${printContent}
-                    <script>
-                        window.onload = function() { window.print(); window.close(); }
-                    </script>
-                </body>
-            </html>
-        `);
-        printWindow.document.close();
+        window.print();
+    };
+
+    window.printReceiptDirectly = function(sale) {
+        showReceipt(sale);
+        setTimeout(() => {
+            window.print();
+        }, 500);
+    };
+
+    window.printInvoiceDirectly = function(id) {
+        const sale = sales.find(s => s.apiId === id || s.id === id);
+        if (!sale) return;
+        renderInvoice(sale, false);
+        setTimeout(() => {
+            window.print();
+        }, 500);
     };
 
     // 0. Admin Authentication
@@ -911,6 +896,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     fetchInventory(),
                     fetchSpaCategories(),
                     fetchExpenseCategories(),
+                    fetchExpenses(),
+                    fetchCostAnalysis(),
                     (async () => {
                         try {
                             await syncCustomersWithAPI();
@@ -2405,7 +2392,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     sendWhatsAppOrder(sale);
                 }
 
-                downloadInvoice(sale.id);
+                printInvoiceDirectly(sale.id);
                 
                 currentSaleItems = [];
                 renderCurrentSaleList();
@@ -2804,6 +2791,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </td>
                     <td style="display: ${showActions ? 'table-cell' : 'none'}">
                         <button class="btn secondary" onclick='viewOrder("${orderId}")'>View</button>
+                        ${checkPermission('export_data') ? `<button class="btn secondary" onclick='printInvoiceDirectly("${orderId}")'>Print</button>` : ''}
                         ${checkPermission('export_data') ? `<button class="btn primary" onclick='downloadInvoice("${orderId}")'>Inv</button>` : ''}
                         ${checkPermission('delete_records') ? `<button class="btn danger" onclick='deleteOrder("${orderId}")'>Del</button>` : ''}
                     </td>
@@ -3549,7 +3537,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = getAdminToken();
         if (!token) return;
         try {
-            const res = await fetch(`${API_BASE}/expenses`, {
+            const res = await fetchWithTimeout(`${API_BASE}/expenses`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -3565,7 +3553,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const token = getAdminToken();
         if (!token) return;
         try {
-            const res = await fetch(`${API_BASE}/cost-analysis`, {
+            const res = await fetchWithTimeout(`${API_BASE}/cost-analysis`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
@@ -4720,7 +4708,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="total">₦${parseFloat(s.total || s.totalAmount || 0).toLocaleString()}</div>
                     <div class="actions">
                         <button class="btn secondary btn-mini" onclick='showReceipt(${JSON.stringify(s).replace(/'/g, "&apos;")})'>View</button>
-                        <button class="btn primary btn-mini" onclick='showReceipt(${JSON.stringify(s).replace(/'/g, "&apos;")})'>Print</button>
+                        <button class="btn primary btn-mini" onclick='printReceiptDirectly(${JSON.stringify(s).replace(/'/g, "&apos;")})'>Print</button>
                     </div>
                 </div>
             `;

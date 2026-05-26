@@ -47,6 +47,38 @@ const login = async (req, res) => {
         return res.status(401).json({ message: 'Account not activated. Check your email for invitation.' });
       }
 
+      // Notify Admins if a staff member logs in
+      if (isStaff) {
+        try {
+          const admins = await Admin.find({});
+          const adminEmails = admins.map(a => a.email);
+          if (adminEmails.length > 0) {
+            await sendEmail({
+              email: adminEmails.join(','),
+              subject: 'Staff Login Notification - Shayors Cosmetics',
+              message: `Staff member ${user.email} has logged into the inventory system.`,
+              html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #d4af37; border-radius: 10px; max-width: 600px; background-color: #000; color: #fff;">
+                  <h2 style="color: #d4af37; text-align: center;">Staff Login Alert</h2>
+                  <p style="font-size: 16px;">Hello Admin,</p>
+                  <p style="font-size: 16px;">A staff member has just logged into the inventory system:</p>
+                  <ul style="font-size: 16px; color: #d4af37;">
+                    <li><strong>Email:</strong> ${user.email}</li>
+                    <li><strong>Role:</strong> ${user.role}</li>
+                    <li><strong>Login Time:</strong> ${new Date().toLocaleString()}</li>
+                  </ul>
+                  <p style="font-size: 14px; color: #aaa; margin-top: 20px; border-top: 1px solid #333; padding-top: 15px;">
+                    This is an automated security notification from the Shayors Cosmetics Inventory System.
+                  </p>
+                </div>
+              `
+            });
+          }
+        } catch (adminNotifyError) {
+          console.error('Failed to notify admins about staff login:', adminNotifyError);
+        }
+      }
+
       res.json({
         _id: user._id,
         email: user.email,
@@ -126,26 +158,28 @@ const inviteStaff = async (req, res) => {
       html
     });
 
-    // Notify Admins about the invitation sent
+    // Notify Admins about the invitation sent successfully
     try {
       const admins = await Admin.find({});
       const adminEmails = admins.map(a => a.email);
       if (adminEmails.length > 0) {
         await sendEmail({
           email: adminEmails.join(','),
-          subject: 'New Staff Invitation Sent',
-          message: `An invitation has been sent to ${staff.email} to join as ${role}.`,
+          subject: 'New Staff Invitation Successfully Sent',
+          message: `An invitation link has been successfully sent to ${staff.email} as ${role}.`,
           html: `
             <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #d4af37; border-radius: 10px; max-width: 600px; background-color: #000; color: #fff;">
               <h2 style="color: #d4af37; text-align: center;">Staff Invitation Sent</h2>
-              <p>Hello Admin,</p>
-              <p>A new invitation has been sent:</p>
-              <ul style="color: #d4af37;">
-                <li><strong>Recipient:</strong> ${staff.email}</li>
+              <p style="font-size: 16px;">Hello Admin,</p>
+              <p style="font-size: 16px;">An invitation link has been <strong>successfully sent</strong> to the following new staff member:</p>
+              <ul style="font-size: 16px; color: #d4af37;">
+                <li><strong>Email:</strong> ${staff.email}</li>
                 <li><strong>Role:</strong> ${role}</li>
                 <li><strong>Sent Date:</strong> ${new Date().toLocaleString()}</li>
               </ul>
-              <p>You will be notified once they activate their account.</p>
+              <p style="font-size: 14px; color: #aaa; margin-top: 20px; border-top: 1px solid #333; padding-top: 15px;">
+                You will receive another notification once they activate their account and log in.
+              </p>
             </div>
           `
         });

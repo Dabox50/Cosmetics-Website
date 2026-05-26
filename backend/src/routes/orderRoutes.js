@@ -1,5 +1,7 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 const {
   createOrder,
   getOrders,
@@ -10,7 +12,7 @@ const {
 } = require('../controllers/orderController');
 const { protect } = require('../middleware/authMiddleware');
 
-router.post('/', createOrder);
+router.post('/', upload.single('receipt'), createOrder);
 router.get('/', protect, getOrders);
 router.get('/dashboard/summary', protect, getDashboardSummary);
 router.get('/:id', protect, getOrderById);

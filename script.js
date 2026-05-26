@@ -1,4 +1,4 @@
-const MAINTENANCE_MODE = true; // Change to true to deactivate the site
+const MAINTENANCE_MODE = false; // Change to true to deactivate the site
 
 if (MAINTENANCE_MODE && !window.location.pathname.includes('inventory.html')) {
     document.addEventListener('DOMContentLoaded', () => {

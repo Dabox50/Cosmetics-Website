@@ -33,6 +33,8 @@ const orderSchema = mongoose.Schema({
     isHidden: Boolean
   }],
   receiptInfo: { type: String },
+  receiptPath: { type: String },
+  receiptVerified: { type: Boolean, default: false },
   notes: { type: String }
 }, {
   timestamps: true

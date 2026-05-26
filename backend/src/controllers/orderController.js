@@ -3,6 +3,7 @@ const Product = require('../models/Product');
 const Customer = require('../models/Customer');
 const { validateOrder } = require('../utils/validation');
 const nodemailer = require('nodemailer');
+const { verifyReceipt } = require('../utils/receiptVerifier');
 
 const sendEmailAlert = async (order) => {
   try {
@@ -45,10 +46,39 @@ const sendEmailAlert = async (order) => {
 // @access  Public
 const createOrder = async (req, res, next) => {
   try {
-    const { error } = validateOrder(req.body);
+    let orderData = req.body;
+
+    // Handle multipart/form-data (when receipt is uploaded)
+    if (req.file) {
+      if (typeof orderData.items === 'string') {
+        orderData.items = JSON.parse(orderData.items);
+      }
+      if (typeof orderData.charges === 'string') {
+        orderData.charges = JSON.parse(orderData.charges);
+      }
+      if (orderData.totalAmount) {
+        orderData.totalAmount = Number(orderData.totalAmount);
+      }
+    }
+
+    const { error } = validateOrder(orderData);
     if (error) return res.status(400).json({ message: error.details[0].message });
 
-    const order = new Order(req.body);
+    const order = new Order(orderData);
+
+    // Verify receipt if provided
+    if (req.file) {
+      const verification = await verifyReceipt(req.file.buffer);
+      if (!verification.valid) {
+        return res.status(400).json({ 
+          message: `Receipt verification failed: ${verification.message}. Please upload a valid bank receipt.` 
+        });
+      }
+      order.receiptVerified = true;
+      order.receiptInfo = `Verified ${verification.bank} receipt. Ref: ${verification.reference}`;
+      // In a real production app, you would save req.file to a cloud storage like AWS S3
+      // For now, we'll mark it as verified based on the memory buffer scan
+    }
     
     // Decrement stock for each item in the order
     for (const item of order.items) {
