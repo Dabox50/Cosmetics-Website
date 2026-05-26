@@ -190,10 +190,11 @@ const inviteStaff = async (req, res) => {
 
     res.status(200).json({ message: 'Invitation email sent successfully' });
   } catch (error) {
-    staff.invitationToken = undefined;
-    staff.invitationExpires = undefined;
-    await staff.save();
-    res.status(500).json({ message: 'Error sending invitation email' });
+    console.error('Error sending invitation email:', error);
+    res.status(201).json({ 
+      message: `Staff added successfully, but there was an error sending the invitation email: ${error.message || error}.\n\nYou can manually copy and share this activation link with them:\n\n${inviteUrl}`,
+      inviteUrl 
+    });
   }
 };
 
@@ -307,6 +308,7 @@ const forgotPassword = async (req, res) => {
     });
     res.status(200).json({ message: 'Reset email sent successfully' });
   } catch (error) {
+    console.error('Error sending reset email:', error);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();

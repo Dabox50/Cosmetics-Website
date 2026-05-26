@@ -18,7 +18,7 @@ primary_region = "ams"
     soft_limit = 20
 
   [[http_service.checks]]
-    grace_period = "90s"
+    grace_period = "60s"
     interval = "15s"
     method = "GET"
     timeout = "5s"
