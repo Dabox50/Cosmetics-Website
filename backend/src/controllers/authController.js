@@ -210,16 +210,34 @@ const acceptInvitation = async (req, res) => {
     return res.status(400).json({ message: 'Invitation token is missing' });
   }
 
-  const trimmedToken = token.trim();
+  // Sanitize token - handle iOS encoding issues, remove whitespace and special chars
+  const trimmedToken = token
+    .trim()
+    .replace(/[\r\n\s]+/g, '') // Remove all whitespace including newlines
+    .replace(/^["']|["']$/g, '') // Remove quotes if present
+    .toLowerCase(); // Normalize to lowercase
 
   const staff = await Staff.findOne({
     invitationToken: trimmedToken
   });
 
   if (!staff) {
-    return res.status(400).json({ message: 'Invalid invitation token' });
+    // Try case-insensitive search as fallback
+    const staffCaseInsensitive = await Staff.findOne({
+      invitationToken: { $regex: `^${trimmedToken}$`, $options: 'i' }
+    });
+    
+    if (!staffCaseInsensitive) {
+      return res.status(400).json({ message: 'Invalid invitation token' });
+    }
+    return acceptInvitationProcess(staffCaseInsensitive, password, res);
   }
 
+  return acceptInvitationProcess(staff, password, res);
+};
+
+// Helper function to process invitation acceptance
+async function acceptInvitationProcess(staff, password, res) {
   if (staff.invitationExpires && staff.invitationExpires < new Date()) {
     return res.status(400).json({ message: 'Invitation token has expired' });
   }
@@ -261,8 +279,8 @@ const acceptInvitation = async (req, res) => {
     console.error('Failed to send joining notification to admins:', error);
   }
 
-  res.status(200).json({ message: 'Account activated successfully. You can now login.' });
-};
+  return res.status(200).json({ message: 'Account activated successfully. You can now login.' });
+}
 
 // @desc    Forgot Password
 // @route   POST /api/auth/forgot-password

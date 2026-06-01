@@ -61,12 +61,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!loggedInStaffEmail) return false; 
         
+        // Try to get role from staff array first
         const currentStaff = staff.find(s => s.email === loggedInStaffEmail);
-        if (!currentStaff) return false;
+        let staffRole = currentStaff?.role;
         
-        if (currentStaff.role === 'Admin') return true; // Any staff with "Admin" role also has full access
+        // Fallback to cached role if staff data not loaded (important for iOS)
+        if (!staffRole) {
+            staffRole = sessionStorage.getItem('shayorsStaffRole') || localStorage.getItem('shayorsStaffRole');
+        }
         
-        const currentRole = roles.find(r => r.name === currentStaff.role);
+        if (!staffRole) return false;
+        
+        if (staffRole === 'Admin') return true; // Any staff with "Admin" role also has full access
+        
+        const currentRole = roles.find(r => r.name === staffRole);
         if (!currentRole) return false;
         
         return currentRole.permissions.includes('all') || currentRole.permissions.includes(perm);
@@ -860,8 +868,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Handle URL tokens for Invitations or Password Resets
         const urlParams = new URLSearchParams(window.location.search);
-        const inviteToken = urlParams.get('inviteToken');
-        const resetToken = urlParams.get('resetToken');
+        let inviteToken = urlParams.get('inviteToken');
+        let resetToken = urlParams.get('resetToken');
+
+        // Sanitize tokens - iOS may add encoding issues or whitespace
+        if (inviteToken) {
+            inviteToken = decodeURIComponent(inviteToken).trim().replace(/[\r\n\s]+/g, '');
+        }
+        if (resetToken) {
+            resetToken = decodeURIComponent(resetToken).trim().replace(/[\r\n\s]+/g, '');
+        }
 
         // If we have an invite/reset token AND no active session, show the modal
         if (inviteToken && !token) {
@@ -1014,13 +1030,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     sessionStorage.setItem('shayorsAdminToken', data.token);
                     sessionStorage.setItem('shayorsStaffEmail', data.email);
                     sessionStorage.setItem('shayorsIsAdmin', !data.isStaff);
+                    
+                    // Store staff role explicitly (important for iOS)
+                    if (data.isStaff && data.role) {
+                        sessionStorage.setItem('shayorsStaffRole', data.role);
+                    }
+                    
                     if (remember) {
                         localStorage.setItem('shayorsAdminToken', data.token);
                         localStorage.setItem('shayorsStaffEmail', data.email);
                         localStorage.setItem('shayorsIsAdmin', !data.isStaff);
+                        if (data.isStaff && data.role) {
+                            localStorage.setItem('shayorsStaffRole', data.role);
+                        }
                         if (!data.isStaff) localStorage.setItem('inventoryLoggedIn', 'true');
                     }
+                    
                     toggleAuthVisibility(true);
+                    
+                    // Force refresh of staff data on iOS to ensure role is loaded
+                    if (data.isStaff) {
+                        localStorage.removeItem('shayorsStaff');
+                        sessionStorage.removeItem('shayorsStaff');
+                    }
+                    
                     await init(); // Apply permissions and load data
                 } else {
                     alert(data.message || "Login failed. Please check your credentials.");
@@ -1109,6 +1142,15 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.showAcceptInviteModal = function(token) {
+        // Sanitize token - iOS may add whitespace or encoding issues
+        const cleanToken = token ? token.trim().replace(/[\r\n\s]+/g, '') : '';
+        
+        if (!cleanToken) {
+            alert('Invalid invitation link. Please check your email and click the link again.');
+            showLoginModal();
+            return;
+        }
+
         const container = document.getElementById('loginModalContainer');
         container.innerHTML = `
             <div class="modal">
@@ -1127,20 +1169,35 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('acceptInviteForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const password = document.getElementById('staffPass').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerText;
+            submitBtn.innerText = "Activating...";
+            submitBtn.disabled = true;
+
             try {
                 const res = await fetch(`${API_BASE}/admin/accept-invite`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ token, password })
+                    body: JSON.stringify({ token: cleanToken, password })
                 });
                 const data = await res.json();
                 alert(data.message);
                 if (res.ok) {
                     // Clear the invitation token from URL so it doesn't pop up again
                     window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // On iOS, clear storage to force fresh sync
+                    localStorage.removeItem('shayorsStaff');
+                    sessionStorage.removeItem('shayorsStaff');
+                    
                     showLoginModal();
                 }
-            } catch (err) { alert("Activation failed."); }
+            } catch (err) {
+                console.error('Activation error:', err);
+                alert("Activation failed. Please try again.");
+                submitBtn.innerText = originalText;
+                submitBtn.disabled = false;
+            }
         });
     };
 
