@@ -3,6 +3,9 @@ const nodemailer = require('nodemailer');
 const sendEmail = async (options) => {
   // Validate required environment variables
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.error('❌ Missing email credentials');
+    console.error('EMAIL_USER:', process.env.EMAIL_USER ? '✓ Set' : '✗ Not set');
+    console.error('EMAIL_PASS:', process.env.EMAIL_PASS ? '✓ Set' : '✗ Not set');
     throw new Error(
       'Email service not configured. Set EMAIL_USER and EMAIL_PASS in .env file. '
       + 'For Gmail: Use an App Password (not your regular password) if 2FA is enabled.'
@@ -15,18 +18,25 @@ const sendEmail = async (options) => {
   }
 
   try {
+    console.log('📧 Initializing email transporter...');
+    console.log('EMAIL_USER:', process.env.EMAIL_USER);
+    
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
       port: 465,
       secure: true,
       auth: {
         user: process.env.EMAIL_USER.trim(),
-        pass: process.env.EMAIL_PASS.replace(/\s+/g, ''),
+        pass: process.env.EMAIL_PASS.trim(), // Changed: just trim, don't remove spaces
       },
       tls: {
         rejectUnauthorized: false
       }
     });
+
+    console.log('🔐 Testing SMTP connection...');
+    await transporter.verify();
+    console.log('✅ SMTP connection verified');
 
     const mailOptions = {
       from: `"Shayors Cosmetics" <${process.env.EMAIL_USER}>`,
@@ -36,11 +46,13 @@ const sendEmail = async (options) => {
       html: options.html || options.message,
     };
 
+    console.log('📤 Sending email to:', options.email);
     const result = await transporter.sendMail(mailOptions);
     console.log(`✅ Email sent successfully to ${options.email}. Message ID: ${result.messageId}`);
     return result;
   } catch (error) {
     console.error(`❌ Failed to send email to ${options.email}:`, error.message);
+    console.error('Full error:', error);
     throw new Error(`Email sending failed: ${error.message}`);
   }
 };
