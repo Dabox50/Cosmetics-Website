@@ -869,6 +869,10 @@ footer {
         z-index: 1001;
     }
 
+    .brands-bar {
+        justify-content: flex-start;
+    }
+    
     .hero h1 {
         font-size: 3.4rem;
     }
@@ -939,6 +943,7 @@ footer {
     }
 
     .brands-bar {
+        justify-content: flex-start;
         font-size: 0.72rem;
         padding: 9px 12px;
     }

@@ -852,6 +852,240 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('receiptModal').classList.add('hidden');
     };
 
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function buildInvoiceDocument(sale) {
+        const dateStr = sale?.date ? new Date(sale.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '---';
+        const invoiceNo = `INV-${(sale?.apiId || sale?.id || '000000').toString().slice(-6).toUpperCase()}`;
+        const customer = escapeHtml(sale?.customer || 'Walk-in Customer');
+        const items = Array.isArray(sale?.items) ? sale.items : [];
+        const lineItems = items.map((item, index) => {
+            const name = escapeHtml(item.name || item.productName || 'Unnamed Product');
+            const qty = Number(item.qty || item.quantity || 0);
+            const price = Number(item.price || 0);
+            const total = Number(item.total || (price * qty) || 0);
+            return `
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px; text-align: center; font-size: 12px; color: #666; vertical-align: top;">${index + 1}</td>
+                    <td style="padding: 10px; font-size: 12px; vertical-align: top; word-wrap: break-word;">
+                        <div style="font-weight: 600; color: #000;">${name}</div>
+                    </td>
+                    <td style="padding: 10px; text-align: center; font-size: 12px; vertical-align: top;">${qty}.00</td>
+                    <td style="padding: 10px; text-align: right; font-size: 12px; vertical-align: top;">${price.toLocaleString()}.00</td>
+                    <td style="padding: 10px; text-align: right; font-size: 12px; vertical-align: top; font-weight: 600;">${total.toLocaleString()}.00</td>
+                </tr>
+            `;
+        }).join('');
+
+        const subtotal = Number(sale?.subtotal || sale?.total || 0);
+        const total = Number(sale?.totalAmount || sale?.total || subtotal);
+        const discount = Number(sale?.discount || 0);
+        const charge = Number(sale?.charges || 0);
+        const amountPaid = Number(sale?.amountPaid || total);
+        const balance = Number(sale?.balance || Math.max(total - amountPaid, 0));
+
+        return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${invoiceNo}</title>
+    <style>
+        body {
+            margin: 0;
+            background: #f5f5f5;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #333;
+            padding: 30px;
+        }
+        .invoice-page {
+            width: min(820px, 100%);
+            margin: 0 auto;
+            background: #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            padding: 30px;
+            box-sizing: border-box;
+        }
+        table { border-collapse: collapse; width: 100%; }
+        @media (max-width: 640px) {
+            body { padding: 12px; }
+            .invoice-page { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="invoice-page">
+        <div id="invoice-template" style="padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; background: #fff; max-width: 750px; width: 100%; margin: 0 auto; box-sizing: border-box; line-height: 1.4;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px; gap: 20px;">
+                <div style="display: flex; align-items: flex-start; flex: 1; min-width: 0;">
+                    <img src="../Image/Shayor's Cosmetics .png" style="width: 90px; margin-right: 20px; object-fit: contain; flex-shrink: 0;">
+                    <div style="min-width: 0;">
+                        <h1 style="margin: 0; font-size: 20px; color: #000; font-weight: bold; letter-spacing: 0.5px;">SHAYORS COSMETICS</h1>
+                        <p style="margin: 5px 0; font-size: 11px; font-weight: 600; color: #555; line-height: 1.4;">
+                            Shop Yk 059, Floor 1, Adebgite shopping complex, Adebisi street, Itire/ikate<br>
+                            Surulere Lagos 101241 Nigeria<br>
+                            +2348189085285, +2348079333403<br>
+                            shayorscosmestics@gmail.com | www.shayorscosmestics.com
+                        </p>
+                    </div>
+                </div>
+                <div style="text-align: right; display: flex; flex-direction: column; justify-content: center; min-width: 140px;">
+                    <h2 style="margin: 0; color: #004936; font-size: 32px; font-weight: 300; letter-spacing: 3px; opacity: 0.8;">INVOICE</h2>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-bottom: 25px; gap: 12px;">
+                <div style="width: 48%; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; background: #fafafa;">
+                    <table style="width: 100%; font-size: 12px; border-collapse: collapse; min-width: auto; table-layout: fixed;">
+                        <tr><td style="color: #777; font-weight: 700; width: 90px; padding: 3px 0;">Invoice#</td><td style="font-weight: 600;">: ${invoiceNo}</td></tr>
+                        <tr><td style="color: #777; font-weight: 700; padding: 3px 0;">Invoice Date</td><td style="font-weight: 600;">: ${dateStr}</td></tr>
+                        <tr><td style="color: #777; font-weight: 700; padding: 3px 0;">Terms</td><td style="font-weight: 600;">: Due on Receipt</td></tr>
+                        <tr><td style="color: #777; font-weight: 700; padding: 3px 0;">Due Date</td><td style="font-weight: 600;">: ${dateStr}</td></tr>
+                    </table>
+                </div>
+                <div style="width: 48%; border: 1px solid #e0e0e0; border-radius: 4px; padding: 12px; background: #fff;">
+                    <h4 style="margin: 0 0 8px 0; font-size: 12px; color: #777; text-transform: uppercase;">Payment Details</h4>
+                    <p style="margin: 3px 0; font-size: 12px; color: #000;">Account: <strong>0089883643</strong></p>
+                    <p style="margin: 3px 0; font-size: 12px; color: #000;">Bank: <strong>Sterling</strong></p>
+                    <p style="margin: 3px 0; font-size: 12px; color: #000;">Name: <strong>Shayors Cosmetics</strong></p>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 25px; border: 1px solid #e0e0e0; border-radius: 4px; overflow: hidden;">
+                <div style="background: #f5f5f5; padding: 6px 15px; font-weight: 600; font-size: 11px; color: #444; border-bottom: 1px solid #e0e0e0; text-transform: uppercase;">Bill To</div>
+                <div style="padding: 10px 15px; font-size: 14px; font-weight: bold; color: #000;">${customer}</div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; table-layout: fixed; min-width: auto;">
+                <thead>
+                    <tr style="background: #333; color: #fff;">
+                        <th style="padding: 10px; text-align: left; width: 30px; font-size: 11px; border: none;">#</th>
+                        <th style="padding: 10px; text-align: left; font-size: 11px; border: none;">ITEM & DESCRIPTION</th>
+                        <th style="padding: 10px; text-align: center; width: 70px; font-size: 11px; border: none;">Qty</th>
+                        <th style="padding: 10px; text-align: right; width: 100px; font-size: 11px; border: none;">Rate</th>
+                        <th style="padding: 10px; text-align: right; width: 110px; font-size: 11px; border: none;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${lineItems}
+                </tbody>
+            </table>
+
+            <div style="display: flex; justify-content: space-between; page-break-inside: avoid; gap: 20px;">
+                <div style="width: 50%; font-size: 10px; color: #666;">
+                    <div style="margin-top: 10px; padding-top: 10px;">
+                        <p style="margin: 0; font-weight: bold; color: #000; font-size: 11px;">Terms & Conditions</p>
+                        <p style="margin: 4px 0; color: #777;">Returns Policy ————————</p>
+                        <p style="margin: 0; font-weight: 800; line-height: 1.4;">For hygiene and safety reasons, we cannot accept returns of opened items. If your order arrives damaged, incorrect, or you wish to return an unopened product, please contact us within 24 hrs of delivery. Replacements will be arranged in line with our policy.</p>
+                    </div>
+                </div>
+                <div style="width: 40%; background: #fafafa; padding: 15px; border-radius: 4px; height: fit-content; border: 1px solid #eee;">
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 12px;">
+                        <span style="color: #777;">Sub Total</span>
+                        <span style="color: #444;">₦${subtotal.toLocaleString()}.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 12px;">
+                        <span style="color: #777;">Discount</span>
+                        <span style="color: #444;">₦${discount.toLocaleString()}.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee; font-size: 12px;">
+                        <span style="color: #777;">Charges</span>
+                        <span style="color: #444;">₦${charge.toLocaleString()}.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; font-weight: 700; color: #000;">
+                        <span>Total</span>
+                        <span>₦${total.toLocaleString()}.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0; border-top: 1px solid #eee; font-size: 12px; margin-top: 8px;">
+                        <span style="color: #777;">Amount Paid</span>
+                        <span style="color: #444;">₦${amountPaid.toLocaleString()}.00</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px;">
+                        <span style="color: #777;">Balance</span>
+                        <span style="color: #444;">₦${balance.toLocaleString()}.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+    }
+
+    window.openInvoiceWindow = function(sale, invoiceWindow) {
+        if (!sale) return false;
+
+        const popup = invoiceWindow || window.open('', '_blank', 'width=1200,height=900');
+        if (!popup) {
+            showToast('Please allow pop-ups to view the invoice in a new tab.', 'warning');
+            return false;
+        }
+
+        popup.document.write(buildInvoiceDocument(sale));
+        popup.document.close();
+        popup.focus();
+
+        const invoiceNo = `INV-${(sale.apiId || sale.id || '000000').toString().slice(-6).toUpperCase()}`;
+        const invoice = popup.document.getElementById('invoice-template');
+        if (!invoice) {
+            popup.close();
+            showToast('Could not prepare the invoice for PDF generation.', 'error');
+            return false;
+        }
+
+        const pdfOptions = {
+            margin: [0.2, 0.2],
+            filename: `${invoiceNo}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
+                letterRendering: true,
+                scrollY: 0
+            },
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+        };
+
+        const imagesReady = Promise.all(
+            Array.from(popup.document.images, image => image.complete
+                ? Promise.resolve()
+                : new Promise(resolve => {
+                    image.addEventListener('load', resolve, { once: true });
+                    image.addEventListener('error', resolve, { once: true });
+                }))
+        );
+
+        Promise.all([imagesReady, popup.document.fonts?.ready])
+            .then(async () => {
+                if (!window.html2pdf) {
+                    throw new Error('The PDF generator did not load.');
+                }
+
+                const pdf = await window.html2pdf()
+                    .set(pdfOptions)
+                    .from(invoice)
+                    .outputPdf('blob');
+                const pdfUrl = URL.createObjectURL(pdf);
+                popup.location.replace(pdfUrl);
+                window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 120000);
+            })
+            .catch(error => {
+                console.error('Invoice PDF generation failed:', error);
+                if (!popup.closed) {
+                    showToast('Could not generate the invoice PDF. The invoice is still open in this tab.', 'error');
+                }
+            });
+
+        return true;
+    };
+
     // Close modal when clicking outside content
     const receiptModal = document.getElementById('receiptModal');
     if (receiptModal) {
@@ -2987,11 +3221,17 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.viewOrder = async function(id) {
+        const invoiceWindow = window.open('', '_blank');
+        if (!invoiceWindow) {
+            showToast('Please allow pop-ups to view the invoice in a new tab.', 'warning');
+            return;
+        }
+
         // Try local first
         const localSale = sales.find(s => s.apiId === id || s.id === id);
         
         if (localSale) {
-            renderInvoice(localSale);
+            window.openInvoiceWindow(localSale, invoiceWindow);
             return;
         }
 
@@ -2999,26 +3239,29 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`${API_BASE}/orders/${id}`, {
                 headers: { 'Authorization': `Bearer ${getAdminToken()}` }
             });
-            if (response.ok) {
-                const order = await response.json();
-                // Map API order to sale format for rendering
-                const mappedSale = {
-                    id: order._id,
-                    apiId: order._id,
-                    date: order.createdAt,
-                    customer: order.customerName,
-                    total: order.totalAmount,
-                    items: order.items.map(i => ({
-                        name: i.productName,
-                        qty: i.quantity,
-                        price: i.price,
-                        total: i.price * i.quantity
-                    }))
-                };
-                renderInvoice(mappedSale);
+            if (!response.ok) {
+                throw new Error(`Invoice request failed (${response.status}).`);
             }
+
+            const order = await response.json();
+            const mappedSale = {
+                id: order._id,
+                apiId: order._id,
+                date: order.createdAt,
+                customer: order.customerName,
+                total: order.totalAmount,
+                items: order.items.map(i => ({
+                    name: i.productName,
+                    qty: i.quantity,
+                    price: i.price,
+                    total: i.price * i.quantity
+                }))
+            };
+            window.openInvoiceWindow(mappedSale, invoiceWindow);
         } catch (e) { 
             console.error(e);
+            if (!invoiceWindow.closed) invoiceWindow.close();
+            showToast(e.message || 'Could not load the invoice. Please try again.', 'error');
         }
     };
 

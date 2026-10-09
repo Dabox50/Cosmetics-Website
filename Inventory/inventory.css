@@ -410,6 +410,32 @@ input:checked + .slider:before {
     font-weight: 600;
 }
 
+.burger {
+    display: none;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 10px;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.32);
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.burger img {
+    filter: none;
+    transition: transform 0.3s ease;
+}
+
+.burger.toggle {
+    background: rgba(212, 175, 55, 0.25);
+    border-color: #d4af37;
+}
+
+.burger.toggle img {
+    transform: rotate(90deg) scale(0.95);
+}
+
 .content-area {
     flex-grow: 1;
     padding: 35px 40px;
@@ -2006,12 +2032,6 @@ footer {
 }
 
 @media screen and (max-width: 1024px) {
-    .nav-links {
-        display: flex;
-        justify-content: space-around;
-        width: 50%;
-        list-style: none;
-    }
     .app-wrapper { 
         flex-direction: column; 
     }
@@ -2042,8 +2062,59 @@ footer {
 }
 
 @media screen and (max-width: 980px) {
+    html,
+    body {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: hidden;
+    }
+
+    .burger {
+        display: flex;
+        z-index: 1002;
+    }
+
+    .nav-links {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 290px;
+        max-width: 82vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 26px;
+        padding-top: 100px;
+        background: #ffffff;
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border-left: 1px solid rgba(212, 175, 55, 0.32);
+        box-shadow: -15px 0 40px rgba(0, 0, 0, 0.18);
+        transform: translateX(100%);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.4s;
+        z-index: 1001;
+        visibility: hidden;
+    }
+
+    .nav-links.nav-active {
+        transform: translateX(0);
+        visibility: visible;
+        transition-delay: 0s;
+    }
+
+    .nav-links a {
+        color: #222222;
+        font-family: 'Playfair Display', serif;
+        font-size: 1.3rem;
+        letter-spacing: 1px;
+    }
+
     .app-wrapper {
         flex-direction: column;
+        width: 100%;
+        min-width: 0;
     }
 
     .sidebar {
@@ -2098,51 +2169,22 @@ footer {
 
     .content-area {
         padding: 15px;
-    }
-
-    .nav-links {
-        position: absolute;
-        right: 30px;
-        height: 65vh;
-        top: 12vh;
-        background-color: rgb(226, 226, 226);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        border-radius: 10px;
-        width: 32%;
-        transform: translateX(10%);
-        transition: transform 0.9s ease-in, visibility 0.5s;
-        z-index: 999;
-        visibility: hidden;
-    }
-
-    .nav-links.nav-active {
-        transform: translateX(0%);
-        visibility: visible;
-    }
-
-    .nav-links li {
-        opacity: 0;
+        flex: 1 1 auto;
         width: 100%;
-        text-align: center;
-        padding: 15px 0;
-    
-    }
-    .nav-links.nav-active li {
-        opacity: 1;
-        animation: navLinkFade 0.9s ease forwards;
+        min-width: 0;
+        max-width: 100%;
+        overflow-x: hidden;
+        overflow-y: visible;
     }
 
-    .nav-links a {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.5rem;
-        font-weight: 400;
+    .module,
+    .sales-history,
+    .table-container,
+    .inventory-table-container {
+        min-width: 0;
+        max-width: 100%;
     }
 
-    .nav-links a:hover, .active-link {
-        color: var(--primary-color) !important;
-    }
     .brands-bar {
         display: flex;
         flex-direction: column;
@@ -2154,15 +2196,6 @@ footer {
     .brands-scroll{
         gap: 30px;
         font-size: 0.7rem;
-    }
-
-    .burger {
-        display: flex;
-        z-index: 1001;
-    }
-
-    .nav-links.nav-active {
-        transform: translateX(0%);
     }
 
     .dashboard-main-content {
@@ -2199,59 +2232,6 @@ footer {
         padding-bottom: 15px;
     }
 
-    .nav-links {
-        position: absolute;
-        right: 20px;
-        height: 65vh;
-        top: 10vh;
-        background-color: rgb(226, 226, 226);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        border-radius: 10px;
-        width: 30%;
-        transform: translateX(10%);
-        transition: transform 0.9s ease-in, visibility 0.5s;
-        z-index: 999;
-        visibility: hidden;
-    }
-
-    .nav-links.nav-active {
-        transform: translateX(0%);
-        visibility: visible;
-    }
-
-    .nav-links li {
-        opacity: 0;
-        width: 100%;
-        text-align: center;
-        padding: 15px 0;
-    }
-
-    .nav-links.nav-active li {
-        opacity: 1;
-        animation: navLinkFade 0.9s ease forwards;
-    }
-
-    .nav-links a {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.5rem;
-        font-weight: 400;
-    }
-
-    .nav-links a:hover, .active-link {
-        color: var(--primary-color) !important;
-    }
-
-    .burger {
-        display: flex;
-        z-index: 1001;
-    }
-
-    .nav-links.nav-active {
-        transform: translateX(0%);
-    }
-
     .inventory-container {
         padding: 20px 10px;
     }
@@ -2285,31 +2265,6 @@ footer {
         right: 4px;
     }
 }
-
-.nav-active {
-    transform: translateX(0%) !important;
-}
-
-@keyframes navLinkFade {
-    from {
-        opacity: 0;
-        transform: translateX(50px);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0px);
-    }
-}
-
-.toggle .line1 {
-    transform: rotate(-45deg) translate(-5px, 6px);
-}
-.toggle .line2 {
-    opacity: 0;
-}
-.toggle .line3 {
-    transform: rotate(45deg) translate(-5px, -6px);
-}
 @media screen and (max-width: 568px) {
     .module-header {
         display: flex;
@@ -2332,23 +2287,6 @@ footer {
     .brands-scroll{
         gap: 20px;
         font-size: 0.7rem;
-    }
-
-    .nav-links {
-        right: 30px;
-        height: 65vh;
-        top: 12vh;
-        width: 50%;
-    }
-
-    .nav-links a {
-        font-family: 'Playfair Display', serif;
-        font-size: 1.5rem;
-        font-weight: 400;
-    }
-
-    .nav-links a:hover, .active-link {
-        color: var(--primary-color) !important;
     }
 
     .dashboard-summary-row {
@@ -2924,3 +2862,25 @@ footer {
     }
 }
 
+/* Keep the receipt modal's dashboard-specific sizing when cart.css is shared. */
+#loginModal.modal,
+#receiptModal.modal {
+    background: rgba(14, 18, 16, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    z-index: 2000;
+    padding: 20px;
+}
+
+#loginModal .modal-content,
+#receiptModal .modal-content {
+    color: rgb(15, 15, 15);
+    padding: 35px 30px;
+    border-radius: 20px;
+    width: 440px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.22);
+}

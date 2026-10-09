@@ -989,6 +989,10 @@ footer {
         z-index: 1002;
     }
 
+    .brands-bar {
+        justify-content: flex-start;
+    }
+    
     .contact-grid {
         grid-template-columns: 1fr;
         gap: 35px;

@@ -378,8 +378,39 @@ html::-webkit-scrollbar-thumb:hover {
     background: #f3e5b8;
 }
 
-/* About's mobile navigation is canonical across all four storefront pages. */
+/* About's mobile navigation is canonical across all five site pages. */
+.burger {
+    display: none;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 10px;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.32);
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.burger img {
+    filter: none;
+    transition: transform 0.3s ease;
+}
+
+.burger.toggle {
+    background: rgba(212, 175, 55, 0.25);
+    border-color: #d4af37;
+}
+
+.burger.toggle img {
+    transform: rotate(90deg) scale(0.95);
+}
+
 @media screen and (max-width: 980px) {
+    .burger {
+        display: flex;
+        z-index: 1002;
+    }
+
     .nav-links {
         position: fixed;
         top: 0;
