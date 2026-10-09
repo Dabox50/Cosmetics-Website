@@ -2558,17 +2558,23 @@ footer {
     @page { size: auto; margin: 0; }
 
     /* ---------- RECEIPT MODE: 80mm thermal ---------- */
-    body.printing-receipt @page,
     @page receipt-page {
         size: 80mm auto;
         margin: 0;
     }
 
+    body.printing-receipt {
+        page: receipt-page;
+    }
+
     /* ---------- INVOICE MODE: A4 portrait ---------- */
-    body.printing-invoice @page,
     @page invoice-page {
         size: A4 portrait;
         margin: 10mm;
+    }
+
+    body.printing-invoice {
+        page: invoice-page;
     }
 
     /* ---- GLOBAL: Hide everything first ---- */
