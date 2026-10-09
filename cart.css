@@ -1,42 +1,44 @@
-/* --- SHARED SHOPPING CART STYLES --- */
+/* --- SHARED SHOPPING CART STYLES (Modern Luxury) --- */
 .floating-cart {
     position: fixed; 
     bottom: 30px; 
     right: 30px;
-    background: #006a4e; /* var(--text-color) fallback */
-    background: var(--text-color, #006a4e);
+    background: linear-gradient(135deg, #0d3b2e 0%, #006a4e 100%);
     color: #fff;
-    width: 60px; 
-    height: 60px; 
+    width: 62px; 
+    height: 62px; 
     border-radius: 50%;
     display: flex; 
     justify-content: center; 
     align-items: center;
     cursor: pointer; 
     z-index: 1500; 
-    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-    transition: all 0.4s ease;
+    border: 2px solid rgba(212, 175, 55, 0.6);
+    box-shadow: 0 8px 25px rgba(0, 106, 78, 0.35), 0 0 15px rgba(212, 175, 55, 0.25);
+    transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .floating-cart:hover {
-    transform: scale(1.1);
+    transform: scale(1.08) translateY(-3px);
+    box-shadow: 0 12px 30px rgba(0, 106, 78, 0.45), 0 0 20px rgba(212, 175, 55, 0.4);
 }
 
 #cartCount {
     position: absolute; 
-    top: 0; 
-    right: 0;
-    background: #d4af37; /* var(--primary-color) fallback */
-    background: var(--primary-color, #d4af37);
+    top: -3px; 
+    right: -3px;
+    background: linear-gradient(135deg, #dfbc45 0%, #c49d28 100%);
     color: #fff;
-    width: 22px; 
-    height: 22px; 
+    width: 24px; 
+    height: 24px; 
     border-radius: 50%;
-    font-size: 0.7rem; 
+    font-size: 0.72rem;
+    font-weight: 700; 
     display: flex; 
     justify-content: center; 
     align-items: center;
     border: 2px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Modal Styles */
@@ -46,43 +48,63 @@
     left: 0; 
     width: 100%; 
     height: 100%;
-    background: rgba(0,0,0,0.7);
+    background: rgba(14, 18, 16, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     display: flex; 
     justify-content: center; 
     align-items: center;
     z-index: 2000;
+    padding: 20px;
 }
 
 .modal-content {
-    background: #fff; 
-    padding: 30px; 
-    border-radius: 10px; 
-    width: 400px;
+    color: rgb(15, 15, 15);
+    background: #ffffff; 
+    padding: 35px 30px; 
+    border-radius: 20px; 
+    width: 440px;
+    max-width: 95vw;
     max-height: 90vh; 
     overflow-y: auto;
     position: relative;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.22);
 }
 
 .modal-content h2, .modal-content h3 {
     margin-bottom: 20px;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Playfair Display', Georgia, serif;
+    color: #006a4e;
 }
 
 .modal-content input, 
 .modal-content select, 
 .modal-content textarea {
     width: 100%; 
-    padding: 12px; 
-    margin: 10px 0; 
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    font-family: inherit;
+    padding: 13px 18px; 
+    margin: 8px 0 14px; 
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 12px;
+    background: #faf9f6;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.25s ease;
+}
+
+.modal-content input:focus,
+.modal-content select:focus,
+.modal-content textarea:focus {
+    background: #fff;
+    border-color: #d4af37;
+    box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.15);
 }
 
 .modal-actions { 
     display: flex; 
-    gap: 10px; 
-    margin-top: 15px; 
+    gap: 12px; 
+    margin-top: 20px; 
 }
 
 .hidden { 
@@ -91,22 +113,24 @@
 
 /* Cart Specific Modal Styles */
 .cart-modal-content { 
-    width: 500px !important; 
+    width: 540px !important; 
 }
 
 .cart-item { 
     display: flex; 
     justify-content: space-between; 
     align-items: center; 
-    margin-bottom: 15px; 
-    padding-bottom: 10px; 
-    border-bottom: 1px solid #eee; 
+    margin-bottom: 14px; 
+    padding-bottom: 12px; 
+    border-bottom: 1px solid #f0eee6; 
 }
 
 .cart-total {
-    margin-top: 20px;
+    margin-top: 22px;
     text-align: right;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
+    color: #006a4e;
+    font-family: 'Playfair Display', serif;
 }
 
 .w-100 { 
@@ -117,17 +141,26 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    padding-bottom: 12px;
+}
+
+.modal-header h2 {
+    margin-bottom: 0;
+    font-size: 1.8rem;
 }
 
 .close-btn {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     cursor: pointer;
-    color: #777;
+    color: #888;
+    line-height: 1;
+    transition: color 0.2s;
 }
 
 .close-btn:hover {
-    color: #000;
+    color: #111;
 }
 
 .booking-form .form-group {
@@ -138,5 +171,276 @@
     display: block;
     margin-bottom: 5px;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
+    color: #444;
+}
+
+/* === Storefront Toast Notification System === */
+.toast-container {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    z-index: 999999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    pointer-events: none;
+    max-width: 90vw;
+}
+
+.toast {
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-width: 320px;
+    max-width: 440px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    background: #ffffff;
+    color: #1f2937;
+    box-shadow: 0 10px 35px rgba(0,0,0,0.15), 0 3px 10px rgba(0,0,0,0.08);
+    font-size: 14px;
+    font-family: 'Montserrat', sans-serif;
+    animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    border-left: 5px solid #d4af37;
+    overflow: hidden;
+    position: relative;
+}
+
+.toast.toast-out {
+    animation: toastSlideOut 0.3s ease forwards;
+}
+
+.toast-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.toast-body {
+    flex: 1;
+    line-height: 1.45;
+    word-break: break-word;
+    font-weight: 500;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    color: #9ca3af;
+    padding: 0 4px;
+    flex-shrink: 0;
+    transition: color 0.2s;
+    line-height: 1;
+}
+.toast-close:hover { color: #111827; }
+
+.toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: #d4af37;
+    animation: toastProgress var(--toast-duration, 4000ms) linear forwards;
+}
+
+.toast.success { border-left-color: #10b981; }
+.toast.success .toast-progress { background: #10b981; }
+
+.toast.error { border-left-color: #ef4444; }
+.toast.error .toast-progress { background: #ef4444; }
+
+.toast.warning { border-left-color: #f59e0b; }
+.toast.warning .toast-progress { background: #f59e0b; }
+
+.toast.info { border-left-color: #3b82f6; }
+.toast.info .toast-progress { background: #3b82f6; }
+
+@keyframes toastSlideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes toastSlideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(120%); opacity: 0; }
+}
+
+@keyframes toastProgress {
+    from { width: 100%; }
+    to { width: 0%; }
+}
+
+@media (max-width: 480px) {
+    .toast-container {
+        top: 15px;
+        right: 15px;
+        left: 15px;
+    }
+    .toast {
+        min-width: unset;
+        max-width: 100%;
+        padding: 12px 16px;
+    }
+}
+
+/* === Universal Mobile Navigation Backdrop & Body Lock === */
+.nav-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(3, 16, 10, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 998;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+}
+
+.nav-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+body.nav-open {
+    overflow: hidden !important;
+    touch-action: none;
+}
+
+/* Mobile Responsive Cart & Modal Tuning */
+@media screen and (max-width: 768px) {
+    .floating-cart {
+        bottom: 22px;
+        right: 20px;
+        width: 52px;
+        height: 52px;
+    }
+
+    .modal-content {
+        padding: 26px 20px;
+        border-radius: 18px;
+        max-height: 88vh;
+        width: 100%;
+        max-width: 95vw;
+    }
+
+    .modal-header h2 {
+        font-size: 1.5rem;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .floating-cart {
+        bottom: 16px;
+        right: 16px;
+        width: 48px;
+        height: 48px;
+    }
+
+    .modal {
+        padding: 10px;
+    }
+
+    .modal-content {
+        padding: 22px 16px;
+        border-radius: 16px;
+        max-height: 90vh;
+    }
+}
+
+/* Shared page scrollbar styling; .brands-bar keeps its page-level hidden rule. */
+html {
+    scrollbar-color: #d4af37 #0d3b2e;
+    scrollbar-width: thin;
+}
+
+html::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+html::-webkit-scrollbar-track {
+    background: #0d3b2e;
+}
+
+html::-webkit-scrollbar-thumb {
+    background: #d4af37;
+    border: 2px solid #0d3b2e;
+    border-radius: 10px;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+    background: #f3e5b8;
+}
+
+/* About's mobile navigation is canonical across all four storefront pages. */
+@media screen and (max-width: 980px) {
+    .nav-links {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: 290px;
+        max-width: 82vw;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 26px;
+        padding-top: 100px;
+        background: #ffffff;
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border-left: 1px solid rgba(212, 175, 55, 0.32);
+        box-shadow: -15px 0 40px rgba(0, 0, 0, 0.18);
+        transform: translateX(100%);
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0s linear 0.4s;
+        z-index: 1001;
+        visibility: hidden;
+    }
+
+    .nav-links.nav-active {
+        transform: translateX(0);
+        visibility: visible;
+        transition-delay: 0s;
+    }
+
+    .nav-links a {
+        color: #222222;
+        font-family: 'Playfair Display', serif;
+        font-size: 1.3rem;
+        letter-spacing: 1px;
+    }
+}
+
+@keyframes navLinkFade {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-links,
+    .nav-backdrop {
+        transition-duration: 0.01ms !important;
+    }
+
+    .nav-links {
+        transition-delay: 0s !important;
+    }
+
+    .nav-links li {
+        animation: none !important;
+    }
 }

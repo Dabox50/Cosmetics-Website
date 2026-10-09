@@ -6,30 +6,42 @@
     <title>Contact Us | Shayors Cosmetics</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="contact.css">
     <link rel="stylesheet" href="../cart.css">
     <link rel="shortcut icon" href="../Image/Shayor's Logo.png" type="image/x-icon">
+    <script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
-<body>
+<body class="three-scene-active">
     <!-- Navigation -->
     <nav>
         <div class="logo">
-            <img src="../Image/Shayor's Cosmetics .png" alt="Logo" width="80px">
+            <a href="../index.html">
+                <img src="../Image/Shayor's Cosmetics .png" alt="Shayors Cosmetics Logo" width="80px">
+            </a>
         </div>
+        
+        <div class="search-nav">
+            <div class="search-container">
+                <input type="text" placeholder="Search products or categories..." id="homeSearch">
+                <div id="searchSuggestions" class="suggestions-dropdown hidden"></div>
+            </div>
+        </div>
+
         <ul class="nav-links">
             <li><a href="../index.html">Home</a></li>
             <li><a href="../Collection/collections.html">Collections</a></li>
             <li><a href="../About/about.html">About Us</a></li>
             <li><a href="./contact.html" class="active-link">Contact Us</a></li>
         </ul>
-        <div class="burger">
-            <img src="../Image/menus.png" alt="menu" width="20px">
+
+        <div class="burger" aria-label="Toggle navigation menu">
+            <img src="../Image/menus.png" alt="menu" width="22px">
         </div>
     </nav>
 
     <!-- Floating Cart Icon -->
-    <div id="cartBtn" class="floating-cart" onclick="openCart()">
+    <div id="cartBtn" class="floating-cart" onclick="openCart()" aria-label="View shopping cart">
         <img src="../Image/grocery-store.png" alt="Cart" width="20px" style="filter: invert(1);">
         <span id="cartCount">0</span>
     </div>
@@ -38,78 +50,189 @@
     <div class="brands-bar">
         <span>Connect With Us:</span>
         <div class="brands-scroll">
-            <span>Care Line</span>
-            <span>Consultation</span>
-            <span>Tracking</span>
-            <span>Location</span>
-            <span>Feedback</span>
+            <span>Direct WhatsApp</span>
+            <span>Boutique Care</span>
+            <span>Fragrance Advisory</span>
+            <span>Skin Consultation</span>
+            <span>Order Tracking</span>
+            <span>Spa Bookings</span>
         </div>
     </div>
 
     <!-- Contact Hero -->
-    <header class="contact-hero">
+    <header class="hero contact-hero">
+        <div class="hero-ambient-glow"></div>
         <div class="hero-content animate-on-scroll">
+            <span class="hero-tag">✦ WE ARE HERE FOR YOU ✦</span>
             <h1>Contact Shayors</h1>
             <p class="slogan">We're Here to Elevate Your Beauty Journey.</p>
+
+            <!-- Quick Contact Pills -->
+            <div class="contact-quick-bar">
+                <a href="https://wa.me/+2348189085285" class="quick-pill" target="_blank" rel="noopener">
+                    <span>💬</span> WhatsApp Instant Care
+                </a>
+                <a href="#storeLocation" class="quick-pill">
+                    <span>📍</span> Surulere Boutique, Lagos
+                </a>
+                <a href="mailto:Shayorscosmestics@gmail.com" class="quick-pill">
+                    <span>✉️</span> VIP Concierge Email
+                </a>
+                <div class="quick-pill static">
+                    <span>⏰</span> Mon–Sat 9:00 AM – 7:00 PM
+                </div>
+            </div>
         </div>
     </header>
 
     <!-- Main Contact Section -->
     <section class="contact-section">
-        <div class="contact-container animate-on-scroll">
-            <!-- Contact Form -->
-            <div class="contact-form-wrapper">
-                <h2>Send Us a Message</h2>
-                <form id="contactForm" class="contact-form">
-                    <div class="input-group">
-                        <input type="text" id="name" placeholder="Your Name" required>
-                    </div>
-                    <div class="input-group">
-                        <input type="email" id="email" placeholder="Your Email" required>
-                    </div>
-                    <div class="input-group">
-                        <textarea id="message" rows="5" placeholder="Your Message" required></textarea>
-                    </div>
-                    <button type="submit" class="btn primary">Send Message</button>
-                </form>
-            </div>
-
-            <!-- Contact Information -->
-            <div class="contact-info">
-                <div class="info-item">
-                    <h3>Visit Our Store</h3>
-                    <p>Shop Yk 059, Floor 1, Adegbite shopping complex, Adebisi street, itire/ikate, Surulere, Lagos 101241<br>Lagos, Nigeria</p>
-                </div>
-                <div class="info-item">
-                    <h3>Contact Details</h3>
-                    <p>Email: <a href="Shayorscosmestics@gmail.com">Shayorscosmestics@gmail.com</a></p>
-                    <p>Phone: <a href="tel: +2348189085285">+2348189085285</a>, <a href="tel: +2348079333403">+2348079333403</a></p>
+        <div class="section-container">
+            <div class="contact-grid animate-on-scroll">
+                
+                <!-- Contact Form Wrapper -->
+                <div class="contact-form-wrapper">
+                    <span class="form-badge">✦ GET IN TOUCH ✦</span>
+                    <h2>Send Us a Message</h2>
+                    <p class="form-sub">Have a question regarding skincare, custom fragrance, or order status? We respond promptly.</p>
                     
+                    <form id="contactForm" class="contact-form" onsubmit="event.preventDefault(); showToast('Thank you! Your message has been sent to our concierge team.', 'success'); this.reset();">
+                        <div class="input-group">
+                            <label for="name">Full Name</label>
+                            <input type="text" id="name" placeholder="e.g. Lady Amina Adeyemi" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="email">Email Address</label>
+                            <input type="email" id="email" placeholder="e.g. amina@example.com" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="phone">Phone Number (Optional)</label>
+                            <input type="tel" id="phone" placeholder="e.g. +234 818 908 5285">
+                        </div>
+                        <div class="input-group">
+                            <label for="subject">Inquiry Type</label>
+                            <select id="subject" class="contact-select">
+                                <option value="Skincare Consultation">✨ Skincare Consultation & Regimen</option>
+                                <option value="Fragrance Advisory">🌸 Fragrance Recommendation</option>
+                                <option value="Order Tracking">📦 Order & Delivery Inquiry</option>
+                                <option value="Spa Booking">🧖‍♀️ Spa Treatment Booking</option>
+                                <option value="Wholesale / Other">💎 General Inquiry / Feedback</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label for="message">Your Message</label>
+                            <textarea id="message" rows="5" placeholder="Tell us how we can assist your skin or beauty journey..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn primary w-100">
+                            <span>Send Message</span> ✦
+                        </button>
+                    </form>
                 </div>
-                <div class="info-item">
-                    <h3>Support Hours</h3>
-                    <p>Monday - Wednesday: 9:00 AM - 7:00 PM</p>
-                    <p>Thursday: 10:00 AM - 7:00 PM</p>
-                    <p>Friday - Saturday: 9:00 AM - 7:00 PM</p>
-                    <p>Sunday: Closed</p>
-                </div>
-                <div class="info-item">
-                    <h3>Follow Us</h3>
-                    <div class="social-links-contact">
-                        <a href="https://www.instagram.com/shayorscosmetics?igsh=MTJyM20ycm9iMXJnYg%3D%3D&utm_source=qr"><img src="../Image/instagram.png" alt="Instagram" width="20px"></a>
-                        <a href="https://www.tiktok.com/@shayorscosmetics?_r=1&_t=ZS-945WjMGy2tD"><img src="../Image/tik-tok.png" alt="TikTok" width="20px"></a>
-                        <a href="https://wa.me/+2348189085285"><img src="../Image/whatsapp.png" alt="Whatsapp Icon" width="20px"></a>
+
+                <!-- Contact Information Column -->
+                <div class="contact-info-col">
+                    
+                    <!-- Store Location -->
+                    <div class="info-card" id="storeLocation">
+                        <div class="info-icon">📍</div>
+                        <div class="info-body">
+                            <h3>Visit Our Boutique</h3>
+                            <p class="address-text">
+                                Shop Yk 059, Floor 1, Adegbite Shopping Complex,<br>
+                                Adebisi Street, Itire/Ikate, Surulere,<br>
+                                Lagos 101241, Nigeria
+                            </p>
+                            <a href="https://maps.google.com/?q=Surulere+Lagos+Nigeria" target="_blank" rel="noopener" class="card-link">
+                                Get Directions on Google Maps →
+                            </a>
+                        </div>
                     </div>
+
+                    <!-- Direct Contacts -->
+                    <div class="info-card">
+                        <div class="info-icon">📞</div>
+                        <div class="info-body">
+                            <h3>Direct Client Care</h3>
+                            <p>Speak directly with our beauty advisors:</p>
+                            <div class="contact-links-list">
+                                <a href="tel:+2348189085285" class="contact-link-row">
+                                    <span class="dot">✦</span> +234 818 908 5285
+                                </a>
+                                <a href="tel:+2348079333403" class="contact-link-row">
+                                    <span class="dot">✦</span> +234 807 933 3403
+                                </a>
+                                <a href="https://wa.me/+2348189085285" target="_blank" rel="noopener" class="whatsapp-badge-btn">
+                                    <span>Chat on WhatsApp</span> 💬
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Email Concierge -->
+                    <div class="info-card">
+                        <div class="info-icon">✉️</div>
+                        <div class="info-body">
+                            <h3>Concierge Email</h3>
+                            <p>For official inquiries, receipts & corporate correspondence:</p>
+                            <a href="mailto:Shayorscosmestics@gmail.com" class="email-link">
+                                Shayorscosmestics@gmail.com
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Boutique Hours -->
+                    <div class="info-card">
+                        <div class="info-icon">⏰</div>
+                        <div class="info-body">
+                            <h3>Support & Store Hours</h3>
+                            <ul class="hours-list">
+                                <li><span>Monday – Wednesday:</span> <strong>9:00 AM – 7:00 PM</strong></li>
+                                <li><span>Thursday:</span> <strong>10:00 AM – 7:00 PM</strong></li>
+                                <li><span>Friday – Saturday:</span> <strong>9:00 AM – 7:00 PM</strong></li>
+                                <li><span>Sunday:</span> <strong class="closed">Closed (By Appointment)</strong></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Social Channels -->
+                    <div class="info-card">
+                        <div class="info-icon">✨</div>
+                        <div class="info-body">
+                            <h3>Follow Shayors</h3>
+                            <p>Connect with our radiant community on social media:</p>
+                            <div class="social-links-contact">
+                                <a href="https://www.instagram.com/shayorscosmetics?igsh=MTJyM20ycm9iMXJnYg%3D%3D&utm_source=qr" target="_blank" rel="noopener" aria-label="Instagram">
+                                    <img src="../Image/instagram.png" alt="Instagram" width="18px">
+                                    <span>Instagram</span>
+                                </a>
+                                <a href="https://www.tiktok.com/@shayorscosmetics?_r=1&_t=ZS-945WjMGy2tD" target="_blank" rel="noopener" aria-label="TikTok">
+                                    <img src="../Image/tik-tok.png" alt="TikTok" width="18px">
+                                    <span>TikTok</span>
+                                </a>
+                                <a href="https://wa.me/+2348189085285" target="_blank" rel="noopener" aria-label="WhatsApp">
+                                    <img src="../Image/whatsapp.png" alt="WhatsApp" width="18px">
+                                    <span>WhatsApp</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Google Map Integration Placeholder -->
-    <section class="map-section animate-on-scroll">
-        <div class="map-wrapper">
-            <!-- Placeholder for Google Map -->
-            <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126844.06348601633!2d3.332824!3d6.524379!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b8b2ae68280c1%3A0xdc9e87a3da577a9!2sLagos%2C%20Nigeria!5e0!3m2!1sen!2sng!4v1620000000000!5m2!1sen!2sng" width="100%" height="450" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+    <!-- Google Map Section -->
+    <section class="map-section">
+        <div class="section-container animate-on-scroll">
+            <div class="map-header">
+                <span class="map-badge">✦ BOUTIQUE LOCATION ✦</span>
+                <h2>Find Our Store in Lagos</h2>
+                <p>Located conveniently in Surulere, Lagos with parking and premium walk-in experience.</p>
+            </div>
+            <div class="map-wrapper">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126844.06348601633!2d3.332824!3d6.524379!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b8b2ae68280c1%3A0xdc9e87a3da577a9!2sLagos%2C%20Nigeria!5e0!3m2!1sen!2sng!4v1620000000000!5m2!1sen!2sng" width="100%" height="420" style="border:0;" allowfullscreen="" loading="lazy" title="Shayors Cosmetics Store Location"></iframe>
+            </div>
         </div>
     </section>
 
@@ -119,6 +242,12 @@
             <div class="footer-logo">
                 <h3>Shayors Cosmetics</h3>
                 <p>Shortcuts to beauty success</p>
+            </div>
+            <div class="footer-nav">
+                <a href="../index.html">Home</a>
+                <a href="../Collection/collections.html">Collections</a>
+                <a href="../About/about.html">About Us</a>
+                <a href="./contact.html">Contact Us</a>
             </div>
             <div class="footer-bottom">
                 <p>Shayors Cosmetics &copy; 2026. All rights reserved.</p>
@@ -154,14 +283,21 @@
             </div>
             <form id="checkoutForm">
                 <input type="text" id="checkCustName" placeholder="Your Full Name" required>
-                <input type="email" id="checkCustEmail" placeholder="Email Address" required>
+                <input type="email" id="checkCustEmail" placeholder="Email Address (for Receipt & Updates)" required>
                 <input type="text" id="checkCustPhone" placeholder="Phone Number" required>
                 <input type="text" id="checkCustAddress" placeholder="Shipping Address" required>
-                <select id="checkPaymentMethod" required>
-                    <option value="Bank Transfer">Bank Transfer</option>
+                
+                <label style="font-size: 0.85rem; color: #555; display: block; margin-top: 10px; margin-bottom: 4px; font-weight: bold;">Payment Method</label>
+                <select id="checkPaymentMethod" required onchange="togglePaymentMethodUI()">
+                    <option value="Paystack" selected>💳 Pay Online (Paystack - Card, Transfer, USSD)</option>
+                    <option value="Bank Transfer">🏦 Direct Bank Transfer (Upload Receipt)</option>
                 </select>
 
-                <div id="bankDetails" style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.6;">
+                <div id="paystackInfoNotice" style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px 14px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85rem; color: #166534;">
+                    <p style="margin: 0;">🔒 <strong>Secured by Paystack:</strong> Pay instantly using Debit Card, Bank Transfer, USSD, or QR code.</p>
+                </div>
+
+                <div id="bankDetails" style="display: none; background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.6;">
                     <p><strong>Payment Instructions:</strong></p>
                     <p>Please make payment to the account below and provide the receipt link or upload a file.</p>
                     <p><strong>Bank Name:</strong> Sterling</p>
@@ -169,8 +305,8 @@
                     <p><strong>Account Number:</strong> 0089883643</p>
                 </div>
 
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.85rem; color: #555; display: block; margin-bottom: 5px;">Receipt Link (URL) *</label>
+                <div id="receiptUploadSection" style="display: none; margin-bottom: 15px;">
+                    <label style="font-size: 0.85rem; color: #555; display: block; margin-bottom: 5px;">Receipt Link (URL)</label>
                     <input type="url" id="checkReceiptLink" placeholder="https://example.com/receipt.jpg">
                     <p style="font-size: 0.75rem; color: #888; margin-top: 5px;">OR Upload Receipt</p>
                     <input type="file" id="checkReceiptFile" accept="image/*,.pdf">
@@ -178,7 +314,7 @@
 
                 <textarea id="checkCustNote" placeholder="Additional Notes (Optional)"></textarea>
                 <div class="modal-actions">
-                    <button type="submit" class="btn primary">Complete Order</button>
+                    <button type="submit" id="checkoutSubmitBtn" class="btn primary">Pay with Paystack</button>
                     <button type="button" class="btn secondary" onclick="closeModal('checkoutModal')">Back to Cart</button>
                 </div>
             </form>

@@ -17,15 +17,39 @@ if (MAINTENANCE_MODE && !window.location.pathname.includes('inventory.html')) {
     });
 }
 
+// Toast notification helper - replaces browser alert() calls
+window.showToast = function(message, type = 'info', duration = 4000) {
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.style.setProperty('--toast-duration', duration + 'ms');
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || icons.info}</span>
+        <span class="toast-body">${message}</span>
+        <button class="toast-close" onclick="this.parentElement.classList.add('toast-out');setTimeout(()=>this.parentElement.remove(),300)">&times;</button>
+        <div class="toast-progress"></div>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.classList.add('toast-out');
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, duration);
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     if (MAINTENANCE_MODE && !window.location.pathname.includes('inventory.html')) return;
-    // Register Service Worker for Offline Access
+    // Register Service Worker for Offline Access + Auto-Update
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            const swPath = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" 
-                ? '/service-worker.js' 
-                : '/service-worker.js'; // Adjust path if needed for subdirectories
-            
             // Check if we are in a subdirectory like /Collection/ or /Inventory/
             const isSubDir = window.location.pathname.includes('/Collection/') || 
                              window.location.pathname.includes('/About/') || 
@@ -36,7 +60,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
             navigator.serviceWorker.register(finalPath)
                 .then(registration => {
-                    console.log('Service Worker registered with scope:', registration.scope);
+                    
+
+                    // Check for updates immediately
+                    registration.update();
+
+                    // When a new service worker is found, force it to activate
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (newWorker) {
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New version available — tell it to take over now
+                                    
+                                    newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                }
+                            });
+                        }
+                    });
+
+                    // When the new SW takes control, reload to get fresh assets
+                    let refreshing = false;
+                    navigator.serviceWorker.addEventListener('controllerchange', () => {
+                        if (!refreshing) {
+                            refreshing = true;
+                            
+                            window.location.reload();
+                        }
+                    });
                 })
                 .catch(error => {
                     console.error('Service Worker registration failed:', error);
@@ -44,30 +95,75 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Mobile Navigation Toggle
+    // Robust Mobile Navigation Toggle with Backdrop & Outside Click
     const navSlide = () => {
         const burger = document.querySelector('.burger');
         const nav = document.querySelector('.nav-links');
         const navLinks = document.querySelectorAll('.nav-links li');
+        
+        if (!burger || !nav) return;
 
-        if (burger) {
-            burger.addEventListener('click', () => {
-                // Toggle Nav
-                nav.classList.toggle('nav-active');
-
-                // Animate Links
-                navLinks.forEach((link, index) => {
-                    if (link.style.animation) {
-                        link.style.animation = '';
-                    } else {
-                        link.style.animation = `navLinkFade 0.5s ease forwards ${index / 7 + 0.3}s`;
-                    }
-                });
-
-                // Burger Animation
-                burger.classList.toggle('toggle');
-            });
+        // Ensure backdrop element exists
+        let backdrop = document.querySelector('.nav-backdrop');
+        if (!backdrop) {
+            backdrop = document.createElement('div');
+            backdrop.className = 'nav-backdrop';
+            document.body.appendChild(backdrop);
         }
+
+        const openMenu = () => {
+            nav.classList.add('nav-active');
+            burger.classList.add('toggle');
+            backdrop.classList.add('active');
+            document.body.classList.add('nav-open');
+
+            navLinks.forEach((link, index) => {
+                link.style.animation = `navLinkFade 0.35s ease forwards ${index * 0.08 + 0.15}s`;
+            });
+        };
+
+        const closeMenu = () => {
+            nav.classList.remove('nav-active');
+            burger.classList.remove('toggle');
+            backdrop.classList.remove('active');
+            document.body.classList.remove('nav-open');
+
+            navLinks.forEach((link) => {
+                link.style.animation = '';
+            });
+        };
+
+        burger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (nav.classList.contains('nav-active')) {
+                closeMenu();
+            } else {
+                openMenu();
+            }
+        });
+
+        backdrop.addEventListener('click', closeMenu);
+
+        // Close when clicking any nav link
+        nav.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                closeMenu();
+            });
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && nav.classList.contains('nav-active')) {
+                closeMenu();
+            }
+        });
+
+        // Close when resizing window past 980px
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 980 && nav.classList.contains('nav-active')) {
+                closeMenu();
+            }
+        });
     };
 
     // Intersection Observer for Scroll Animations
@@ -94,18 +190,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const smoothScroll = () => {
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth'
-                    });
-                    // Close mobile nav if open
-                    const nav = document.querySelector('.nav-links');
-                    const burger = document.querySelector('.burger');
-                    if (nav && nav.classList.contains('nav-active')) {
-                        nav.classList.remove('nav-active');
-                        burger.classList.remove('toggle');
+                const targetId = this.getAttribute('href');
+                if (targetId && targetId !== '#') {
+                    const target = document.querySelector(targetId);
+                    if (target) {
+                        e.preventDefault();
+                        target.scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                        // Close mobile nav if open
+                        const nav = document.querySelector('.nav-links');
+                        const burger = document.querySelector('.burger');
+                        const backdrop = document.querySelector('.nav-backdrop');
+                        if (nav && nav.classList.contains('nav-active')) {
+                            nav.classList.remove('nav-active');
+                            if (burger) burger.classList.remove('toggle');
+                            if (backdrop) backdrop.classList.remove('active');
+                            document.body.classList.remove('nav-open');
+                        }
                     }
                 }
             });
@@ -131,8 +233,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         window.location.hostname.startsWith('10.') || 
                         window.location.hostname.startsWith('172.');
 
-        // SET THIS TO FALSE to use the LOCAL server data while working locally
-        const USE_LIVE_DATA_LOCALLY = false;
+        // SET THIS TO TRUE to use the LIVE server data while working locally via Live Server
+        const USE_LIVE_DATA_LOCALLY = true;
 
         const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
             ? `http://${window.location.hostname}:5000/api` 
@@ -140,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Don't fetch products here if we're on the Inventory or Collections page (handled by their respective JS)
         if (window.location.pathname.includes('inventory.html') || window.location.pathname.includes('collections.html')) {
-            console.log("Skipping product fetch in script.js (page has its own fetch)");
+            
             return;
         }
 
@@ -193,7 +295,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         const name = item.getAttribute('data-name');
                         const cat = item.getAttribute('data-cat');
                         // Redirect to collections page with search parameters
-                        window.location.href = `./Collection/collections.html?search=${encodeURIComponent(name)}&cat=${encodeURIComponent(cat)}`;
+                        const isSubDir = window.location.pathname.includes('/Collection/') || 
+                                         window.location.pathname.includes('/About/') || 
+                                         window.location.pathname.includes('/Contact/') ||
+                                         window.location.pathname.includes('/Inventory/');
+                        const collUrl = isSubDir ? '../Collection/collections.html' : './Collection/collections.html';
+                        window.location.href = `${collUrl}?search=${encodeURIComponent(name)}&cat=${encodeURIComponent(cat)}`;
                     });
                 });
             } else {
@@ -238,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         saveCart();
         updateCartUI();
-        alert(`${name} added to cart!`);
+        showToast(`${name} added to cart!`, 'success');
     };
 
     function saveCart() {
@@ -318,41 +425,151 @@ document.addEventListener('DOMContentLoaded', () => {
         openCart(); 
     };
 
+    // --- Paystack & Checkout Integration ---
+    const isLocal = window.location.hostname === "localhost" || 
+                    window.location.hostname === "127.0.0.1" || 
+                    window.location.hostname.startsWith('192.168.') || 
+                    window.location.hostname.startsWith('10.') || 
+                    window.location.hostname.startsWith('172.');
+
+    const USE_LIVE_DATA_LOCALLY = true;
+    const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
+        ? `http://${window.location.hostname}:5000/api` 
+        : "https://cosmetics-website.fly.dev/api";
+
+    // Paystack Public Key - can be overridden via window.PAYSTACK_PUBLIC_KEY or backend /api/orders/paystack/key
+    let PAYSTACK_PUBLIC_KEY = window.PAYSTACK_PUBLIC_KEY || 'pk_test_8a6511b9f4a37ec467717e292d732da21e1f745a';
+
+    async function fetchPaystackKey() {
+        try {
+            const res = await fetch(`${API_BASE}/orders/paystack/key`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.publicKey && data.publicKey.startsWith('pk_')) {
+                    PAYSTACK_PUBLIC_KEY = data.publicKey;
+                }
+            }
+        } catch (e) {
+            // Silently retain fallback key
+        }
+    }
+    fetchPaystackKey();
+
+    // Helper to dynamically load Paystack Inline SDK if not loaded yet
+    function ensurePaystackLoaded() {
+        return new Promise((resolve, reject) => {
+            if (window.PaystackPop) return resolve(window.PaystackPop);
+            const script = document.createElement('script');
+            script.src = 'https://js.paystack.co/v1/inline.js';
+            script.async = true;
+            script.onload = () => resolve(window.PaystackPop);
+            script.onerror = () => reject(new Error('Failed to load Paystack SDK. Check your internet connection.'));
+            document.head.appendChild(script);
+        });
+    }
+
+    // Toggle Payment Method UI (Paystack vs Bank Transfer)
+    window.togglePaymentMethodUI = function() {
+        const methodSelect = document.getElementById('checkPaymentMethod');
+        const bankDetails = document.getElementById('bankDetails');
+        const receiptSection = document.getElementById('receiptUploadSection');
+        const paystackNotice = document.getElementById('paystackInfoNotice');
+        const submitBtn = document.getElementById('checkoutSubmitBtn') || 
+            (document.getElementById('checkoutForm') ? document.getElementById('checkoutForm').querySelector('button[type="submit"]') : null);
+
+        const method = methodSelect ? methodSelect.value : 'Paystack';
+        const isPaystack = method === 'Paystack';
+        const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+        if (bankDetails) bankDetails.style.display = isPaystack ? 'none' : 'block';
+        if (receiptSection) receiptSection.style.display = isPaystack ? 'none' : 'block';
+        if (paystackNotice) paystackNotice.style.display = isPaystack ? 'block' : 'none';
+
+        if (submitBtn) {
+            if (isPaystack) {
+                submitBtn.innerText = total > 0 ? `Pay ₦${total.toLocaleString()} with Paystack` : 'Pay with Paystack';
+            } else {
+                submitBtn.innerText = 'Complete Order';
+            }
+        }
+    };
+
     window.goToCheckout = function() {
+        if (!cart || cart.length === 0) {
+            showToast('Your cart is empty. Please add items before checking out.', 'warning');
+            return;
+        }
         closeModal('cartModal');
         openModal('checkoutModal');
+        window.togglePaymentMethodUI();
     };
+
+    // Helper to submit the order to backend API and sync state
+    async function submitOrderToBackend(orderData, receiptFile) {
+        let response;
+        if (receiptFile) {
+            const formData = new FormData();
+            formData.append('receipt', receiptFile);
+            Object.keys(orderData).forEach(key => {
+                if (key === 'items' || key === 'charges') {
+                    formData.append(key, JSON.stringify(orderData[key]));
+                } else {
+                    formData.append(key, orderData[key]);
+                }
+            });
+            response = await fetch(`${API_BASE}/orders`, {
+                method: 'POST',
+                body: formData
+            });
+        } else {
+            response = await fetch(`${API_BASE}/orders`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orderData)
+            });
+        }
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.message || 'Order creation failed');
+        }
+
+        return await response.json();
+    }
 
     const checkoutForm = document.getElementById('checkoutForm');
     if (checkoutForm) {
         checkoutForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const submitBtn = checkoutForm.querySelector('button[type="submit"]');
+            const submitBtn = document.getElementById('checkoutSubmitBtn') || checkoutForm.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerText;
-            submitBtn.innerText = "Processing Order...";
-            submitBtn.disabled = true;
+            const paymentMethod = document.getElementById('checkPaymentMethod').value;
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-            const receiptLink = document.getElementById('checkReceiptLink').value.trim();
-            const receiptFile = document.getElementById('checkReceiptFile').files[0];
-
-            if (!receiptLink && !receiptFile) {
-                alert("Please provide a payment receipt (Link or File) before completing your order.");
-                submitBtn.innerText = originalText;
-                submitBtn.disabled = false;
+            if (total <= 0) {
+                showToast('Your cart total is ₦0. Please add items to proceed.', 'warning');
                 return;
             }
 
-            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-            
-            const orderData = {
-                customerName: document.getElementById('checkCustName').value,
-                customerEmail: document.getElementById('checkCustEmail').value,
-                customerPhone: document.getElementById('checkCustPhone').value,
-                shippingAddress: document.getElementById('checkCustAddress').value,
-                paymentMethod: document.getElementById('checkPaymentMethod').value,
-                notes: document.getElementById('checkCustNote').value,
-                receiptInfo: receiptLink || (receiptFile ? `File: ${receiptFile.name}` : 'N/A'),
+            const customerName = document.getElementById('checkCustName').value.trim();
+            const customerEmail = document.getElementById('checkCustEmail').value.trim();
+            const customerPhone = document.getElementById('checkCustPhone').value.trim();
+            const shippingAddress = document.getElementById('checkCustAddress').value.trim();
+            const notes = document.getElementById('checkCustNote').value.trim();
+
+            if (!customerEmail || !customerEmail.includes('@')) {
+                showToast('Please provide a valid email address for your order receipt and Paystack verification.', 'warning');
+                return;
+            }
+
+            const baseOrderData = {
+                customerName,
+                customerEmail,
+                customerPhone,
+                shippingAddress,
+                paymentMethod,
+                notes,
                 items: cart.map(item => ({
                     productId: item.id,
                     productName: item.name,
@@ -363,79 +580,138 @@ document.addEventListener('DOMContentLoaded', () => {
                 platform: 'Web Store'
             };
 
-            const isLocal = window.location.hostname === "localhost" || 
-                            window.location.hostname === "127.0.0.1" || 
-                            window.location.hostname.startsWith('192.168.') || 
-                            window.location.hostname.startsWith('10.') || 
-                            window.location.hostname.startsWith('172.');
+            // --- PAYSTACK ONLINE PAYMENT FLOW ---
+            if (paymentMethod === 'Paystack') {
+                submitBtn.innerText = "Opening Paystack...";
+                submitBtn.disabled = true;
 
-            const USE_LIVE_DATA_LOCALLY = false;
-            const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
-                ? `http://${window.location.hostname}:5000/api` 
-                : "https://cosmetics-website.fly.dev/api";
+                try {
+                    await ensurePaystackLoaded();
 
-            try {
-                let response;
-                
-                if (receiptFile) {
-                    // Use FormData for file upload
-                    const formData = new FormData();
-                    formData.append('receipt', receiptFile);
-                    
-                    // Add other fields to formData
-                    Object.keys(orderData).forEach(key => {
-                        if (key === 'items' || key === 'charges') {
-                            formData.append(key, JSON.stringify(orderData[key]));
-                        } else {
-                            formData.append(key, orderData[key]);
+                    const handler = PaystackPop.setup({
+                        key: PAYSTACK_PUBLIC_KEY,
+                        email: customerEmail,
+                        amount: Math.round(total * 100), // In kobo
+                        currency: 'NGN',
+                        ref: 'SHAYORS_' + Date.now() + '_' + Math.floor(Math.random() * 100000),
+                        metadata: {
+                            custom_fields: [
+                                { display_name: "Customer Name", variable_name: "customer_name", value: customerName },
+                                { display_name: "Phone Number", variable_name: "phone_number", value: customerPhone },
+                                { display_name: "Shipping Address", variable_name: "shipping_address", value: shippingAddress }
+                            ]
+                        },
+                        callback: function(response) {
+                            (async () => {
+                                submitBtn.innerText = "Securing Order...";
+                                try {
+                                    const orderData = {
+                                        ...baseOrderData,
+                                        paymentStatus: 'paid',
+                                        paymentReference: response.reference,
+                                        receiptInfo: `Paystack Verified - Ref: ${response.reference}`
+                                    };
+
+                                    const createdOrder = await submitOrderToBackend(orderData, null);
+
+                                    // Update local sales records
+                                    const sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
+                                    sales.push({
+                                        ...orderData,
+                                        id: createdOrder._id,
+                                        date: new Date().toISOString(),
+                                        status: 'Paid',
+                                        amountPaid: total,
+                                        type: 'product'
+                                    });
+                                    localStorage.setItem('shayorsSales', JSON.stringify(sales));
+
+                                    // Open WhatsApp with confirmed order details
+                                    const itemsList = cart.map(item => `${item.name} (x${item.qty})`).join(', ');
+                                    const waMessage = `✅ New Paid Order via Paystack!\nCustomer: ${orderData.customerName}\nOrder ID: ${createdOrder._id}\nPaystack Ref: ${response.reference}\nItems: ${itemsList}\nTotal: ₦${total.toLocaleString()}\nAddress: ${orderData.shippingAddress}\nPhone: ${orderData.customerPhone}`;
+                                    window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
+
+                                    showToast(`🎉 Payment Successful! Order #${createdOrder._id.slice(-6).toUpperCase()} confirmed. Receipt sent to your email.`, 'success', 6000);
+                                    cart = [];
+                                    saveCart();
+                                    updateCartUI();
+                                    closeModal('checkoutModal');
+                                    checkoutForm.reset();
+                                } catch (err) {
+                                    console.error('Order saving error after payment:', err);
+                                    showToast(`Payment recorded (Ref: ${response.reference}). Please reach out on WhatsApp if you need support.`, 'warning', 6000);
+                                } finally {
+                                    submitBtn.innerText = originalText;
+                                    submitBtn.disabled = false;
+                                }
+                            })();
+                        },
+                        onClose: function() {
+                            submitBtn.innerText = originalText;
+                            submitBtn.disabled = false;
+                            showToast('Payment window closed. Your order was not charged.', 'info');
                         }
                     });
 
-                    response = await fetch(`${API_BASE}/orders`, {
-                        method: 'POST',
-                        body: formData
-                    });
-                } else {
-                    // Fallback to JSON if only link is provided
-                    response = await fetch(`${API_BASE}/orders`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(orderData)
-                    });
+                    handler.openIframe();
+                } catch (err) {
+                    console.error('Paystack initialization error:', err);
+                    showToast(`Could not open Paystack payment window: ${err.message}`, 'error');
+                    submitBtn.innerText = originalText;
+                    submitBtn.disabled = false;
                 }
+                return;
+            }
 
-                if (response.ok) {
-                    const createdOrder = await response.json();
-                    
-                    // 2. Open WhatsApp (Now that we know it's saved)
-                    const itemsList = cart.map(item => `${item.name} (x${item.qty})`).join(', ');
-                    const waMessage = `New Order from ${orderData.customerName}:\nOrder ID: ${createdOrder._id}\nItems: ${itemsList}\nTotal: ₦${total.toLocaleString()}\nAddress: ${orderData.shippingAddress}\nPhone: ${orderData.customerPhone}\nPayment: ${orderData.paymentMethod}\nReceipt: ${orderData.receiptInfo}`;
-                    window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
+            // --- MANUAL BANK TRANSFER FLOW ---
+            const receiptLinkInput = document.getElementById('checkReceiptLink');
+            const receiptFileInput = document.getElementById('checkReceiptFile');
+            const receiptLink = receiptLinkInput ? receiptLinkInput.value.trim() : '';
+            const receiptFile = receiptFileInput && receiptFileInput.files ? receiptFileInput.files[0] : null;
 
-                    // 3. Update Local Records
-                    const sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
-                    sales.push({
-                        ...orderData,
-                        id: createdOrder._id,
-                        date: new Date().toISOString(),
-                        status: 'Unpaid',
-                        amountPaid: 0,
-                        type: 'product'
-                    });
-                    localStorage.setItem('shayorsSales', JSON.stringify(sales));
+            if (!receiptLink && !receiptFile) {
+                showToast('Please provide a payment receipt (Link or File) for Bank Transfer verification before completing your order.', 'warning');
+                return;
+            }
 
-                    alert('Order placed successfully! Redirecting to WhatsApp for confirmation...');
-                    cart = [];
-                    saveCart();
-                    updateCartUI();
-                    closeModal('checkoutModal');
-                } else {
-                    const err = await response.json();
-                    alert(`Order failed: ${err.message || 'Please try again.'}`);
-                }
+            submitBtn.innerText = "Processing Order...";
+            submitBtn.disabled = true;
+
+            try {
+                const orderData = {
+                    ...baseOrderData,
+                    paymentStatus: 'unpaid',
+                    receiptInfo: receiptLink || (receiptFile ? `File: ${receiptFile.name}` : 'N/A')
+                };
+
+                const createdOrder = await submitOrderToBackend(orderData, receiptFile);
+
+                // Update Local Records
+                const sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
+                sales.push({
+                    ...orderData,
+                    id: createdOrder._id,
+                    date: new Date().toISOString(),
+                    status: 'Unpaid',
+                    amountPaid: 0,
+                    type: 'product'
+                });
+                localStorage.setItem('shayorsSales', JSON.stringify(sales));
+
+                // Open WhatsApp
+                const itemsList = cart.map(item => `${item.name} (x${item.qty})`).join(', ');
+                const waMessage = `New Order from ${orderData.customerName}:\nOrder ID: ${createdOrder._id}\nItems: ${itemsList}\nTotal: ₦${total.toLocaleString()}\nAddress: ${orderData.shippingAddress}\nPhone: ${orderData.customerPhone}\nPayment: ${orderData.paymentMethod}\nReceipt: ${orderData.receiptInfo}`;
+                window.open(`https://wa.me/+2348189085285?text=${encodeURIComponent(waMessage)}`, '_blank');
+
+                showToast('Order placed successfully! Opening WhatsApp for confirmation...', 'success', 5000);
+                cart = [];
+                saveCart();
+                updateCartUI();
+                closeModal('checkoutModal');
+                checkoutForm.reset();
             } catch (error) {
                 console.error('Order error:', error);
-                alert('Connection error. Please check your internet and try again.');
+                showToast(`Order submission failed: ${error.message || 'Please check connection.'}`, 'error');
             } finally {
                 submitBtn.innerText = originalText;
                 submitBtn.disabled = false;
@@ -448,7 +724,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contactForm) {
         contactForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            alert('Thank you for contacting Shayors Cosmetics. We will get back to you shortly!');
+            showToast('Thank you for contacting Shayors Cosmetics. We will get back to you shortly!', 'success');
             contactForm.reset();
         });
     }

@@ -6,18 +6,28 @@
     <title>About Us | Shayors Cosmetics</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="about.css">
     <link rel="stylesheet" href="../cart.css">
     <link rel="shortcut icon" href="../Image/Shayor's Logo.png" type="image/x-icon">
+    <script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
-<body>
+<body class="three-scene-active">
     <!-- Navigation -->
     <nav>
         <div class="logo">
-            <img src="../Image/Shayor's Cosmetics .png" alt="Logo" width="80px">
+            <a href="../index.html">
+                <img src="../Image/Shayor's Cosmetics .png" alt="Shayors Cosmetics Logo" width="80px">
+            </a>
         </div>
         
+        <div class="search-nav">
+            <div class="search-container">
+                <input type="text" placeholder="Search products or categories..." id="homeSearch">
+                <div id="searchSuggestions" class="suggestions-dropdown hidden"></div>
+            </div>
+        </div>
+
         <ul class="nav-links">
             <li><a href="../index.html">Home</a></li>
             <li><a href="../Collection/collections.html">Collections</a></li>
@@ -25,13 +35,13 @@
             <li><a href="../Contact/contact.html">Contact Us</a></li>
         </ul>
 
-        <div class="burger">
-            <img src="../Image/menus.png" alt="menu" width="20px">
+        <div class="burger" aria-label="Toggle navigation menu">
+            <img src="../Image/menus.png" alt="menu" width="22px">
         </div>
     </nav>
 
     <!-- Floating Cart Icon -->
-    <div id="cartBtn" class="floating-cart" onclick="openCart()">
+    <div id="cartBtn" class="floating-cart" onclick="openCart()" aria-label="View shopping cart">
         <img src="../Image/grocery-store.png" alt="Cart" width="20px" style="filter: invert(1);">
         <span id="cartCount">0</span>
     </div>
@@ -44,75 +54,205 @@
             <span>Bar Soap</span>
             <span>Serum</span>
             <span>Scrub</span>
+            <span>Fragrance</span>
+            <span>Supplements</span>
+            <span>Spa Therapy</span>
         </div>
     </div>
 
-    <!-- About Hero -->
+    <!-- About Hero Section -->
     <header class="hero about-hero">
+        <div class="hero-ambient-glow"></div>
         <div class="hero-content animate-on-scroll">
+            <span class="hero-tag">✦ OUR HERITAGE & VISION ✦</span>
             <h1>About Shayors</h1>
             <p class="slogan">Shortcuts to beauty success….</p>
+            
+            <!-- Luxury Trust Badges -->
+            <div class="about-trust-bar">
+                <div class="about-trust-pill"><span>✦</span> 100% Authentic Botanicals</div>
+                <div class="about-trust-pill"><span>★</span> 4.9/5 Glowing Reviews</div>
+                <div class="about-trust-pill"><span>🌿</span> Cruelty-Free & Organic</div>
+                <div class="about-trust-pill"><span>✨</span> Bespoke Consultations</div>
+            </div>
         </div>
     </header>
 
-    <!-- Brand Story -->
+    <!-- Brand Story Section -->
     <section class="brand-story">
-        <div class="container animate-on-scroll">
-            <p class="intro-text">
-                We redefine beauty through luxury, self-care, and intentional indulgence. What began as a passion for radiant skin and captivating fragrance has evolved into a refined beauty brand offering premium skincare, signature perfumes, supplement, and rejuvenating spa experiences.
-            </p>
+        <div class="section-container animate-on-scroll">
+            <div class="story-card">
+                <div class="quote-mark">“</div>
+                <p class="intro-text">
+                    We redefine beauty through luxury, self-care, and intentional indulgence. What began as a passion for radiant skin and captivating fragrance has evolved into a refined beauty brand offering premium skincare, signature perfumes, supplement, and rejuvenating spa experiences.
+                </p>
+                <div class="luxury-divider">
+                    <span class="divider-line"></span>
+                    <span class="divider-gem">✦</span>
+                    <span class="divider-line"></span>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Core Values -->
+    <!-- Core Values Section -->
     <section class="core-values">
-        <h2 class="section-title animate-on-scroll">Core Values</h2>
-        <div class="value-divider animate-on-scroll">—————</div>
-        <div class="container animate-on-scroll">
-            <p>We believe beauty is more than appearance — it’s a feeling. Every product and services we offer is thoughtfully designed to help you look radiant, feel relaxed, and express your individuality effortlessly.</p>
+        <div class="section-container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-badge">OUR ETHOS</span>
+                <h2 class="section-title">Core Values</h2>
+                <div class="luxury-divider">
+                    <span class="divider-line"></span>
+                    <span class="divider-gem">✦</span>
+                    <span class="divider-line"></span>
+                </div>
+                <p class="section-subtitle">
+                    We believe beauty is more than appearance — it’s a feeling. Every product and services we offer is thoughtfully designed to help you look radiant, feel relaxed, and express your individuality effortlessly.
+                </p>
+            </div>
+
+            <!-- 3 Core Value Cards -->
+            <div class="values-grid animate-on-scroll">
+                <div class="value-card">
+                    <div class="value-icon-box">✨</div>
+                    <h3>Radiant Results</h3>
+                    <p>Formulated with high-potency botanical actives and bio-compatible nutrients to nourish and reveal lasting skin radiance.</p>
+                </div>
+                <div class="value-card">
+                    <div class="value-icon-box">🌸</div>
+                    <h3>Sensory Luxury</h3>
+                    <p>Elevating daily self-care into soothing rituals through captivating aromas, velvety textures, and spa-grade relaxation.</p>
+                </div>
+                <div class="value-card">
+                    <div class="value-icon-box">💎</div>
+                    <h3>Individuality</h3>
+                    <p>Honoring unique skin types with personalized guidance, tailored regimens, and products that celebrate authentic confidence.</p>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- What Makes Us Different -->
+    <!-- What Makes Us Different Section -->
     <section class="differentiation">
-        <h2 class="section-title animate-on-scroll">What Makes Us Different</h2>
-        <div class="value-divider animate-on-scroll">————————————-</div>
-        <div class="container animate-on-scroll">
-            <p>We don’t just sell skincare products, fragrance and render personal care services, we listen, educate, guide, support your desire goals and tailored products accordingly. Whether you are a newbies or enthusiast, we are here to assist you with any skin related conditions.</p>
-            <p class="highlight-text">Either you’re discovering our skincare, selecting a signature scent, or indulging in a spa treatment.</p>
+        <div class="section-container">
+            <div class="section-header animate-on-scroll">
+                <span class="section-badge">THE SHAYORS DISTINCTION</span>
+                <h2 class="section-title">What Makes Us Different</h2>
+                <div class="luxury-divider">
+                    <span class="divider-line"></span>
+                    <span class="divider-gem">✦</span>
+                    <span class="divider-line"></span>
+                </div>
+            </div>
+
+            <div class="diff-showcase animate-on-scroll">
+                <div class="diff-main-card">
+                    <p class="diff-lead">
+                        We don’t just sell skincare products, fragrance and render personal care services, we listen, educate, guide, support your desire goals and tailored products accordingly. Whether you are a newbies or enthusiast, we are here to assist you with any skin related conditions.
+                    </p>
+                    <p class="highlight-text">
+                        Either you’re discovering our skincare, selecting a signature scent, or indulging in a spa treatment.
+                    </p>
+                </div>
+
+                <div class="diff-pillars-grid">
+                    <div class="pillar-card">
+                        <div class="pillar-num">01</div>
+                        <h4>Listen & Educate</h4>
+                        <p>We take time to analyze your skin challenges and advise you on exact ingredient synergies for real transformation.</p>
+                    </div>
+                    <div class="pillar-card">
+                        <div class="pillar-num">02</div>
+                        <h4>Tailored Regimens</h4>
+                        <p>No generic solutions. Every bundle and routine is tailored directly to your skin goals, lifestyle, and preferences.</p>
+                    </div>
+                    <div class="pillar-card">
+                        <div class="pillar-num">03</div>
+                        <h4>Holistic Harmony</h4>
+                        <p>Integrating therapeutic skincare, signature perfumes, and restorative spa care for total sensory well-being.</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Consultation CTA -->
     <section id="contact" class="consultation">
-        <div class="container animate-on-scroll">
-            <h2>Contact Us</h2>
-            <p>For skin consultation and fragrance recommendations</p>
-            <p class="signature">Your Glow. Your Scent. Your Signature.</p>
-            <a href="https://wa.me/+2348189085285" class="btn primary">Get Consultation</a>
+        <div class="section-container animate-on-scroll">
+            <div class="consultation-card">
+                <span class="consult-badge">✦ BESPOKE BEAUTY ADVISORY ✦</span>
+                <h2>Contact Us</h2>
+                <p class="consult-sub">For skin consultation and fragrance recommendations</p>
+                <p class="signature">Your Glow. Your Scent. Your Signature.</p>
+                <div class="consult-actions">
+                    <a href="https://wa.me/+2348189085285" class="btn primary" target="_blank" rel="noopener">
+                        <span>Get Consultation on WhatsApp</span> 💬
+                    </a>
+                    <a href="../Contact/contact.html" class="btn secondary">
+                        <span>Send Message</span> ✉️
+                    </a>
+                </div>
+            </div>
         </div>
     </section>
 
-    <!-- Social Proof -->
+    <!-- Social Proof Section -->
     <section class="social-proof">
-        <div class="container animate-on-scroll">
-            <p>Join thousands of happy shayorsified customers across the country who trust us to care for their skin.</p>
-            <p class="sensory">Where Self-Care Becomes Sensory Luxury</p>
+        <div class="section-container animate-on-scroll">
+            <div class="proof-card">
+                <div class="proof-stars">★★★★★</div>
+                <p class="proof-lead">Join thousands of happy shayorsified customers across the country who trust us to care for their skin.</p>
+                <p class="sensory">Where Self-Care Becomes Sensory Luxury</p>
+                
+                <div class="proof-metrics">
+                    <div class="metric-item">
+                        <span class="metric-num">10K+</span>
+                        <span class="metric-label">Happy Clients</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-num">100%</span>
+                        <span class="metric-label">Authentic Extracts</span>
+                    </div>
+                    <div class="metric-item">
+                        <span class="metric-num">4.9★</span>
+                        <span class="metric-label">Client Satisfaction</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Community / Newsletter -->
     <section class="community">
-        <div class="container animate-on-scroll">
-            <h2>Join Our Community</h2>
-            <div class="social-icons">
-                <a href="https://www.instagram.com/shayorscosmetics?igsh=MTJyM20ycm9iMXJnYg%3D%3D&utm_source=qr">Instagram</a> • <a href="https://www.tiktok.com/@shayorscosmetics?_r=1&_t=ZS-945WjMGy2tD">TikTok</a> 
-                <h3>Sign up to our newsletter</h3>
-                <form class="newsletter-form">
-                    <input type="text" placeholder="Name" required>
-                    <input type="email" placeholder="Email" required>
-                    <button type="submit" class="btn primary">Subscribe</button>
-                </form>
+        <div class="section-container animate-on-scroll">
+            <div class="community-card">
+                <span class="comm-tag">✦ STAY CONNECTED ✦</span>
+                <h2>Join Our Community</h2>
+                <p class="comm-sub">Follow our luminous beauty world and receive exclusive access to private sales & skincare tips.</p>
+                
+                <div class="social-pills-row">
+                    <a href="https://www.instagram.com/shayorscosmetics?igsh=MTJyM20ycm9iMXJnYg%3D%3D&utm_source=qr" class="social-pill" target="_blank" rel="noopener">
+                        <img src="../Image/instagram.png" alt="Instagram" width="16px">
+                        <span>Instagram</span>
+                    </a>
+                    <a href="https://www.tiktok.com/@shayorscosmetics?_r=1&_t=ZS-945WjMGy2tD" class="social-pill" target="_blank" rel="noopener">
+                        <img src="../Image/tik-tok.png" alt="TikTok" width="16px">
+                        <span>TikTok</span>
+                    </a>
+                    <a href="https://wa.me/+2348189085285" class="social-pill" target="_blank" rel="noopener">
+                        <img src="../Image/whatsapp.png" alt="WhatsApp" width="16px">
+                        <span>WhatsApp VIP</span>
+                    </a>
+                </div>
+
+                <div class="newsletter-box">
+                    <h3>Sign up to our newsletter</h3>
+                    <form class="newsletter-form" onsubmit="event.preventDefault(); showToast('Thank you for subscribing to Shayors VIP!', 'success'); this.reset();">
+                        <input type="text" placeholder="Your Name" required>
+                        <input type="email" placeholder="Your Email Address" required>
+                        <button type="submit" class="btn primary">Subscribe</button>
+                    </form>
+                </div>
             </div>
         </div>
     </section>
@@ -123,6 +263,12 @@
             <div class="footer-logo">
                 <h3>Shayors Cosmetics</h3>
                 <p>Shortcuts to beauty success</p>
+            </div>
+            <div class="footer-nav">
+                <a href="../index.html">Home</a>
+                <a href="../Collection/collections.html">Collections</a>
+                <a href="./about.html">About Us</a>
+                <a href="../Contact/contact.html">Contact Us</a>
             </div>
             <div class="footer-bottom">
                 <p>Shayors Cosmetics &copy; 2026. All rights reserved.</p>
@@ -158,14 +304,21 @@
             </div>
             <form id="checkoutForm">
                 <input type="text" id="checkCustName" placeholder="Your Full Name" required>
-                <input type="email" id="checkCustEmail" placeholder="Email Address" required>
+                <input type="email" id="checkCustEmail" placeholder="Email Address (for Receipt & Updates)" required>
                 <input type="text" id="checkCustPhone" placeholder="Phone Number" required>
                 <input type="text" id="checkCustAddress" placeholder="Shipping Address" required>
-                <select id="checkPaymentMethod" required>
-                    <option value="Bank Transfer">Bank Transfer</option>
+                
+                <label style="font-size: 0.85rem; color: #555; display: block; margin-top: 10px; margin-bottom: 4px; font-weight: bold;">Payment Method</label>
+                <select id="checkPaymentMethod" required onchange="togglePaymentMethodUI()">
+                    <option value="Paystack" selected>💳 Pay Online (Paystack - Card, Transfer, USSD)</option>
+                    <option value="Bank Transfer">🏦 Direct Bank Transfer (Upload Receipt)</option>
                 </select>
 
-                <div id="bankDetails" style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.6;">
+                <div id="paystackInfoNotice" style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px 14px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85rem; color: #166534;">
+                    <p style="margin: 0;">🔒 <strong>Secured by Paystack:</strong> Pay instantly using Debit Card, Bank Transfer, USSD, or QR code.</p>
+                </div>
+
+                <div id="bankDetails" style="display: none; background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.6;">
                     <p><strong>Payment Instructions:</strong></p>
                     <p>Please make payment to the account below and provide the receipt link or upload a file.</p>
                     <p><strong>Bank Name:</strong> Sterling</p>
@@ -173,8 +326,8 @@
                     <p><strong>Account Number:</strong> 0089883643</p>
                 </div>
 
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.85rem; color: #555; display: block; margin-bottom: 5px;">Receipt Link (URL) *</label>
+                <div id="receiptUploadSection" style="display: none; margin-bottom: 15px;">
+                    <label style="font-size: 0.85rem; color: #555; display: block; margin-bottom: 5px;">Receipt Link (URL)</label>
                     <input type="url" id="checkReceiptLink" placeholder="https://example.com/receipt.jpg">
                     <p style="font-size: 0.75rem; color: #888; margin-top: 5px;">OR Upload Receipt</p>
                     <input type="file" id="checkReceiptFile" accept="image/*,.pdf">
@@ -182,7 +335,7 @@
 
                 <textarea id="checkCustNote" placeholder="Additional Notes (Optional)"></textarea>
                 <div class="modal-actions">
-                    <button type="submit" class="btn primary">Complete Order</button>
+                    <button type="submit" id="checkoutSubmitBtn" class="btn primary">Pay with Paystack</button>
                     <button type="button" class="btn secondary" onclick="closeModal('checkoutModal')">Back to Cart</button>
                 </div>
             </form>

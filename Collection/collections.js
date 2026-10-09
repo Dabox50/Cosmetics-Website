@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     window.location.hostname.startsWith('10.') || 
                     window.location.hostname.startsWith('172.');
 
-    // SET THIS TO FALSE to use the LOCAL server data while working locally
-    const USE_LIVE_DATA_LOCALLY = false;
+    // SET THIS TO TRUE to use the LIVE server data while working locally via Live Server
+    const USE_LIVE_DATA_LOCALLY = true;
 
     const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
         ? `http://${window.location.hostname}:5000/api` 
@@ -74,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return Promise.resolve();
             });
             await Promise.all(promises);
-            console.log("All product images pre-cached for offline use.");
         } catch (error) {
             console.error("Error during pre-caching:", error);
         }
@@ -110,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const robustFetch = async (url, retryCount = 3) => {
                 const res = await fetch(url, { signal: controller.signal });
                 if (res.status === 503 && retryCount > 0) {
-                    console.log(`Server warming up, retrying ${url} (${retryCount} left)...`);
                     await new Promise(r => setTimeout(r, 3000));
                     return robustFetch(url, retryCount - 1);
                 }
@@ -226,30 +224,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function createProductCard(product) {
         const available = product.stock > 0;
+        const rating = product.rating ? Number(product.rating).toFixed(1) : '5.0';
         return `
             <div class="product-card">
+                <div class="card-aura-glow"></div>
                 <span class="product-status ${available ? 'status-available' : 'status-unavailable'}">
-                    ${available ? 'In Stock' : 'Out of Stock'}
+                    ${available ? '✦ In Stock' : 'Out of Stock'}
                 </span>
-                <img src="${getImagePath(product.image)}" alt="${product.name}" onerror="this.src='../Image/Shayor\\'s Logo.png'">
+                <div class="product-img-box">
+                    <img src="${getImagePath(product.image)}" alt="${product.name}" onerror="this.src='../Image/Shayor\\'s Logo.png'">
+                </div>
                 <div class="card-content">
-                    <p class="brand">${product.category || 'Product'} | ${product.brand || 'Shayors'}</p>
-                    <h3>${product.name}</h3>
-                    <p class="price">₦${parseFloat(product.price).toLocaleString()}</p>
-                    <p style="font-size: 0.75rem; color: #777; margin: 5px 0; height: 35px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-                        ${product.description || product.review || 'Premium quality product.'}
+                    <div class="card-rating-row">
+                        <span class="rating-stars">★★★★★</span>
+                        <span class="rating-score">(${rating})</span>
+                    </div>
+                    <p class="brand">${product.category || 'Luxury'} ✦ ${product.brand || 'Shayors'}</p>
+                    <h3 title="${product.name}">${product.name}</h3>
+                    <p class="product-mini-desc">
+                        ${product.description || product.review || 'Mastercrafted botanical formulation for elevated radiance and lasting skincare.'}
                     </p>
                     
+                    ${(product.skinTypes || product.skinConcern) ? `
                     <div class="product-details-mini">
-                        ${product.skinTypes ? `<p><strong>Skin Type:</strong> ${product.skinTypes}</p>` : ''}
-                        ${product.skinConcern ? `<p><strong>Concern:</strong> ${product.skinConcern}</p>` : ''}
-                    </div>
+                        ${product.skinTypes ? `<p><strong>Skin:</strong> ${product.skinTypes}</p>` : ''}
+                        ${product.skinConcern ? `<p><strong>Target:</strong> ${product.skinConcern}</p>` : ''}
+                    </div>` : ''}
 
-                    <div class="card-actions">
-                        <button class="btn primary" ${available ? '' : 'disabled'} onclick="addToCart('${product._id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.image}')">
-                            ${available ? 'Add to Cart 🛒' : 'Out of Stock'}
-                        </button>
-                        <button class="btn secondary info-btn" onclick="showProductInfo('${product._id}')">Details</button>
+                    <div class="price-action-row">
+                        <p class="price">₦${parseFloat(product.price).toLocaleString()}</p>
+                        <div class="card-actions">
+                            <button class="btn primary card-cart-btn" ${available ? '' : 'disabled'} onclick="addToCart('${product._id}', '${product.name.replace(/'/g, "\\'")}', ${product.price}, '${product.image}')">
+                                ${available ? '+ Cart' : 'Sold Out'}
+                            </button>
+                            <button class="btn secondary info-btn" onclick="showProductInfo('${product._id}')" title="View details">Info</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -375,7 +384,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.submitReview = async function(productId) {
         const name = document.getElementById('revName').value;
         const ratingElement = document.querySelector('input[name="rating"]:checked');
-        if (!ratingElement) return alert("Please select a rating star");
+        if (!ratingElement) return showToast("Please select a rating star", "warning");
         const rating = ratingElement.value;
         const comment = document.getElementById('revComment').value;
 
@@ -387,31 +396,41 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.ok) {
-                alert("Review submitted successfully!");
+                showToast("Review submitted successfully!", "success");
                 // Refresh modal
                 document.getElementById('infoModal').remove();
                 showProductInfo(productId);
             } else {
                 const data = await response.json();
-                alert("Failed to submit review: " + (data.message || "Unknown error"));
+                showToast("Failed to submit review: " + (data.message || "Unknown error"), "error");
             }
         } catch (error) {
             console.error("Review submission failed:", error);
-            alert("Error connecting to server. Please try again.");
+            showToast("Error connecting to server. Please try again.", "error");
         }
     };
 
     function createServiceCard(service) {
         return `
             <div class="product-card service-card">
-                <span class="product-status status-available">Service</span>
-                <img src="${service.image || '../Image/Shayor\'s Logo.png'}" alt="${service.name}" onerror="this.src='../Image/Shayor\\'s Logo.png'">
+                <div class="card-aura-glow"></div>
+                <span class="product-status status-available">✦ Spa Service</span>
+                <div class="product-img-box">
+                    <img src="${service.image || '../Image/Shayor\'s Logo.png'}" alt="${service.name}" onerror="this.src='../Image/Shayor\\'s Logo.png'">
+                </div>
                 <div class="card-content">
-                    <p class="brand">${service.category || 'Spa & Beauty'}</p>
+                    <div class="card-rating-row">
+                        <span class="rating-stars">★★★★★</span>
+                        <span class="rating-score">(5.0)</span>
+                    </div>
+                    <p class="brand">${service.category || 'Spa & Beauty'} ✦ Wellness</p>
                     <h3>${service.name}</h3>
-                    <p class="price">₦${parseFloat(service.price).toLocaleString()}</p>
-                    <div style="display: flex; gap: 5px; flex-wrap: wrap;">
-                        <button class="btn primary" onclick="openBookingModal('${service._id || service.id}', '${service.name.replace(/'/g, "\\'")}')">Book Now</button>
+                    <p class="product-mini-desc">Rejuvenating holistic therapist session designed for deep relaxation and inner renewal.</p>
+                    <div class="price-action-row">
+                        <p class="price">₦${parseFloat(service.price).toLocaleString()}</p>
+                        <div class="card-actions">
+                            <button class="btn primary card-cart-btn" onclick="openBookingModal('${service._id || service.id}', '${service.name.replace(/'/g, "\\'")}')">Book Now</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -419,7 +438,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderProductRows(filterCat = "All", searchTerm = "") {
-        console.log("Rendering products...", { filterCat, searchTerm, productsCount: productData.length });
         if (!productRowsContainer) {
             console.error("productRowsContainer not found!");
             return;
@@ -598,6 +616,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Interactive Category Filter Pills Bar
+    const filterPills = document.querySelectorAll('.filter-pill');
+    if (filterPills.length > 0) {
+        filterPills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                filterPills.forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                const filter = pill.dataset.filter || "All";
+                const navSearch = document.getElementById('navSearch');
+                const catSelect = document.getElementById('catSelect');
+                if (catSelect) {
+                    const matchOption = catSelect.querySelector(`option[value="${filter}"]`);
+                    catSelect.value = matchOption ? filter : "All";
+                }
+                renderProductRows(filter, navSearch ? navSearch.value : '');
+            });
+        });
+    }
+
     // Initial Fetch
     // fetchProducts(); (Called earlier now)
 
@@ -638,11 +675,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (response.ok) {
-                    alert('Service saved successfully!');
+                    showToast('Service saved successfully!', 'success');
                     closeModal('spaManagementModal');
                     fetchProducts();
                 } else {
-                    alert('Failed to save service. Are you logged in as admin?');
+                    showToast('Failed to save service. Are you logged in as admin?', 'error');
                 }
             } catch (error) {
                 console.error('Service sync error:', error);
@@ -739,7 +776,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.ok) {
-                    console.log('Order recorded in database');
+                    // Order successfully saved
                 } else {
                     const err = await response.json();
                     console.error('Database order recording failed:', err.message);
@@ -829,7 +866,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const note = document.getElementById('bookingNote').value;
             
             const service = spaServices.find(s => s._id == serviceId || s.id == serviceId);
-            if (!service) return alert('Service not found');
+            if (!service) return showToast('Service not found', 'error');
 
             const bookingData = {
                 serviceId,
@@ -854,7 +891,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (response.ok) {
-                    console.log('Booking recorded in database');
+                    
                     // Also update local sales history for consistency
                     const sales = JSON.parse(localStorage.getItem('shayorsSales')) || [];
                     const newSale = {
@@ -871,15 +908,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     localStorage.setItem('shayorsSales', JSON.stringify(sales));
                     
                     closeModal('bookingModal');
-                    alert('Booking request sent and recorded!');
+                    showToast('Booking request sent and recorded!', 'success');
                 } else {
                     const err = await response.json();
-                    alert(err.message || 'Booking failed');
+                    showToast(err.message || 'Booking failed', 'error');
                 }
             } catch (error) {
                 console.error('Database booking connection error:', error);
                 closeModal('bookingModal');
-                alert('Booking request sent via WhatsApp!');
+                showToast('Booking request sent via WhatsApp!', 'success');
             }
         });
     }

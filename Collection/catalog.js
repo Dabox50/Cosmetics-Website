@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLocal = window.location.hostname === "localhost" || 
                     window.location.hostname === "127.0.0.1";
     
-    // SET THIS TO FALSE to use the LOCAL server data while working locally
-    const USE_LIVE_DATA_LOCALLY = false;
+    // SET THIS TO TRUE to use the LIVE server data while working locally via Live Server
+    const USE_LIVE_DATA_LOCALLY = true;
 
     const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
         ? `http://${window.location.hostname}:5000/api` 
@@ -91,7 +91,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 return Promise.resolve();
             });
             await Promise.all(promises);
-            console.log("All product images pre-cached for offline use.");
         } catch (error) {
             console.error("Error during pre-caching:", error);
         }

@@ -2,8 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const isLocal = window.location.hostname === "localhost" || 
                     window.location.hostname === "127.0.0.1";
 
-    // SET THIS TO FALSE to use your LOCAL server for testing
-    const USE_LIVE_DATA_LOCALLY = false;
+    // SET THIS TO TRUE to use the LIVE server data while working locally via Live Server
+    const USE_LIVE_DATA_LOCALLY = true;
 
     const API_BASE = (isLocal && !USE_LIVE_DATA_LOCALLY)
         ? `http://${window.location.hostname}:5000/api` 
@@ -19,13 +19,35 @@ document.addEventListener('DOMContentLoaded', () => {
         return token;
     }
 
+    // Toast notification helper — replaces alert() calls
+    function showToast(message, type = 'info', duration = 4000) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.style.setProperty('--toast-duration', duration + 'ms');
+        toast.innerHTML = `
+            <span class="toast-icon">${icons[type] || icons.info}</span>
+            <span class="toast-body">${message}</span>
+            <button class="toast-close" onclick="this.parentElement.classList.add('toast-out');setTimeout(()=>this.parentElement.remove(),300)">&times;</button>
+            <div class="toast-progress"></div>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.classList.add('toast-out');
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, duration);
+    }
+
     // Standardized fetch with 300s timeout and auto-retry for 503
     async function fetchWithTimeout(resource, options = {}, retries = 5) {
         const { timeout = 300000 } = options;
         const controller = new AbortController();
         const id = setTimeout(() => controller.abort(), timeout);
         try {
-            console.log(`Attempting fetch: ${resource} (${6 - retries}/6)`);
             const response = await fetch(resource, {
                 ...options,
                 signal: controller.signal
@@ -34,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // AUTO-RETRY for 503 (Database warming up)
             if (response.status === 503 && retries > 0) {
-                console.log(`Database warming up (503), retrying in 5s... (${retries} retries left)`);
                 await new Promise(r => setTimeout(r, 5000));
                 return fetchWithTimeout(resource, options, retries - 1);
             }
@@ -44,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
             clearTimeout(id);
             // If it's a network error (like what the SW might throw or actual offline), retry too
             if (retries > 0) {
-                console.log(`Network error or SW block, retrying in 5s... (${retries} retries left)`, error);
                 await new Promise(r => setTimeout(r, 5000));
                 return fetchWithTimeout(resource, options, retries - 1);
             }
@@ -385,7 +405,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }));
             // Clear local storage to avoid double sync
             localStorage.removeItem('shayorsCustomers');
-            console.log("Local customers synced to API");
         } catch (error) {
             console.error("Sync Customers Error:", error);
         }
@@ -412,7 +431,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }));
             localStorage.removeItem('shayorsAdjustments');
-            console.log("Local adjustments synced to API");
         } catch (error) {
             console.error("Sync Adjustments Error:", error);
         }
@@ -535,11 +553,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     addProductToPOSCart(apiProd);
                     if (navigator.vibrate) navigator.vibrate(50);
                 } else {
-                    alert(`Product not found in store inventory: ${barcode}`);
+                    showToast(`Product not found in store inventory: ${barcode}`, "warning");
                 }
             } catch (err) { 
                 console.error("Barcode fetch error", err);
-                alert("Error searching for product in store.");
+                showToast("Error searching for product in store.", "error");
             }
         }
     }
@@ -557,14 +575,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const existing = posCart.find(item => item.product === product._id);
         if (existing) {
             if (existing.quantity + 1 > product.stock) {
-                alert("Cannot add more. Insufficient stock!");
+                showToast('Cannot add more. Insufficient stock!', 'warning');
                 return;
             }
             existing.quantity++;
             existing.total = existing.quantity * existing.price;
         } else {
             if (product.stock < 1) {
-                alert("Product out of stock!");
+                showToast('Product out of stock!', 'warning');
                 return;
             }
             posCart.push({
@@ -682,7 +700,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.updateCartQty = function(index, delta) {
         const item = posCart[index];
         if (item.quantity + delta > item.stock) {
-            alert("Insufficient stock!");
+            showToast('Insufficient stock!', 'warning');
             return;
         }
         item.quantity += delta;
@@ -708,7 +726,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.checkoutPOS = async function() {
         if (posCart.length === 0) {
-            alert("Cart is empty!");
+            showToast('Cart is empty!', 'warning');
             return;
         }
 
@@ -753,7 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (res.ok) {
                 const saleData = await res.json();
-                alert("Sale completed successfully!");
+                showToast('Sale completed successfully!', 'success');
                 showReceipt(saleData);
                 
                 // Add to local sales history with consistent ID mapping
@@ -780,11 +798,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderSalesHistory();
             } else {
                 const err = await res.json();
-                alert("Checkout failed: " + err.message);
+                showToast('Checkout failed: ' + err.message, 'error');
             }
         } catch (err) {
             console.error("POS Checkout error", err);
-            alert("An error occurred during checkout.");
+            showToast('An error occurred during checkout.', 'error');
         }
     };
 
@@ -843,13 +861,23 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.printReceipt = function() {
+        document.body.classList.add('printing-receipt');
         window.print();
+        window.addEventListener('afterprint', function handler() {
+            document.body.classList.remove('printing-receipt');
+            window.removeEventListener('afterprint', handler);
+        });
     };
 
     window.printReceiptDirectly = function(sale) {
         showReceipt(sale);
         setTimeout(() => {
+            document.body.classList.add('printing-receipt');
             window.print();
+            window.addEventListener('afterprint', function handler() {
+                document.body.classList.remove('printing-receipt');
+                window.removeEventListener('afterprint', handler);
+            });
         }, 500);
     };
 
@@ -858,7 +886,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!sale) return;
         renderInvoice(sale, false);
         setTimeout(() => {
+            document.body.classList.add('printing-invoice');
             window.print();
+            window.addEventListener('afterprint', function handler() {
+                document.body.classList.remove('printing-invoice');
+                window.removeEventListener('afterprint', handler);
+            });
         }, 500);
     };
 
@@ -1055,17 +1088,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     
                     await init(); // Apply permissions and load data
+                    const postLoginParams = new URLSearchParams(window.location.search);
+                    const postLoginHash = window.location.hash ? window.location.hash.replace('#', '') : null;
+                    const targetModule = postLoginParams.get('module') || postLoginHash;
+                    if (targetModule) {
+                        showModule(targetModule);
+                    }
                 } else {
-                    alert(data.message || "Login failed. Please check your credentials.");
+                    showToast(data.message || 'Login failed. Please check your credentials.', 'error');
                     submitBtn.innerText = originalText;
                     submitBtn.disabled = false;
                 }
             } catch (error) {
                 console.error("Login failed:", error);
                 if (error.name === 'AbortError') {
-                    alert("Connection timeout. The server is taking too long to respond. Please try again.");
+                    showToast('Connection timeout. The server is taking too long to respond. Please try again.', 'error');
                 } else {
-                    alert("Connection error: " + error.message + "\n\nIs the server running? Check your internet connection.");
+                    showToast("Connection error: " + error.message + ". Check connection.", "error");
                 }
                 submitBtn.innerText = originalText;
                 submitBtn.disabled = false;
@@ -1100,9 +1139,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ email })
                 });
                 const data = await res.json();
-                alert(data.message);
+                showToast(data.message, 'info');
                 if (res.ok) showLoginModal();
-            } catch (err) { alert("Failed to send reset link."); }
+            } catch (err) { showToast('Failed to send reset link.', 'error'); }
         });
     };
 
@@ -1131,13 +1170,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ token, password })
                 });
                 const data = await res.json();
-                alert(data.message);
+                showToast(data.message, 'info');
                 if (res.ok) {
                     // Clear reset token from URL
                     window.history.replaceState({}, document.title, window.location.pathname);
                     showLoginModal();
                 }
-            } catch (err) { alert("Reset failed."); }
+            } catch (err) { showToast('Reset failed.', 'error'); }
         });
     };
 
@@ -1146,7 +1185,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cleanToken = token ? token.trim().replace(/[\r\n\s]+/g, '') : '';
         
         if (!cleanToken) {
-            alert('Invalid invitation link. Please check your email and click the link again.');
+            showToast('Invalid invitation link. Please check your email and click the link again.', 'warning');
             showLoginModal();
             return;
         }
@@ -1181,7 +1220,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({ token: cleanToken, password })
                 });
                 const data = await res.json();
-                alert(data.message);
+                showToast(data.message, 'info');
                 if (res.ok) {
                     // Clear the invitation token from URL so it doesn't pop up again
                     window.history.replaceState({}, document.title, window.location.pathname);
@@ -1194,7 +1233,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (err) {
                 console.error('Activation error:', err);
-                alert("Activation failed. Please try again.");
+                showToast('Activation failed. Please try again.', 'error');
                 submitBtn.innerText = originalText;
                 submitBtn.disabled = false;
             }
@@ -1266,8 +1305,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const automation = document.getElementById('chargeAutomation').value;
         const scope = document.querySelector('input[name="chargeScope"]:checked').value;
 
-        if (!name) return alert('Enter charge name');
-        if (value <= 0) return alert('Enter valid charge value');
+        if (!name) return showToast('Enter charge name', 'warning');
+        if (value <= 0) return showToast('Enter valid charge value', 'warning');
 
         const charge = {
             id: Date.now(),
@@ -1345,8 +1384,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- WEB ORDERS MODULE ---
     window.fetchOrders = async function() {
-        const status = document.getElementById('orderStatusFilter').value;
+        renderOrders();
+        const statusFilter = document.getElementById('orderStatusFilter');
+        const status = statusFilter ? statusFilter.value : '';
         const token = getAdminToken();
+        if (!token) {
+            renderOrders();
+            return;
+        }
         try {
             const res = await fetchWithTimeout(`${API_BASE}/orders?status=${status}`, {
                 headers: { 'Authorization': `Bearer ${token}` }
@@ -1361,9 +1406,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 lastPendingCount = pendingNow;
                 
                 updateNewOrderBadge(); 
+            } else {
+                renderOrders();
             }
         } catch (err) {
             console.error("Order fetch failed:", err);
+            renderOrders();
         }
     };
 
@@ -1405,6 +1453,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const body = document.getElementById('ordersBody');
         if (!body) return;
         body.innerHTML = '';
+
+        if (!filterData || filterData.length === 0) {
+            body.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #888; padding: 25px;">No web orders received yet. New storefront purchases will appear here automatically.</td></tr>`;
+            return;
+        }
 
         filterData.forEach(order => {
             const date = new Date(order.createdAt).toLocaleDateString();
@@ -1457,7 +1510,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ orderStatus: status })
             });
             if (res.ok) {
-                alert('Order status updated!');
+                showToast('Order status updated!', 'success');
 
                 if (status === 'confirmed') {
                     const order = currentOrders.find(o => o._id === id);
@@ -1485,7 +1538,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({ paymentStatus: status })
             });
             if (res.ok) {
-                alert('Payment status updated!');
+                showToast('Payment status updated!', 'success');
 
                 if (status === 'paid') {
                     const order = currentOrders.find(o => o._id === id);
@@ -1522,7 +1575,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const order = currentOrders.find(o => o._id === id);
         if (!order) return;
         // Reuse invoice logic or a simple alert for now
-        alert(`Order for ${order.customerName}\nAddress: ${order.shippingAddress}\nTotal: ₦${order.totalAmount.toLocaleString()}\nNotes: ${order.notes || 'None'}`);
+        showToast(`Order #${order._id.slice(-6).toUpperCase()} (${order.customerName}) - ₦${order.totalAmount.toLocaleString()}`, "info", 6000);
     };
     // --- END WEB ORDERS MODULE ---
 
@@ -1551,16 +1604,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Fetch Inventory from Backend
     async function fetchInventory() {
-        console.log("fetchInventory called. API_BASE:", API_BASE);
         try {
             const prodRes = await fetchWithTimeout(`${API_BASE}/products`);
             await fetchCategories(); 
-
-            console.log("Products response status:", prodRes.status);
             if (prodRes.ok) {
                 const apiData = await prodRes.json();
-                console.log("Products fetched from API:", apiData ? apiData.length : 0);
-                
                 if (apiData && Array.isArray(apiData) && apiData.length > 0) {
                     inventory = apiData; 
                     safeSaveInventory(inventory); 
@@ -1614,7 +1662,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (moduleId === 'orders') fetchOrders();
         if (moduleId === 'sales') { syncSalesWithAPI().then(() => { renderSalesHistory(); updateSaleProductDropdown(); }); }
-        if (moduleId === 'expenses') { fetchExpenses(); fetchCostAnalysis(); fetchExpenseCategories(); }
+        if (moduleId === 'expenses') { renderExpenses(); renderCostAnalysis(); fetchExpenses(); fetchCostAnalysis(); fetchExpenseCategories(); }
         if (moduleId === 'analytics') { syncSalesWithAPI().then(() => renderAnalytics()); }
         if (moduleId === 'spa') renderSpaServices();
         if (moduleId === 'adjustments') { renderAdjustments(); updateAdjustmentProductDropdown(); }
@@ -1807,16 +1855,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (response.ok) {
-                alert(id ? "Product updated successfully!" : "Product added successfully!");
+                showToast(id ? 'Product updated successfully!' : 'Product added successfully!', 'success');
                 fetchInventory(); // Refresh list from backend
                 toggleForm();
             } else {
                 const err = await response.json();
-                alert(`Error: ${err.message}`);
+                showToast(`Error: ${err.message}`, "error");
             }
         } catch (error) {
             console.error("Form submission failed:", error);
-            alert("Server connection failed. Product was not saved to database.");
+            showToast('Server connection failed. Product was not saved to database.', 'error');
         }
     });
 
@@ -1864,11 +1912,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     fetchInventory();
                 } else {
                     const err = await response.json();
-                    alert(`Failed to delete: ${err.message}`);
+                    showToast(`Failed to delete: ${err.message}`, "error");
                 }
             } catch (error) {
                 console.error("Delete failed:", error);
-                alert("Could not delete product from server.");
+                showToast('Could not delete product from server.', 'error');
             }
         }
     };
@@ -2015,7 +2063,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 onScanSuccess(text);
             }).catch(err => {
                 console.error("Camera start error:", err);
-                alert("Could not start camera. Please ensure you have given camera permissions.");
+                showToast("Could not start camera. Please ensure permissions.", "warning");
                 reader.classList.add('hidden');
             });
         } else {
@@ -2067,7 +2115,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (prod.ingredients_text) document.getElementById('pIngredients').value = prod.ingredients_text;
                 
-                alert("Product information found and auto-filled!");
+                showToast('Product information found and auto-filled!', 'success');
             } else {
                 console.warn("Product not found in external database.");
                 // Check local database as well
@@ -2119,8 +2167,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function onScanSuccess(decodedText) {
         // Success callback
-        console.log(`Code scanned: ${decodedText}`);
-        
         // If we are in the POS module, add directly to cart
         const posModule = document.getElementById('pos-module');
         const productForm = document.getElementById('productForm');
@@ -2196,7 +2242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) { console.error("Sync failed for", p.name); }
         }
 
-        alert(`Sync completed! ${successCount} products added to your database.`);
+        showToast(`Sync completed! ${successCount} products added.`, "success");
         btn.innerText = "Import Samples";
         btn.disabled = false;
         fetchInventory();
@@ -2272,16 +2318,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const qty = parseInt(document.getElementById('saleQty').value);
         const price = parseFloat(document.getElementById('salePrice').value);
 
-        if (!productId) return alert('Select a product');
-        if (isNaN(qty) || qty <= 0) return alert('Enter valid quantity');
-        if (isNaN(price) || price < 0) return alert('Enter valid price');
+        if (!productId) return showToast('Select a product', 'warning');
+        if (isNaN(qty) || qty <= 0) return showToast('Enter valid quantity', 'warning');
+        if (isNaN(price) || price < 0) return showToast('Enter valid price', 'warning');
 
         const product = inventory.find(p => p._id == productId);
         
         let piecesPerUnit = product.piecesPerUnit || 1;
         let actualQty = (unitType === 'Dozen' || unitType === product.primaryUnit) ? qty * piecesPerUnit : qty;
         
-        if (product.stock < actualQty) return alert('Insufficient stock');
+        if (product.stock < actualQty) return showToast('Insufficient stock', 'warning');
 
         currentSaleItems.push({
             productId: product._id,
@@ -2345,7 +2391,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.finalizeSale = async function(type) {
-        if (currentSaleItems.length === 0) return alert('Add items to sale');
+        if (currentSaleItems.length === 0) return showToast('Add items to sale', 'warning');
         
         const customerName = document.getElementById('saleCustomerName').value || 'Walk-in Customer';
         const contact = document.getElementById('saleCustomerContact').value || '';
@@ -2457,14 +2503,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderSalesHistory();
                 renderRecentPosTransactions();
                 document.getElementById('newSaleSection').classList.add('hidden');
-                alert('Sale Recorded Successfully!');
+                showToast('Sale Recorded Successfully!', 'success');
             } else {
                 const err = await response.json();
-                alert(`Failed to save sale: ${err.message}`);
+                showToast(`Failed to save sale: ${err.message}`, "error");
             }
         } catch (error) {
             console.error("Sale finalization failed:", error);
-            alert("Connection error. Could not save sale to database.");
+            showToast('Connection error. Could not save sale to database.', 'error');
         }
     };
 
@@ -2510,7 +2556,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Removed localStorage inventory sync
             localStorage.setItem('shayorsCustomers', JSON.stringify(customers));
             renderSalesHistory();
-            alert('Sale returned and stock restored.');
+            showToast('Sale returned and stock restored.', 'success');
         }
     };
 
@@ -2533,7 +2579,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const invoiceNo = `INV-${(sale.apiId || sale.id).toString().slice(-6).toUpperCase()}`;
 
         container.innerHTML = `
-            <div id="invoice-template" style="padding: 30px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; background: #fff; width: 750px; margin: 0 auto; box-sizing: border-box; line-height: 1.4;">
+            <div id="invoice-template" style="padding: 30px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #333; background: #fff; max-width: 750px; width: 100%; margin: 0 auto; box-sizing: border-box; line-height: 1.4;">
                 <!-- Header -->
                 <div style="display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 2px solid #eee; padding-bottom: 20px;">
                     <div style="display: flex; align-items: flex-start;">
@@ -2978,7 +3024,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.deleteOrder = async function(id) {
         if (!id || id === "undefined" || id === "null") {
-            alert("Could not determine record ID for deletion.");
+            showToast('Could not determine record ID for deletion.', 'error');
             return;
         }
         
@@ -3003,7 +3049,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     const res = await fetch(url, { method: 'DELETE', headers });
                     if (res.ok) {
-                        console.log(`Deleted successfully from ${url}`);
                         deletedOnServer = true;
                         break; // Stop after first successful deletion
                     } else {
@@ -3037,11 +3082,11 @@ document.addEventListener('DOMContentLoaded', () => {
             renderRecentPosTransactions();
             if (typeof renderAnalytics === 'function') renderAnalytics();
             
-            alert("Order deleted successfully.");
+            showToast('Order deleted successfully.', 'success');
         } catch (e) { 
             console.error(e); 
             renderSalesHistory();
-            alert("Error deleting order: " + (e.message || "Unknown error"));
+            showToast("Error deleting order: " + (e.message || "Unknown error"), "error");
         }
     };
 
@@ -3098,6 +3143,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const body = document.getElementById('expensesBody');
         if (!body) return;
         body.innerHTML = '';
+
+        if (!expenses || expenses.length === 0) {
+            body.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #888; padding: 25px;">No expense records found. Click "+ Record Expense" above to add your first expense.</td></tr>`;
+            return;
+        }
+
         expenses.slice().reverse().forEach((e, idx) => {
             body.innerHTML += `
                 <tr>
@@ -3220,6 +3271,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!body) return;
         body.innerHTML = '';
         
+        if (!costAnalysis || costAnalysis.length === 0) {
+            body.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #888; padding: 25px;">No cost analysis records found. Click "+ Cost Analysis" above to calculate and save production costs.</td></tr>`;
+            return;
+        }
+
         costAnalysis.slice().reverse().forEach((c, idx) => {
             body.innerHTML += `
                 <tr>
@@ -3263,10 +3319,36 @@ document.addEventListener('DOMContentLoaded', () => {
     let productSalesChartInstance = null;
     let budgetDonutChartInstance = null;
 
+    // Helper functions for robust field extraction
+    function getSaleDate(s) {
+        const d = new Date(s.date || s.createdAt || s.saleDate || s.timestamp);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    function getSaleTotal(s) {
+        return parseFloat(s.total || s.totalAmount || s.amount || s.grandTotal || 0);
+    }
+
+    function getSaleUnits(s) {
+        if (Array.isArray(s.items) && s.items.length > 0) {
+            return s.items.reduce((sum, item) => sum + parseFloat(item.actualQty || item.qty || item.quantity || 0), 0);
+        }
+        return parseFloat(s.quantity || s.units || s.qty || 1);
+    }
+
+    function getProductCost(p) {
+        return parseFloat(p.costPrice || p.cost || p.buyPrice || p.purchasePrice || 0);
+    }
+
+    function getProductPrice(p) {
+        return parseFloat(p.price || p.unitPrice || 0);
+    }
+
     function renderAnalytics() {
         const activeYearBtn = document.querySelector('.year-btn.active');
         const currentYear = activeYearBtn ? parseInt(activeYearBtn.innerText) : new Date().getFullYear();
         const pastYear = currentYear - 1;
+        const twoYearsAgo = currentYear - 2;
 
         let totalStock = 0;
         let totalRetailVal = 0;
@@ -3274,22 +3356,39 @@ document.addEventListener('DOMContentLoaded', () => {
         let lowStockCount = 0;
 
         inventory.forEach(p => {
-            totalStock += (p.stock || 0);
-            totalRetailVal += (p.stock || 0) * (p.price || 0);
-            totalCostVal += (p.stock || 0) * (p.costPrice || 0);
-            if ((p.stock || 0) <= (p.threshold || 5)) lowStockCount++;
+            const stock = parseFloat(p.stock || 0);
+            const price = getProductPrice(p);
+            const cost = getProductCost(p);
+            const threshold = parseFloat(p.threshold || 5);
+
+            totalStock += stock;
+            totalRetailVal += stock * price;
+            totalCostVal += stock * cost;
+            if (stock <= threshold) lowStockCount++;
         });
 
-        const totalOverallSales = sales.reduce((sum, s) => sum + (s.total || 0), 0);
-        const totalUnitsSold = sales.reduce((sum, s) => {
-            const itemsList = Array.isArray(s.items) ? s.items : [];
-            return sum + itemsList.reduce((itemSum, item) => itemSum + (item.actualQty || item.qty || item.quantity || 0), 0);
+        const totalOverallSales = sales.reduce((sum, s) => sum + getSaleTotal(s), 0);
+        const totalUnitsSold = sales.reduce((sum, s) => sum + getSaleUnits(s), 0);
+        
+        const creditSalesOverall = sales.reduce((sum, s) => {
+            const status = (s.status || s.paymentStatus || 'Paid').toString().toLowerCase();
+            if (status === 'paid') return sum;
+            const total = getSaleTotal(s);
+            const paid = parseFloat(s.amountPaid || s.paidAmount || 0);
+            return sum + Math.max(0, total - paid);
         }, 0);
-        const creditSalesOverall = sales.filter(s => s.status !== 'Paid').reduce((sum, s) => sum + ((s.total || 0) - (s.amountPaid || 0)), 0);
-        const debtorsTotal = customers.reduce((sum, c) => sum + ((c.totalAmount || 0) - (c.partlyPaid || 0)), 0);
+
+        const debtorsTotal = customers.reduce((sum, c) => {
+            const status = (c.status || 'Paid').toString().toLowerCase();
+            if (status === 'paid') return sum;
+            const total = parseFloat(c.totalAmount || c.total || 0);
+            const paid = parseFloat(c.partlyPaid || 0);
+            return sum + Math.max(0, total - paid);
+        }, 0);
+
         const expectedProfitOverall = totalRetailVal - totalCostVal;
 
-        // Update Global Cards (restored metrics)
+        // Update Global Summary Cards
         const updateText = (id, val) => {
             const el = document.getElementById(id);
             if (el) el.innerText = val;
@@ -3297,28 +3396,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateText('anaTotalItems', inventory.length);
         updateText('anaTotalStock', totalStock);
-        updateText('anaRetailValue', `₦${totalRetailVal.toLocaleString()}`);
-        updateText('anaInvCost', `₦${totalCostVal.toLocaleString()}`);
-        updateText('anaTotalSales', `₦${totalOverallSales.toLocaleString()}`);
+        updateText('anaRetailValue', `₦${totalRetailVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+        updateText('anaInvCost', `₦${totalCostVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+        updateText('anaTotalSales', `₦${totalOverallSales.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
         updateText('anaTotalUnitsSold', totalUnitsSold);
-        updateText('anaExpProfit', `₦${expectedProfitOverall.toLocaleString()}`);
+        updateText('anaExpProfit', `₦${expectedProfitOverall.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
         updateText('anaLowStock', lowStockCount);
-        updateText('anaCreditSales', `₦${creditSalesOverall.toLocaleString()}`);
-        updateText('anaDebtors', `₦${debtorsTotal.toLocaleString()}`);
+        updateText('anaCreditSales', `₦${creditSalesOverall.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
+        updateText('anaDebtors', `₦${debtorsTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`);
 
         // Calculate Year-Specific Sales Data
-        const currentYearSales = sales.filter(s => new Date(s.date).getFullYear() === currentYear);
-        const pastYearSales = sales.filter(s => new Date(s.date).getFullYear() === pastYear);
+        const currentYearSales = sales.filter(s => {
+            const d = getSaleDate(s);
+            return d && d.getFullYear() === currentYear;
+        });
 
-        const totalCurrentYearSales = currentYearSales.reduce((sum, s) => sum + (s.total || 0), 0);
-        const totalPastYearSales = pastYearSales.reduce((sum, s) => sum + (s.total || 0), 0);
+        const pastYearSales = sales.filter(s => {
+            const d = getSaleDate(s);
+            return d && d.getFullYear() === pastYear;
+        });
 
-        // Budget is simulated (Current Sales * 1.2 or Inventory Value)
+        const twoYearsAgoSales = sales.filter(s => {
+            const d = getSaleDate(s);
+            return d && d.getFullYear() === twoYearsAgo;
+        });
+
+        const totalCurrentYearSales = currentYearSales.reduce((sum, s) => sum + getSaleTotal(s), 0);
+        const totalPastYearSales = pastYearSales.reduce((sum, s) => sum + getSaleTotal(s), 0);
+        const totalTwoYearsAgoSales = twoYearsAgoSales.reduce((sum, s) => sum + getSaleTotal(s), 0);
+
+        // Target budget calculation based on inventory retail value & current sales targets
         const budgetSales = Math.max(totalRetailVal, totalCurrentYearSales * 1.2);
         const variance = budgetSales > 0 ? ((totalCurrentYearSales - budgetSales) / budgetSales) * 100 : 0;
         const growth = totalPastYearSales > 0 ? ((totalCurrentYearSales - totalPastYearSales) / totalPastYearSales) * 100 : 0;
 
-        // Update Comparative Cards (from image)
+        // Update Comparative Cards
         updateText('cardValCurrentSales', `₦${totalCurrentYearSales.toLocaleString()}`);
         updateText('cardValBudgetSales', `₦${budgetSales.toLocaleString()}`);
         updateText('cardValBudgetVariance', `${variance.toFixed(2)}%`);
@@ -3327,7 +3439,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Render All Charts
         renderActualVsBudgetChart(currentYearSales, budgetSales);
-        renderCurrentVsPastChart(currentYearSales, pastYearSales);
+        renderCurrentVsPastChart(totalTwoYearsAgoSales, totalPastYearSales, totalCurrentYearSales, currentYear);
         renderProductSalesChart(currentYearSales);
         renderBudgetDonutChart(totalCurrentYearSales, budgetSales);
     }
@@ -3355,10 +3467,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 await fetchCostAnalysis();
                 
                 renderAnalytics();
-                alert("Analytics data synced successfully!");
+                showToast('Analytics data synced successfully!', 'success');
             } catch (err) {
                 console.error("Sync failed:", err);
-                alert(`Sync Error: ${err.message || 'Check your connection'}.`);
+                showToast(`Sync Error: ${err.message || "Check your connection"}.`, "error");
             } finally {
                 syncBtn.disabled = false;
                 syncBtn.innerText = "Refresh & Sync Data";
@@ -3371,15 +3483,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (resetBtn) {
         resetBtn.addEventListener('click', () => {
             if (confirm("Are you sure you want to reset all analytics data? This will clear local records for Sales, Expenses, Customers, and Adjustments.")) {
-                console.log("Resetting analytics data...");
-                
                 // Clear localStorage
                 localStorage.removeItem('shayorsSales');
                 localStorage.removeItem('shayorsExpenses');
                 localStorage.removeItem('shayorsCustomers');
                 localStorage.removeItem('shayorsAdjustments');
 
-                // Reset local variables (these must match the 'let' variables at top of DOMContentLoaded)
+                // Reset local variables
                 sales = [];
                 expenses = [];
                 customers = [];
@@ -3394,7 +3504,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (document.getElementById('customers-module')?.classList.contains('active')) renderCustomers();
                 if (document.getElementById('adjustments-module')?.classList.contains('active')) renderAdjustments();
 
-                alert("Analytics data has been reset successfully.");
+                showToast('Analytics data has been reset successfully.', 'success');
             }
         });
     }
@@ -3411,8 +3521,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const budgetData = new Array(12).fill(budgetTotal / 12);
 
         currentSales.forEach(s => {
-            const m = new Date(s.date).getMonth();
-            actualData[m] += (s.total || 0);
+            const d = getSaleDate(s);
+            if (d) {
+                const m = d.getMonth();
+                actualData[m] += getSaleTotal(s);
+            }
         });
 
         actualVsBudgetChartInstance = new Chart(ctx, {
@@ -3447,17 +3560,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderCurrentVsPastChart(currentSales, pastSales) {
+    function renderCurrentVsPastChart(olderYearTotal, pastYearTotal, currentYearTotal, currentYear) {
         const canvas = document.getElementById('currentVsPastChart');
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         if (currentVsPastChartInstance) currentVsPastChartInstance.destroy();
 
-        const currentYear = new Date().getFullYear();
-        const years = [currentYear - 2, currentYear - 1, currentYear];
-        const currentYearTotal = currentSales.reduce((sum, s) => sum + (s.total || 0), 0);
-        const pastYearTotal = pastSales.reduce((sum, s) => sum + (s.total || 0), 0);
-        const olderYearTotal = pastYearTotal * 0.8; // Simulated
+        const yearLabel = currentYear || new Date().getFullYear();
+        const years = [yearLabel - 2, yearLabel - 1, yearLabel];
 
         currentVsPastChartInstance = new Chart(ctx, {
             type: 'bar',
@@ -3487,26 +3597,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const productTotals = {};
         currentSales.forEach(s => {
-            const itemsList = Array.isArray(s.items) ? s.items : [];
-            itemsList.forEach(item => {
-                productTotals[item.name] = (productTotals[item.name] || 0) + (item.total || 0);
-            });
+            if (Array.isArray(s.items) && s.items.length > 0) {
+                s.items.forEach(item => {
+                    const name = item.name || item.productName || 'Unknown Product';
+                    const qty = parseFloat(item.actualQty || item.qty || item.quantity || 1);
+                    const price = parseFloat(item.price || item.unitPrice || 0);
+                    const total = parseFloat(item.total || (qty * price) || 0);
+                    productTotals[name] = (productTotals[name] || 0) + total;
+                });
+            } else if (s.product || s.productName) {
+                const name = s.product || s.productName;
+                const total = getSaleTotal(s);
+                productTotals[name] = (productTotals[name] || 0) + total;
+            }
         });
 
         const sortedProducts = Object.entries(productTotals)
             .sort((a, b) => b[1] - a[1])
             .slice(0, 6);
 
+        // Get budget/target value per product from inventory stock value
+        const budgetData = sortedProducts.map(([pName, actualVal]) => {
+            const found = inventory.find(inv => inv.name && inv.name.toLowerCase() === pName.toLowerCase());
+            if (found) {
+                const stockVal = parseFloat(found.stock || 0) * getProductPrice(found);
+                return Math.max(stockVal, actualVal * 1.1);
+            }
+            return actualVal * 1.2;
+        });
+
         productSalesChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: sortedProducts.map(p => p[0]),
-                datasets: [{
-                    label: 'Actual Sales',
-                    data: sortedProducts.map(p => p[1]),
-                    backgroundColor: '#3a7afe',
-                    borderRadius: 5
-                }]
+                datasets: [
+                    {
+                        label: 'Actual Sales',
+                        data: sortedProducts.map(p => p[1]),
+                        backgroundColor: '#3a7afe',
+                        borderRadius: 5
+                    },
+                    {
+                        label: 'Target / Stock Retail Budget',
+                        data: budgetData,
+                        backgroundColor: 'rgba(23, 199, 212, 0.5)',
+                        borderRadius: 5
+                    }
+                ]
             },
             options: {
                 responsive: true,
@@ -3591,35 +3728,146 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function fetchExpenses() {
+        // Render local/cached data immediately so the table is never blank
+        renderExpenses();
+
         const token = getAdminToken();
         if (!token) return;
+
         try {
             const res = await fetchWithTimeout(`${API_BASE}/expenses`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 const data = await res.json();
-                expenses = data.map(e => ({ ...e, id: e._id }));
-                localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
-                renderExpenses();
+                if (Array.isArray(data)) {
+                    const serverMapped = data.map(e => ({ ...e, id: e._id }));
+                    const serverIds = new Set(serverMapped.map(e => e.id));
+
+                    // Identify local items not yet stored in backend
+                    const unsynced = expenses.filter(e => !e.id || !serverIds.has(e.id));
+
+                    // Push unsynced local records to server
+                    for (const localExp of unsynced) {
+                        try {
+                            const postRes = await fetch(`${API_BASE}/expenses`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({
+                                    date: localExp.date,
+                                    code: localExp.code,
+                                    category: localExp.category,
+                                    description: localExp.description,
+                                    vendor: localExp.vendor,
+                                    paymentMethod: localExp.paymentMethod,
+                                    amount: localExp.amount,
+                                    status: localExp.status
+                                })
+                            });
+                            if (postRes.ok) {
+                                const saved = await postRes.json();
+                                localExp.id = saved._id;
+                                localExp._id = saved._id;
+                            }
+                        } catch (e) { /* keep local copy */ }
+                    }
+
+                    // Merge server data with local records without losing local entries
+                    if (serverMapped.length > 0) {
+                        const merged = [...serverMapped];
+                        unsynced.forEach(loc => {
+                            if (!merged.some(m => m.id === loc.id || (m.description === loc.description && m.date === loc.date && m.amount === loc.amount))) {
+                                merged.push(loc);
+                            }
+                        });
+                        expenses = merged;
+                    } else if (unsynced.length > 0) {
+                        expenses = unsynced;
+                    }
+
+                    localStorage.setItem('shayorsExpenses', JSON.stringify(expenses));
+                }
             }
-        } catch (err) { console.error("Fetch expenses failed:", err); }
+        } catch (err) {
+            console.error("Fetch expenses failed:", err);
+        } finally {
+            renderExpenses();
+        }
     }
 
     async function fetchCostAnalysis() {
+        // Render local/cached data immediately so the table is never blank
+        renderCostAnalysis();
+
         const token = getAdminToken();
         if (!token) return;
+
         try {
             const res = await fetchWithTimeout(`${API_BASE}/cost-analysis`, {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (res.ok) {
                 const data = await res.json();
-                costAnalysis = data.map(c => ({ ...c, id: c._id }));
-                localStorage.setItem('shayorsCostAnalysis', JSON.stringify(costAnalysis));
-                renderCostAnalysis();
+                if (Array.isArray(data)) {
+                    const serverMapped = data.map(c => ({ ...c, id: c._id }));
+                    const serverIds = new Set(serverMapped.map(c => c.id));
+
+                    const unsynced = costAnalysis.filter(c => !c.id || !serverIds.has(c.id));
+
+                    for (const localCost of unsynced) {
+                        try {
+                            const postRes = await fetch(`${API_BASE}/cost-analysis`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({
+                                    date: localCost.date,
+                                    productName: localCost.productName,
+                                    category: localCost.category,
+                                    size: localCost.size,
+                                    rawMaterials: localCost.rawMaterials,
+                                    container: localCost.container,
+                                    label: localCost.label,
+                                    seals: localCost.seals,
+                                    logistics: localCost.logistics,
+                                    totalInput: localCost.totalInput,
+                                    output: localCost.output,
+                                    costPrice: localCost.costPrice
+                                })
+                            });
+                            if (postRes.ok) {
+                                const saved = await postRes.json();
+                                localCost.id = saved._id;
+                                localCost._id = saved._id;
+                            }
+                        } catch (e) { /* keep local copy */ }
+                    }
+
+                    if (serverMapped.length > 0) {
+                        const merged = [...serverMapped];
+                        unsynced.forEach(loc => {
+                            if (!merged.some(m => m.id === loc.id || (m.productName === loc.productName && m.date === loc.date))) {
+                                merged.push(loc);
+                            }
+                        });
+                        costAnalysis = merged;
+                    } else if (unsynced.length > 0) {
+                        costAnalysis = unsynced;
+                    }
+
+                    localStorage.setItem('shayorsCostAnalysis', JSON.stringify(costAnalysis));
+                }
             }
-        } catch (err) { console.error("Fetch cost analysis failed:", err); }
+        } catch (err) {
+            console.error("Fetch cost analysis failed:", err);
+        } finally {
+            renderCostAnalysis();
+        }
     }
 
     const customerForm = document.getElementById('customerForm');
@@ -3660,14 +3908,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     await fetchCustomers();
                     customerForm.reset();
                     toggleCustomerForm();
-                    alert(id ? 'Customer updated' : 'Customer added');
+                    showToast(id ? 'Customer updated' : 'Customer added', 'success');
                 } else {
                     const errorData = await response.json();
-                    alert("Save failed: " + (errorData.message || response.statusText));
+                    showToast("Save failed: " + (errorData.message || response.statusText), "error");
                 }
             } catch (err) { 
                 console.error("Customer Save Error:", err);
-                alert("Save failed due to a network or connection error"); 
+                showToast("Save failed due to a network or connection error", "error"); 
             }
         });
     }
@@ -3863,11 +4111,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const data = await response.json();
-            alert(data.message);
+            showToast(data.message, 'info');
             await fetchStaff();
         } catch (error) {
             console.error("Resend all failed:", error);
-            alert("Failed to resend invitations.");
+            showToast("Failed to resend invitations.", "error");
         }
     };
 
@@ -3884,13 +4132,13 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const data = await response.json();
-            alert(data.message);
+            showToast(data.message, 'info');
             if (response.ok) {
                 await fetchStaff();
             }
         } catch (error) {
             console.error("Resend failed:", error);
-            alert("Failed to resend invitation.");
+            showToast("Failed to resend invitation.", "error");
         }
     };
 
@@ -3963,7 +4211,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     toggleRoleForm();
                 } else {
                     const data = await response.json();
-                    alert(data.message || "Failed to create role");
+                    showToast(data.message || "Failed to create role", "error");
                     roles.push(r);
                     localStorage.setItem('shayorsRoles', JSON.stringify(roles));
                     renderRoles();
@@ -4015,7 +4263,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const existingStaff = staff.find(s => s.email.toLowerCase() === email.toLowerCase());
             if (existingStaff) {
                 if (existingStaff.isActivated) {
-                    alert("This staff member is already active in the system.");
+                    showToast("This staff member is already active in the system.", "warning");
                     return;
                 } else {
                     if (confirm("This staff member has a pending invitation. Would you like to resend it?")) {
@@ -4038,7 +4286,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 const data = await response.json();
-                alert(data.message);
+                showToast(data.message, 'info');
                 
                 if (response.ok) {
                     // Refresh list from server
@@ -4048,7 +4296,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 console.error("Invite failed:", error);
-                alert("Failed to send invitation.");
+                showToast("Failed to send invitation.", "error");
             }
         });
     }
@@ -4068,7 +4316,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 if (!res.ok) {
                     const data = await res.json();
-                    alert(data.message || 'Failed to delete staff');
+                    showToast(data.message || "Failed to delete staff", "error");
                     // Rollback if failed
                     await fetchStaff();
                 }
@@ -4161,14 +4409,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         renderInventory();
                         adjustmentForm.reset();
                         toggleAdjustmentForm();
-                        alert('Stock adjusted and synced.');
+                        showToast("Stock adjusted and synced.", "success");
                     } else {
                         const err = await stockRes.json();
-                        alert(`Adjustment failed: ${err.message}`);
+                        showToast(`Adjustment failed: ${err.message}`, "error");
                     }
                 } catch (error) {
                     console.error("Adjustment sync failed:", error);
-                    alert("Could not connect to server.");
+                    showToast("Could not connect to server.", "error");
                 }
             }
         });
@@ -4432,7 +4680,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Category Management Functions
     async function fetchCategories() {
-        console.log("Fetching categories...");
         try {
             const response = await fetchWithTimeout(`${API_BASE}/categories`);
             if (response.ok) {
@@ -4441,7 +4688,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     categories = data;
                     localStorage.setItem('shayorsCategories', JSON.stringify(categories));
                 }
-                console.log("Categories loaded:", categories);
                 updateCategoryDropdowns();
                 renderCategoryManager();
             } else {
@@ -4486,7 +4732,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addCategory = async function() {
         const nameInput = document.getElementById('newCatName');
         const name = nameInput.value.trim();
-        if (!name) return alert("Please enter a category name");
+        if (!name) return showToast("Please enter a category name", "warning");
 
         // Try API first
         try {
@@ -4515,7 +4761,7 @@ document.addEventListener('DOMContentLoaded', () => {
         nameInput.value = '';
         updateCategoryDropdowns();
         renderCategoryManager();
-        alert("Category added locally (Will sync with server after redeploy)");
+        showToast("Category added locally", "info");
     };
 
     window.deleteCategory = async function(id) {
@@ -4543,13 +4789,12 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('shayorsCategories', JSON.stringify(categories));
         updateCategoryDropdowns();
         renderCategoryManager();
-        alert("Category removed locally");
+        showToast("Category removed locally", "info");
     };
 
     // --- SPA CATEGORY MANAGEMENT ---
 
     async function fetchSpaCategories() {
-        console.log("Fetching spa categories...");
         // For now, we use local storage as primary until backend support is added
         // but we structure it like fetchCategories for future sync
         updateSpaCategoryDropdowns();
@@ -4588,7 +4833,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addSpaCategory = function() {
         const nameInput = document.getElementById('newSpaCatName');
         const name = nameInput.value.trim();
-        if (!name) return alert("Please enter a category name");
+        if (!name) return showToast("Please enter a category name", "warning");
 
         const newCat = { name, _id: 'spa_' + Math.random().toString(36).substr(2, 9) };
         spaCategories.push(newCat);
@@ -4607,18 +4852,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function renderExpenseCategoriesManager() {
-        const manager = document.getElementById('expenseCategoriesManager');
         const expSelect = document.getElementById('expCategory');
         const costSelect = document.getElementById('costCategory');
-        if (!manager) return;
-
-        manager.innerHTML = expenseCategories.map(cat => `
-            <div class="cat-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem;">
-                <span>${cat.name}</span>
-                <button class="btn-text danger" onclick="deleteExpenseCategory('${cat._id}')" style="font-size: 0.8rem;">Delete</button>
-            </div>
-        `).join('') || '<p style="font-size: 0.8rem; color: #888; text-align: center;">No categories added</p>';
-
         const optionsHtml = '<option value="">Category...</option>' + 
             expenseCategories.map(cat => `<option value="${cat.name}">${cat.name}</option>`).join('');
 
@@ -4632,6 +4867,16 @@ document.addEventListener('DOMContentLoaded', () => {
             costSelect.innerHTML = optionsHtml;
             costSelect.value = currentVal;
         }
+
+        const manager = document.getElementById('expenseCategoriesManager');
+        if (!manager) return;
+
+        manager.innerHTML = expenseCategories.map(cat => `
+            <div class="cat-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid #eee; font-size: 0.9rem;">
+                <span>${cat.name}</span>
+                <button class="btn-text danger" onclick="deleteExpenseCategory('${cat._id}')" style="font-size: 0.8rem;">Delete</button>
+            </div>
+        `).join('') || '<p style="font-size: 0.8rem; color: #888; text-align: center;">No categories added</p>';
     }
 
     async function fetchExpenseCategories() {
@@ -4675,7 +4920,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addExpenseCategory = async function() {
         const nameInput = document.getElementById('newExpCatName');
         const name = nameInput.value.trim();
-        if (!name) return alert("Enter a category name");
+        if (!name) return showToast("Enter a category name", "warning");
 
         const token = getAdminToken();
         try {
@@ -4693,11 +4938,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 await fetchExpenseCategories();
             } else {
                 const err = await res.json();
-                alert(err.message || "Failed to add category");
+                showToast(err.message || "Failed to add category", "error");
             }
         } catch (err) {
             console.error("Add expense category error", err);
-            alert("An error occurred");
+            showToast("An error occurred", "error");
         }
     };
 
@@ -4720,11 +4965,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 await fetchExpenseCategories();
             } else {
                 const err = await res.json();
-                alert(err.message || "Failed to delete category");
+                showToast(err.message || "Failed to delete category", "error");
             }
         } catch (err) {
             console.error("Delete expense category error", err);
-            alert("An error occurred");
+            showToast("An error occurred", "error");
         }
     };
 
@@ -4775,7 +5020,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize
     init().then(() => {
         const urlParams = new URLSearchParams(window.location.search);
-        const moduleParam = urlParams.get('module');
+        const hashModule = window.location.hash ? window.location.hash.replace('#', '') : null;
+        const moduleParam = urlParams.get('module') || hashModule;
         if (moduleParam) {
             showModule(moduleParam);
         } else {

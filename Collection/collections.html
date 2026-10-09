@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="collections.css">
     <link rel="stylesheet" href="../cart.css">
     <link rel="shortcut icon" href="../Image/Shayor's Logo.png" type="image/x-icon">
-    
+    <script src="https://js.paystack.co/v1/inline.js"></script>
 </head>
 
 <body>
@@ -54,8 +54,29 @@
 
     <!-- Collections Header -->
     <header class="collections-header">
+        <div class="header-ambient-glow"></div>
+        <span class="hero-tag">✦ EXCLUSIVE BEAUTY CATALOG ✦</span>
         <h1 class="animate-on-scroll">Premium Collections</h1>
-        <p class="animate-on-scroll">Curated luxury for every skin type</p>
+        <p class="collections-subtitle animate-on-scroll">Mastercrafted botanical skincare, opulent fragrances & holistic wellness</p>
+        
+        <!-- Luxury Trust Badges -->
+        <div class="collections-trust-bar animate-on-scroll">
+            <span class="trust-badge">✦ 100% Authentic Botanicals</span>
+            <span class="trust-badge">★ 4.9/5 Client Satisfaction</span>
+            <span class="trust-badge">🌿 Cruelty Free & Organic</span>
+            <span class="trust-badge">⚡ Same-Day Dispatch</span>
+        </div>
+
+        <!-- Interactive Category Quick Filter Bar -->
+        <div class="category-filter-bar animate-on-scroll" id="categoryFilterBar">
+            <button type="button" class="filter-pill active" data-filter="All">✨ All Products</button>
+            <button type="button" class="filter-pill" data-filter="Skincare,Face cream,Body Lotion,Lotion">🌿 Skincare</button>
+            <button type="button" class="filter-pill" data-filter="Soap,Facesoap,Bar soap,Black soap,Scrub">🧼 Soaps & Scrubs</button>
+            <button type="button" class="filter-pill" data-filter="Serum,Oil,Tube">💧 Serums & Oils</button>
+            <button type="button" class="filter-pill" data-filter="Fragrance,Perfume oil,Body spray,Airfreshner">🌸 Fragrance</button>
+            <button type="button" class="filter-pill" data-filter="Supplements,Tea,Aphrodisiacs">💊 Supplements</button>
+            <button type="button" class="filter-pill" data-filter="Spa">🧖‍♀️ Spa & Salon</button>
+        </div>
     </header>
 
     <!-- 5 Horizontal Product Rows Container -->
@@ -156,14 +177,21 @@
             </div>
             <form id="checkoutForm">
                 <input type="text" id="checkCustName" placeholder="Your Full Name" required>
-                <input type="email" id="checkCustEmail" placeholder="Email Address" required>
+                <input type="email" id="checkCustEmail" placeholder="Email Address (for Receipt & Updates)" required>
                 <input type="text" id="checkCustPhone" placeholder="Phone Number" required>
                 <input type="text" id="checkCustAddress" placeholder="Shipping Address" required>
-                <select id="checkPaymentMethod" required>
-                    <option value="Bank Transfer">Bank Transfer</option>
+                
+                <label style="font-size: 0.85rem; color: #555; display: block; margin-top: 10px; margin-bottom: 4px; font-weight: bold;">Payment Method</label>
+                <select id="checkPaymentMethod" required onchange="togglePaymentMethodUI()">
+                    <option value="Paystack" selected>💳 Pay Online (Paystack - Card, Transfer, USSD)</option>
+                    <option value="Bank Transfer">🏦 Direct Bank Transfer (Upload Receipt)</option>
                 </select>
 
-                <div id="bankDetails" style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.6;">
+                <div id="paystackInfoNotice" style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 12px 14px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85rem; color: #166534;">
+                    <p style="margin: 0;">🔒 <strong>Secured by Paystack:</strong> Pay instantly using Debit Card, Bank Transfer, USSD, or QR code.</p>
+                </div>
+
+                <div id="bankDetails" style="display: none; background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.6;">
                     <p><strong>Payment Instructions:</strong></p>
                     <p>Please make payment to the account below and provide the receipt link or upload a file.</p>
                     <p><strong>Bank Name:</strong> Sterling</p>
@@ -171,8 +199,8 @@
                     <p><strong>Account Number:</strong> 0089883643</p>
                 </div>
 
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.85rem; color: #555; display: block; margin-bottom: 5px;">Receipt Link (URL) *</label>
+                <div id="receiptUploadSection" style="display: none; margin-bottom: 15px;">
+                    <label style="font-size: 0.85rem; color: #555; display: block; margin-bottom: 5px;">Receipt Link (URL)</label>
                     <input type="url" id="checkReceiptLink" placeholder="https://example.com/receipt.jpg">
                     <p style="font-size: 0.75rem; color: #888; margin-top: 5px;">OR Upload Receipt</p>
                     <input type="file" id="checkReceiptFile" accept="image/*,.pdf">
@@ -180,7 +208,7 @@
 
                 <textarea id="checkCustNote" placeholder="Additional Notes (Optional)"></textarea>
                 <div class="modal-actions">
-                    <button type="submit" class="btn primary">Complete Order</button>
+                    <button type="submit" id="checkoutSubmitBtn" class="btn primary">Pay with Paystack</button>
                     <button type="button" class="btn secondary" onclick="closeModal('checkoutModal')">Back to Cart</button>
                 </div>
             </form>

@@ -6,12 +6,14 @@
     <title>Shayors Cosmetics | Luxury for the Skin</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="cart.css">
     <link rel="shortcut icon" href="./Image/Shayor's Logo.png" type="image/x-icon">
+    <script src="https://js.paystack.co/v1/inline.js"></script>
+
 </head>
-<body>
+<body class="three-scene-active">
     <!-- Navigation -->
     <nav>
         <div class="logo">
@@ -51,18 +53,67 @@
             <span>Bar Soap</span>
             <span>Serum</span>
             <span>Scrub</span>
+            <span>Fragrance</span>
+            <span>Supplements</span>
         </div>
     </div>
 
-    <!-- Hero Section -->
+    <!-- Hero Section with Interactive 3D Product Stage -->
     <header class="hero">
-        <div class="hero-content animate-on-scroll">
-            <h1>Shayors Cosmetics</h1>
-            <p class="slogan">Luxury for the Skin. Signature for the Senses.</p>
-            <p class="description">Skincare, fragrance, supplements, and spa experiences designed to elevate your beauty and self-care routine.</p>
-            <div class="hero-btns">
-                <a href="./Collection/collections.html" class="btn primary">Shop Now</a>
-                <a href="./Collection/collections.html" class="btn secondary">Explore Collections</a>
+        <div class="hero-split-container">
+            <!-- Left Column: Editorial Brand Headline -->
+            <div class="hero-text-col animate-on-scroll">
+                <span class="hero-tag">✦ PURE LUXURY & BOTANICAL WELLNESS ✦</span>
+                <h1>Shayors Cosmetics</h1>
+                <p class="slogan">Luxury for the Skin. Signature for the Senses.</p>
+                <p class="description">Masterfully formulated skincare, bespoke oriental fragrances, and revitalizing wellness therapies designed to elevate your personal radiance and self-care routine.</p>
+                <div class="hero-btns">
+                    <a href="./Collection/collections.html" class="btn primary">Shop All Collections</a>
+                    <a href="#bestsellers" class="btn secondary">View Bestsellers</a>
+                </div>
+                <div class="hero-trust-bar">
+                    <div class="hero-trust-item"><span class="icon">★</span> 4.9/5 Rating</div>
+                    <div class="hero-trust-item"><span class="icon">✦</span> 100% Organic Extracts</div>
+                    <div class="hero-trust-item"><span class="icon">🌿</span> Cruelty Free</div>
+                </div>
+            </div>
+
+            <!-- Right Column: Interactive 3D Product Stage -->
+            <div class="hero-3d-stage animate-on-scroll">
+                <div class="product-3d-card-wrap" id="hero3dCardWrap">
+                    <div class="product-3d-card" id="hero3dCard">
+                        <div class="card-aura-glow"></div>
+                        <span class="floating-pill-badge-left" id="heroProdCat">Pure Botanical</span>
+                        <span class="floating-pill-badge" id="heroProdBadge">BESTSELLER</span>
+                        
+                        <div class="product-3d-img-container">
+                            <img id="heroProdImg" src="./Image/WhatsApp2.jpeg" alt="Royal Glow Face Cream">
+                        </div>
+
+                        <div class="product-3d-info">
+                            <span class="cat-tag" id="heroProdSub">Restorative Skincare</span>
+                            <h3 id="heroProdName">Royal Glow Face Cream</h3>
+                            <p class="prod-desc" id="heroProdDesc">Formulated with rare botanical oils and plant peptides to restore luminous cellular hydration.</p>
+                            
+                            <div class="product-3d-price-row">
+                                <div class="price" id="heroProdPrice">₦15,000</div>
+                                <button type="button" class="btn primary" id="heroAddToCartBtn" onclick="handleHeroAddToCart()">+ Add to Cart</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3D Showcase Switcher Controls -->
+                <div class="showcase-controls">
+                    <button type="button" class="showcase-nav-btn" id="heroPrevBtn" aria-label="Previous Product">‹</button>
+                    <div class="showcase-dots" id="heroDots">
+                        <span class="showcase-dot active" data-index="0"></span>
+                        <span class="showcase-dot" data-index="1"></span>
+                        <span class="showcase-dot" data-index="2"></span>
+                        <span class="showcase-dot" data-index="3"></span>
+                    </div>
+                    <button type="button" class="showcase-nav-btn" id="heroNextBtn" aria-label="Next Product">›</button>
+                </div>
             </div>
         </div>
     </header>
@@ -101,31 +152,108 @@
         </div>
     </section>
 
-    <!-- Bestsellers -->
+    <!-- Bestsellers Section with 3D Product Cards -->
     <section id="bestsellers" class="bestsellers">
-        <div class="container animate-on-scroll">
-            <h2>Bestsellers</h2>
-            <p>Our most-loved products, trusted for quality, results, and luxury appeal.</p>
-            <a href="./Collection/collections.html" class="btn primary">Shop Bestsellers</a>
+        <h2 class="section-title animate-on-scroll">Our Bestsellers</h2>
+        <p style="color: #9eccb3; max-width: 620px; margin: 0 auto 30px auto;" class="animate-on-scroll">Trusted favorites crafted with pure botanical essences for unmatched results and prestige.</p>
+        
+        <div class="bestsellers-grid">
+            <!-- Card 1 -->
+            <div class="bestseller-3d-card animate-on-scroll">
+                <div class="bestseller-img-box">
+                    <img src="./Image/WhatsApp2.jpeg" alt="Royal Glow Face Cream">
+                    <span class="bestseller-badge">★ TOP PICK</span>
+                </div>
+                <div class="bestseller-rating">★★★★★ (5.0)</div>
+                <h3 class="bestseller-title">Royal Glow Face Cream</h3>
+                <p class="bestseller-desc">Restorative day & night youth balm with bio-active peptides and gold essence.</p>
+                <div class="bestseller-footer">
+                    <span class="bestseller-price">₦15,000</span>
+                    <button class="bestseller-add-btn" onclick="addToCart('prod-best-1', 'Royal Glow Face Cream', 15000, './Image/WhatsApp2.jpeg')">+ Cart</button>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="bestseller-3d-card animate-on-scroll">
+                <div class="bestseller-img-box">
+                    <img src="./Image/WhatsApp4.jpeg" alt="Radiance Botanical Soap">
+                    <span class="bestseller-badge">ORGANIC</span>
+                </div>
+                <div class="bestseller-rating">★★★★★ (4.9)</div>
+                <h3 class="bestseller-title">Radiance Botanical Soap</h3>
+                <p class="bestseller-desc">Gentle cleansing herbal bar with turmeric, honey, and raw shea butter.</p>
+                <div class="bestseller-footer">
+                    <span class="bestseller-price">₦6,500</span>
+                    <button class="bestseller-add-btn" onclick="addToCart('prod-best-2', 'Radiance Botanical Soap', 6500, './Image/WhatsApp4.jpeg')">+ Cart</button>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="bestseller-3d-card animate-on-scroll">
+                <div class="bestseller-img-box">
+                    <img src="./Image/WhatsApp6.jpeg" alt="Luxury Oud & Rose">
+                    <span class="bestseller-badge">SIGNATURE</span>
+                </div>
+                <div class="bestseller-rating">★★★★★ (5.0)</div>
+                <h3 class="bestseller-title">Luxury Oud & Rose</h3>
+                <p class="bestseller-desc">Opulent oriental parfum combining rare Cambodian agarwood and damask rose.</p>
+                <div class="bestseller-footer">
+                    <span class="bestseller-price">₦28,000</span>
+                    <button class="bestseller-add-btn" onclick="addToCart('prod-best-3', 'Luxury Oud & Rose', 28000, './Image/WhatsApp6.jpeg')">+ Cart</button>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="bestseller-3d-card animate-on-scroll">
+                <div class="bestseller-img-box">
+                    <img src="./Image/WhatsApp8.jpeg" alt="Skin Renewal Exfoliating Scrub">
+                    <span class="bestseller-badge">RENEWAL</span>
+                </div>
+                <div class="bestseller-rating">★★★★★ (4.8)</div>
+                <h3 class="bestseller-title">Skin Renewal Scrub</h3>
+                <p class="bestseller-desc">Dead skin buffing formula infused with botanical oils for instant silken touch.</p>
+                <div class="bestseller-footer">
+                    <span class="bestseller-price">₦11,500</span>
+                    <button class="bestseller-add-btn" onclick="addToCart('prod-best-4', 'Skin Renewal Scrub', 11500, './Image/WhatsApp8.jpeg')">+ Cart</button>
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-top: 45px;" class="animate-on-scroll">
+            <a href="./Collection/collections.html" class="btn secondary">View Full Catalog</a>
         </div>
     </section>
 
-    <!-- New & Limited -->
+    <!-- New & Limited Edition Spotlight -->
     <section class="new-limited">
-        <div class="container1 animate-on-scroll">
-            <h2>New & Limited</h2>
-            <p>Discover new arrivals and exclusive limited editions.</p>
-            <a href="./Collection/collections.html" class="btn primary">Explore New</a>
+        <div class="limited-spotlight-card animate-on-scroll">
+            <div class="limited-spotlight-img">
+                <img src="./Image/WhatsApp10.jpeg" alt="VIP Limited Edition Royale Set">
+            </div>
+            <div class="limited-spotlight-content">
+                <span class="tag">Exquisite Seasonal Batch</span>
+                <h3>VIP Limited Royale Set</h3>
+                <p>An elite, handcrafted curation of our most prized skin elixir and velvet night concentrate. Infused with 24K gold flakes, pure botanical squalane, and rare moroccan neroli essence.</p>
+                <div class="limited-features">
+                    <span class="feature-pill">✦ Only 50 Sets Crafted</span>
+                    <span class="feature-pill">✦ Serialized Gold Seal</span>
+                    <span class="feature-pill">✦ Hand-Blended</span>
+                </div>
+                <div class="limited-price-action">
+                    <span class="limited-price">₦45,000</span>
+                    <button class="btn primary" onclick="addToCart('prod-lim-1', 'VIP Limited Royale Set', 45000, './Image/WhatsApp10.jpeg')">Claim Limited Edition</button>
+                </div>
+            </div>
         </div>
     </section>
 
     <!-- Testimonials -->
     <section class="testimonials">
-        <h2 class="animate-on-scroll">Loved by Our Clients</h2>
+        <h2 class="section-title animate-on-scroll">Loved by Our Clients</h2>
         <div class="testimonial-list">
-            <div class="testimonial-item animate-on-scroll">⭐ “My skin glows like never before.”</div>
-            <div class="testimonial-item animate-on-scroll">⭐ “The perfumes are unforgettable.”</div>
-            <div class="testimonial-item animate-on-scroll">⭐ “Pure luxury and relaxation.”</div>
+            <div class="testimonial-item animate-on-scroll">⭐ “My skin glows like never before. The Royal Glow Face Cream changed my routine completely!”</div>
+            <div class="testimonial-item animate-on-scroll">⭐ “The Luxury Oud is unforgettable. Everyone asks what fragrance I'm wearing.”</div>
+            <div class="testimonial-item animate-on-scroll">⭐ “Pure luxury, authentic botanical ingredients, and top-tier customer care.”</div>
         </div>
     </section>
 
@@ -133,7 +261,7 @@
     <section id="community" class="community">
         <div class="container3 animate-on-scroll">
             <h2>Join the Shayors Community</h2>
-            <p>Get early access to launches, offers, and beauty tips.</p>
+            <p>Get early access to exclusive launches, VIP offers, and luxury beauty tips.</p>
             <form class="newsletter-form">
                 <input type="email" placeholder="Enter your email" required>
                 <button type="submit" class="btn primary">Sign Up</button>
@@ -149,7 +277,7 @@
                 <p>Shortcuts to beauty success</p>
             </div>
             <div class="footer-bottom">
-                <p>Shayors Cosmetics &copy; 2026. All rights reserved. | <a href="./Inventory/inventory.html" style="color: rgba(85, 85, 85, 0.11); text-decoration: line-through; font-size: 0.7rem;">Admin Login</a></p>
+                <p>Shayors Cosmetics &copy; 2026. All rights reserved. | <a href="./Inventory/inventory.html" style="color: rgba(120, 255, 185, 0); text-decoration: none; font-size: 0.72rem;">Admin Login</a></p>
             </div>
         </div>
     </footer>
@@ -182,14 +310,21 @@
             </div>
             <form id="checkoutForm">
                 <input type="text" id="checkCustName" placeholder="Your Full Name" required>
-                <input type="email" id="checkCustEmail" placeholder="Email Address" required>
+                <input type="email" id="checkCustEmail" placeholder="Email Address (for Receipt & Updates)" required>
                 <input type="text" id="checkCustPhone" placeholder="Phone Number" required>
                 <input type="text" id="checkCustAddress" placeholder="Shipping Address" required>
-                <select id="checkPaymentMethod" required>
-                    <option value="Bank Transfer">Bank Transfer</option>
+                
+                <label style="font-size: 0.85rem; color: #a3cbb5; display: block; margin-top: 10px; margin-bottom: 4px; font-weight: bold;">Payment Method</label>
+                <select id="checkPaymentMethod" required onchange="togglePaymentMethodUI()">
+                    <option value="Paystack" selected>💳 Pay Online (Paystack - Card, Transfer, USSD)</option>
+                    <option value="Bank Transfer">🏦 Direct Bank Transfer (Upload Receipt)</option>
                 </select>
 
-                <div id="bankDetails" style="background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.6;">
+                <div id="paystackInfoNotice" style="background: rgba(16, 185, 129, 0.15); border-left: 4px solid #10b981; padding: 12px 14px; border-radius: 6px; margin-bottom: 15px; font-size: 0.85rem; color: #a7f3d0;">
+                    <p style="margin: 0;">🔒 <strong>Secured by Paystack:</strong> Pay instantly using Debit Card, Bank Transfer, USSD, or QR code.</p>
+                </div>
+
+                <div id="bankDetails" style="display: none; background: rgba(255, 255, 255, 0.05); padding: 15px; border-radius: 8px; margin-bottom: 15px; font-size: 0.9rem; line-height: 1.6; color: #e5f9ef;">
                     <p><strong>Payment Instructions:</strong></p>
                     <p>Please make payment to the account below and provide the receipt link or upload a file.</p>
                     <p><strong>Bank Name:</strong> Sterling</p>
@@ -197,8 +332,8 @@
                     <p><strong>Account Number:</strong> 0089883643</p>
                 </div>
 
-                <div style="margin-bottom: 15px;">
-                    <label style="font-size: 0.85rem; color: #555; display: block; margin-bottom: 5px;">Receipt Link (URL) *</label>
+                <div id="receiptUploadSection" style="display: none; margin-bottom: 15px;">
+                    <label style="font-size: 0.85rem; color: #a3cbb5; display: block; margin-bottom: 5px;">Receipt Link (URL)</label>
                     <input type="url" id="checkReceiptLink" placeholder="https://example.com/receipt.jpg">
                     <p style="font-size: 0.75rem; color: #888; margin-top: 5px;">OR Upload Receipt</p>
                     <input type="file" id="checkReceiptFile" accept="image/*,.pdf">
@@ -206,13 +341,176 @@
 
                 <textarea id="checkCustNote" placeholder="Additional Notes (Optional)"></textarea>
                 <div class="modal-actions">
-                    <button type="submit" class="btn primary">Complete Order</button>
+                    <button type="submit" id="checkoutSubmitBtn" class="btn primary">Pay with Paystack</button>
                     <button type="button" class="btn secondary" onclick="closeModal('checkoutModal')">Back to Cart</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Core App Logic -->
     <script src="script.js"></script>
+
+    <!-- Interactive 3D Hero Product Stage Controller -->
+    <script>
+        /* ==========================================================================
+           Interactive 3D Hero Product Stage Controller
+           ========================================================================== */
+        const heroProducts = [
+            {
+                id: 'prod-hero-1',
+                name: 'Royal Glow Face Cream',
+                badge: 'BESTSELLER',
+                category: 'Pure Botanical',
+                sub: 'Restorative Skincare',
+                price: 15000,
+                image: './Image/WhatsApp2.jpeg',
+                desc: 'Formulated with rare botanical oils and plant peptides to restore luminous cellular hydration.'
+            },
+            {
+                id: 'prod-hero-2',
+                name: 'Radiance Botanical Soap',
+                badge: 'ORGANIC FAVORITE',
+                category: 'Herbal Essence',
+                sub: 'Gentle Cleansing Therapy',
+                price: 6500,
+                image: './Image/WhatsApp4.jpeg',
+                desc: 'Infused with organic honey, raw turmeric, and shea butter for a crystal-clear, radiant skin glow.'
+            },
+            {
+                id: 'prod-hero-3',
+                name: 'Luxury Oud & Rose',
+                badge: 'EXCLUSIVE PARFUM',
+                category: 'Signature Scent',
+                sub: 'Haute Parfumerie',
+                price: 28000,
+                image: './Image/WhatsApp6.jpeg',
+                desc: 'Opulent oriental harmony combining rare Cambodian agarwood with velvety Damask rose and amber.'
+            },
+            {
+                id: 'prod-hero-4',
+                name: 'Skin Renewal Scrub',
+                badge: 'REVITALIZING',
+                category: 'Exfoliation Therapy',
+                sub: 'Velvet Body Treatment',
+                price: 11500,
+                image: './Image/WhatsApp8.jpeg',
+                desc: 'Micro-polishing botanical crystals that gently buff away dead cells to reveal baby-soft, supple skin.'
+            }
+        ];
+
+        let currentHeroIdx = 0;
+        let isTransitioning = false;
+        let autoRotateTimer = null;
+
+        const cardWrap = document.getElementById('hero3dCardWrap');
+        const cardEl = document.getElementById('hero3dCard');
+        const imgEl = document.getElementById('heroProdImg');
+        const nameEl = document.getElementById('heroProdName');
+        const badgeEl = document.getElementById('heroProdBadge');
+        const catEl = document.getElementById('heroProdCat');
+        const subEl = document.getElementById('heroProdSub');
+        const descEl = document.getElementById('heroProdDesc');
+        const priceEl = document.getElementById('heroProdPrice');
+        const dots = document.querySelectorAll('.showcase-dot');
+
+        function updateHeroProduct(idx, direction = 1) {
+            if (isTransitioning) return;
+            isTransitioning = true;
+            currentHeroIdx = idx;
+
+            // Update dots
+            dots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentHeroIdx);
+            });
+
+            // 3D transition animation
+            cardWrap.style.transition = 'transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease';
+            cardWrap.style.opacity = '0.3';
+            cardWrap.style.transform = `perspective(1000px) rotateY(${direction * 35}deg) scale(0.92)`;
+
+            setTimeout(() => {
+                const p = heroProducts[currentHeroIdx];
+                imgEl.src = p.image;
+                imgEl.alt = p.name;
+                nameEl.innerText = p.name;
+                badgeEl.innerText = p.badge;
+                catEl.innerText = p.category;
+                subEl.innerText = p.sub;
+                descEl.innerText = p.desc;
+                priceEl.innerText = `₦${p.price.toLocaleString()}`;
+
+                cardWrap.style.transform = `perspective(1000px) rotateY(${-direction * 15}deg) scale(0.98)`;
+                cardWrap.style.opacity = '1';
+
+                setTimeout(() => {
+                    cardWrap.style.transform = 'perspective(1000px) rotateY(0deg) scale(1)';
+                    setTimeout(() => {
+                        cardWrap.style.transition = 'transform 0.15s ease-out';
+                        isTransitioning = false;
+                    }, 200);
+                }, 150);
+            }, 250);
+        }
+
+        // Global Add-To-Cart function for hero product
+        window.handleHeroAddToCart = function() {
+            const p = heroProducts[currentHeroIdx];
+            if (window.addToCart) {
+                window.addToCart(p.id, p.name, p.price, p.image);
+            }
+        };
+
+        // Navigation controls
+        document.getElementById('heroPrevBtn')?.addEventListener('click', () => {
+            resetAutoTimer();
+            const nextIdx = (currentHeroIdx - 1 + heroProducts.length) % heroProducts.length;
+            updateHeroProduct(nextIdx, -1);
+        });
+
+        document.getElementById('heroNextBtn')?.addEventListener('click', () => {
+            resetAutoTimer();
+            const nextIdx = (currentHeroIdx + 1) % heroProducts.length;
+            updateHeroProduct(nextIdx, 1);
+        });
+
+        dots.forEach((dot, i) => {
+            dot.addEventListener('click', () => {
+                if (i !== currentHeroIdx) {
+                    resetAutoTimer();
+                    const dir = i > currentHeroIdx ? 1 : -1;
+                    updateHeroProduct(i, dir);
+                }
+            });
+        });
+
+        // Mouse tilt effect on the 3D card
+        if (cardWrap) {
+            cardWrap.addEventListener('mousemove', (e) => {
+                if (isTransitioning) return;
+                const rect = cardWrap.getBoundingClientRect();
+                const x = e.clientX - rect.left - rect.width / 2;
+                const y = e.clientY - rect.top - rect.height / 2;
+                const tiltX = -(y / (rect.height / 2)) * 14;
+                const tiltY = (x / (rect.width / 2)) * 14;
+                cardWrap.style.transform = `perspective(1000px) rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg) translateY(-8px)`;
+            });
+
+            cardWrap.addEventListener('mouseleave', () => {
+                if (isTransitioning) return;
+                cardWrap.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px)';
+            });
+        }
+
+        function resetAutoTimer() {
+            clearInterval(autoRotateTimer);
+            autoRotateTimer = setInterval(() => {
+                const nextIdx = (currentHeroIdx + 1) % heroProducts.length;
+                updateHeroProduct(nextIdx, 1);
+            }, 6500);
+        }
+
+        resetAutoTimer();
+    </script>
 </body>
 </html>

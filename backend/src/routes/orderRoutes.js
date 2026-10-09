@@ -8,11 +8,15 @@ const {
   getOrderById,
   updateOrderStatus,
   deleteOrder,
-  getDashboardSummary
+  getDashboardSummary,
+  getPaystackKey,
+  verifyPaystackPayment
 } = require('../controllers/orderController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.post('/', upload.single('receipt'), createOrder);
+router.get('/paystack/key', getPaystackKey);
+router.post('/paystack/verify', verifyPaystackPayment);
 router.get('/', protect, getOrders);
 router.get('/dashboard/summary', protect, getDashboardSummary);
 router.get('/:id', protect, getOrderById);
