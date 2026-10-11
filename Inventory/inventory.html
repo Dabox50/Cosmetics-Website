@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="inventory.css">
+    <link rel="stylesheet" href="inventory.css?v=receipt-fix-final">
     <link rel="stylesheet" href="../cart.css">
     <link rel="shortcut icon" href="../Image/Shayor's Logo.png" type="image/x-icon">
     <script src="https://unpkg.com/html5-qrcode"></script>
@@ -517,8 +517,8 @@
                                             <input type="number" id="saleDiscountPercent" placeholder="0.00" step="0.01" value="0.00" oninput="updateSaleTotal()">
                                         </div>
                                         <div class="input-group">
-                                            <label>Charges (%)</label>
-                                            <input type="number" id="saleChargesPercent" placeholder="0.00" step="0.01" value="0.00" oninput="updateSaleTotal()">
+                                            <label>Charges (₦)</label>
+                                            <input type="number" id="saleChargesAmount" placeholder="0.00" min="0" step="0.01" value="0.00" oninput="updateSaleTotal()">
                                         </div>
                                     </div>
                                 </div>
@@ -1245,6 +1245,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="../script.js"></script>
-    <script src="inventory.js"></script>
+    <script src="inventory.js?v=receipt-fix-final-v2"></script>
 </body>
 </html>

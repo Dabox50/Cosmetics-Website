@@ -477,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- SALES PRODUCT SEARCH LOGIC ---
     const saleProductSearch = document.getElementById('saleProductSearch');
     const saleDiscountInput = document.getElementById('saleDiscountPercent');
-    const saleChargesInput = document.getElementById('saleChargesPercent');
+    const saleChargesInput = document.getElementById('saleChargesAmount');
     
     if (saleDiscountInput) {
         saleDiscountInput.addEventListener('input', updateSaleTotal);
@@ -1095,24 +1095,149 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.printReceipt = function() {
-        document.body.classList.add('printing-receipt');
-        window.print();
-        window.addEventListener('afterprint', function handler() {
-            document.body.classList.remove('printing-receipt');
-            window.removeEventListener('afterprint', handler);
-        });
+        const receiptArea = document.getElementById('receiptPrintArea');
+        if (!receiptArea) {
+            window.print();
+            return;
+        }
+
+        // Clean up any old iframe
+        const existingFrame = document.getElementById('receiptPrintFrame');
+        if (existingFrame) existingFrame.remove();
+
+        // Create invisible iframe dedicated to receipt printing
+        const iframe = document.createElement('iframe');
+        iframe.id = 'receiptPrintFrame';
+        iframe.setAttribute('style', 'position:fixed;top:-9999px;left:-9999px;width:80mm;height:0;border:0;visibility:hidden;');
+        document.body.appendChild(iframe);
+
+        const receiptHTML = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt - Shayors Cosmetics</title>
+    <style>
+        @page {
+            size: 80mm auto;
+            margin: 0;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        html, body {
+            width: 100%;
+            margin: 0;
+            padding: 0;
+            background: #fff;
+            color: #000;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            line-height: 1.35;
+        }
+        .receipt-container {
+            width: 72mm;
+            max-width: 95%;
+            margin: 0 auto;
+            padding: 4mm 2mm;
+        }
+        .receipt-header {
+            text-align: center;
+            margin-bottom: 6px;
+        }
+        .receipt-header h2 {
+            font-size: 15px;
+            font-weight: bold;
+            font-family: Georgia, serif;
+            margin-bottom: 3px;
+            color: #000;
+        }
+        .receipt-header p {
+            font-size: 10px;
+            margin: 1px 0;
+            color: #222;
+        }
+        hr {
+            border: 0;
+            border-top: 1px dashed #000;
+            margin: 5px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            margin: 5px 0;
+        }
+        th {
+            border-bottom: 1px dashed #000;
+            font-size: 10px;
+            padding: 2px 1px;
+            text-align: left;
+            font-weight: bold;
+        }
+        td {
+            font-size: 10px;
+            padding: 2px 1px;
+            vertical-align: top;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+        th:nth-child(1), td:nth-child(1) { width: 44%; text-align: left; }
+        th:nth-child(2), td:nth-child(2) { width: 12%; text-align: center; }
+        th:nth-child(3), td:nth-child(3) { width: 22%; text-align: right; }
+        th:nth-child(4), td:nth-child(4) { width: 22%; text-align: right; }
+        .receipt-summary {
+            text-align: right;
+            margin: 5px 0;
+            font-size: 10px;
+        }
+        .receipt-summary p {
+            margin: 2px 0;
+        }
+        .receipt-summary strong {
+            font-size: 11px;
+        }
+        .receipt-footer {
+            margin-top: 8px;
+            text-align: center;
+            font-style: italic;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        ${receiptArea.innerHTML}
+    </div>
+</body>
+</html>`;
+
+        const frameDoc = iframe.contentWindow || iframe.contentDocument;
+        const targetDoc = frameDoc.document || frameDoc;
+        targetDoc.open();
+        targetDoc.write(receiptHTML);
+        targetDoc.close();
+
+        setTimeout(() => {
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } catch (err) {
+                console.error("Iframe print error, falling back to window.print:", err);
+                document.body.classList.add('printing-receipt');
+                window.print();
+                document.body.classList.remove('printing-receipt');
+            }
+        }, 250);
     };
 
     window.printReceiptDirectly = function(sale) {
         showReceipt(sale);
-        setTimeout(() => {
-            document.body.classList.add('printing-receipt');
-            window.print();
-            window.addEventListener('afterprint', function handler() {
-                document.body.classList.remove('printing-receipt');
-                window.removeEventListener('afterprint', handler);
-            });
-        }, 500);
+        // Small delay so the receipt DOM renders before print fires
+        setTimeout(() => window.printReceipt(), 300);
     };
 
     window.printInvoiceDirectly = function(id) {
@@ -2524,7 +2649,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('saleCustomerContact').value = '';
             document.getElementById('saleNote').value = '';
             document.getElementById('saleDiscountPercent').value = '0.00';
-            document.getElementById('saleChargesPercent').value = '0.00';
+            document.getElementById('saleChargesAmount').value = '0.00';
             document.getElementById('saleAmountPaid').value = '';
             document.getElementById('saleProduct').value = '';
             document.getElementById('saleProductSearch').value = '';
@@ -2605,10 +2730,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const subtotal = currentSaleItems.reduce((sum, item) => sum + item.total, 0);
         
         const discountPercent = parseFloat(document.getElementById('saleDiscountPercent').value) || 0;
-        const chargesPercent = parseFloat(document.getElementById('saleChargesPercent').value) || 0;
+        const chargesAmount = Math.max(0, parseFloat(document.getElementById('saleChargesAmount').value) || 0);
         
         const discountAmount = (subtotal * discountPercent) / 100;
-        const chargesAmount = (subtotal * chargesPercent) / 100;
         
         const grandTotal = subtotal + chargesAmount - discountAmount;
         
@@ -2637,14 +2761,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const note = document.getElementById('saleNote').value;
         
         const discountPercent = parseFloat(document.getElementById('saleDiscountPercent').value) || 0;
-        const chargesPercent = parseFloat(document.getElementById('saleChargesPercent').value) || 0;
+        const chargesAmount = Math.max(0, parseFloat(document.getElementById('saleChargesAmount').value) || 0);
         
         let subtotal = currentSaleItems.reduce((sum, item) => sum + item.total, 0);
         let totalUnits = currentSaleItems.reduce((sum, item) => sum + (item.qty || 0), 0);
         const grandTotal = updateSaleTotal();
         
         const discountAmount = (subtotal * discountPercent) / 100;
-        const chargesAmount = (subtotal * chargesPercent) / 100;
 
         const orderData = {
             customerName,
@@ -2665,7 +2788,7 @@ document.addEventListener('DOMContentLoaded', () => {
             platform: platform || 'In-Store',
             charges: [
                 { name: 'Discount', value: discountPercent, type: 'percent', isDiscount: true },
-                { name: 'Charges', value: chargesPercent, type: 'percent' }
+                { name: 'Charges', value: chargesAmount, type: 'fixed' }
             ],
             notes: note
         };
