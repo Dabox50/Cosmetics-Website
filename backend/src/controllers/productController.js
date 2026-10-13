@@ -1,4 +1,7 @@
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
+const Sale = require('../models/Sale');
+const Order = require('../models/Order');
 
 // @desc    Get all products
 // @route   GET /api/products
@@ -12,6 +15,49 @@ const getProducts = async (req, res, next) => {
       .select('-description -howToUse -ingredients -reviews')
       .lean();
     res.json(products);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getBestSellingProducts = async (req, res, next) => {
+  try {
+    const [saleTotals, orderTotals] = await Promise.all([
+      Sale.aggregate([
+        { $match: { paymentStatus: 'paid' } },
+        { $unwind: '$items' },
+        { $group: { _id: '$items.product', unitsSold: { $sum: '$items.quantity' } } }
+      ]),
+      Order.aggregate([
+        { $match: { paymentStatus: 'paid', orderStatus: { $ne: 'cancelled' } } },
+        { $unwind: '$items' },
+        { $group: { _id: '$items.productId', unitsSold: { $sum: '$items.quantity' } } }
+      ])
+    ]);
+
+    const unitsSoldByProduct = new Map();
+    [...saleTotals, ...orderTotals].forEach(({ _id, unitsSold }) => {
+      const productId = String(_id);
+      unitsSoldByProduct.set(productId, (unitsSoldByProduct.get(productId) || 0) + unitsSold);
+    });
+
+    const productIds = [...unitsSoldByProduct.keys()]
+      .filter(productId => mongoose.Types.ObjectId.isValid(productId));
+    if (productIds.length === 0) return res.json([]);
+
+    const products = await Product.find({ _id: { $in: productIds }, stock: { $gt: 0 } })
+      .select('-ingredients -reviews')
+      .lean();
+
+    const bestsellers = products
+      .map(product => ({
+        ...product,
+        unitsSold: unitsSoldByProduct.get(String(product._id)) || 0
+      }))
+      .sort((a, b) => b.unitsSold - a.unitsSold)
+      .slice(0, 4);
+
+    res.json(bestsellers);
   } catch (error) {
     next(error);
   }
@@ -113,6 +159,7 @@ const getProductByBarcode = async (req, res, next) => {
 
 module.exports = {
   getProducts,
+  getBestSellingProducts,
   getProductById,
   getProductByBarcode,
   createProduct,

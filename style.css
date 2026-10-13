@@ -1527,7 +1527,7 @@ body.three-scene-active .section-title::after {
 }
 
 .limited-spotlight-card::before {
-    content: "✦ LIMITED ROYALE ✦";
+    content: "✦ LIMITED EDITION ✦";
     position: absolute;
     top: 24px;
     right: 30px;

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   getProducts,
+  getBestSellingProducts,
   getProductById,
   getProductByBarcode,
   createProduct,
@@ -12,6 +13,7 @@ const {
 const { protect } = require('../middleware/authMiddleware');
 
 router.get('/', getProducts);
+router.get('/bestsellers', getBestSellingProducts);
 router.get('/barcode/:barcode', getProductByBarcode);
 router.get('/:id', getProductById);
 router.post('/:id/reviews', createProductReview);

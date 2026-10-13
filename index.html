@@ -63,18 +63,18 @@
         <div class="hero-split-container">
             <!-- Left Column: Editorial Brand Headline -->
             <div class="hero-text-col animate-on-scroll">
-                <span class="hero-tag">✦ PURE LUXURY & BOTANICAL WELLNESS ✦</span>
+                <span class="hero-tag">✦ BEAUTY. SCENT. WELLNESS. REFINED. ✦</span>
                 <h1>Shayors Cosmetics</h1>
-                <p class="slogan">Luxury for the Skin. Signature for the Senses.</p>
-                <p class="description">Masterfully formulated skincare, bespoke oriental fragrances, and revitalizing wellness therapies designed to elevate your personal radiance and self-care routine.</p>
+                <p class="slogan">Affordable Luxury for Skin. Signature Scents for the Senses.</p>
+                <p class="description">Discover the art of elevated beauty with dermatologist tested skincare, captivating oriental fragrances, and rejuvenating spa therapies. At Shayors, we bring together beauty, indulgence, and self-care to help you look radiant, smell unforgettable, and feel your absolute best.</p>
                 <div class="hero-btns">
                     <a href="./Collection/collections.html" class="btn primary">Shop All Collections</a>
                     <a href="#bestsellers" class="btn secondary">View Bestsellers</a>
                 </div>
                 <div class="hero-trust-bar">
                     <div class="hero-trust-item"><span class="icon">★</span> 4.9/5 Rating</div>
-                    <div class="hero-trust-item"><span class="icon">✦</span> 100% Organic Extracts</div>
-                    <div class="hero-trust-item"><span class="icon">🌿</span> Cruelty Free</div>
+                    <div class="hero-trust-item"><span class="icon">✦</span> 100% Organic</div>
+                    <div class="hero-trust-item"><span class="icon">🌿</span> Well Refined</div>
                 </div>
             </div>
 
@@ -83,7 +83,7 @@
                 <div class="product-3d-card-wrap" id="hero3dCardWrap">
                     <div class="product-3d-card" id="hero3dCard">
                         <div class="card-aura-glow"></div>
-                        <span class="floating-pill-badge-left" id="heroProdCat">Pure Botanical</span>
+                        <span class="floating-pill-badge-left" id="heroProdCat">DERMATOLOGIST TESTED</span>
                         <span class="floating-pill-badge" id="heroProdBadge">BESTSELLER</span>
                         
                         <div class="product-3d-img-container">
@@ -231,13 +231,14 @@
                 <img src="./Image/WhatsApp10.jpeg" alt="VIP Limited Edition Royale Set">
             </div>
             <div class="limited-spotlight-content">
-                <span class="tag">Exquisite Seasonal Batch</span>
-                <h3>VIP Limited Royale Set</h3>
-                <p>An elite, handcrafted curation of our most prized skin elixir and velvet night concentrate. Infused with 24K gold flakes, pure botanical squalane, and rare moroccan neroli essence.</p>
+                <span class="tag">EXQUISITE SEASONAL BATCH</span>
+                <h3>VIP LIMITED · ROYALE SET</h3>
+                <p>An exclusive curation of our most coveted face elixirs and the indulgent Velvet day and Night cream. Thoughtfully crafted for the discerning beauty enthusiast, this limited-edition collection embodies elegance, indulgence, and the art of exceptional self-care.</p>
+                <p>Adorned with the allure of glutathione, enriched with botanical vitamins C, and infused with the delicate essence of Moroccan neroli, every detail is designed to elevate your skincare ritual into a luxurious experience.</p>
                 <div class="limited-features">
-                    <span class="feature-pill">✦ Only 50 Sets Crafted</span>
-                    <span class="feature-pill">✦ Serialized Gold Seal</span>
-                    <span class="feature-pill">✦ Hand-Blended</span>
+                    <span class="feature-pill">✦ Rare by Design.</span>
+                    <span class="feature-pill">✦ Luxurious by Nature.</span>
+                    <span class="feature-pill">✦ Exclusively Shayors.</span>
                 </div>
                 <div class="limited-price-action">
                     <span class="limited-price">₦45,000</span>
@@ -356,7 +357,7 @@
         /* ==========================================================================
            Interactive 3D Hero Product Stage Controller
            ========================================================================== */
-        const heroProducts = [
+        let heroProducts = [
             {
                 id: 'prod-hero-1',
                 name: 'Royal Glow Face Cream',
@@ -370,7 +371,7 @@
             {
                 id: 'prod-hero-2',
                 name: 'Radiance Botanical Soap',
-                badge: 'ORGANIC FAVORITE',
+                badge: 'BESTSELLER',
                 category: 'Herbal Essence',
                 sub: 'Gentle Cleansing Therapy',
                 price: 6500,
@@ -380,7 +381,7 @@
             {
                 id: 'prod-hero-3',
                 name: 'Luxury Oud & Rose',
-                badge: 'EXCLUSIVE PARFUM',
+                badge: 'BESTSELLER',
                 category: 'Signature Scent',
                 sub: 'Haute Parfumerie',
                 price: 28000,
@@ -390,7 +391,7 @@
             {
                 id: 'prod-hero-4',
                 name: 'Skin Renewal Scrub',
-                badge: 'REVITALIZING',
+                badge: 'BESTSELLER',
                 category: 'Exfoliation Therapy',
                 sub: 'Velvet Body Treatment',
                 price: 11500,
@@ -412,7 +413,7 @@
         const subEl = document.getElementById('heroProdSub');
         const descEl = document.getElementById('heroProdDesc');
         const priceEl = document.getElementById('heroProdPrice');
-        const dots = document.querySelectorAll('.showcase-dot');
+        let dots = document.querySelectorAll('.showcase-dot');
 
         function updateHeroProduct(idx, direction = 1) {
             if (isTransitioning) return;
@@ -474,15 +475,59 @@
             updateHeroProduct(nextIdx, 1);
         });
 
-        dots.forEach((dot, i) => {
-            dot.addEventListener('click', () => {
-                if (i !== currentHeroIdx) {
-                    resetAutoTimer();
-                    const dir = i > currentHeroIdx ? 1 : -1;
-                    updateHeroProduct(i, dir);
-                }
+        function bindHeroDotEvents() {
+            dots = document.querySelectorAll('.showcase-dot');
+            dots.forEach((dot, i) => {
+                dot.addEventListener('click', () => {
+                    if (i !== currentHeroIdx) {
+                        resetAutoTimer();
+                        const dir = i > currentHeroIdx ? 1 : -1;
+                        updateHeroProduct(i, dir);
+                    }
+                });
             });
-        });
+        }
+
+        bindHeroDotEvents();
+
+        function getHeroImagePath(image) {
+            if (!image) return './Image/WhatsApp2.jpeg';
+            if (image.startsWith('data:') || image.startsWith('http') || image.includes('Image/')) return image;
+            const serverBase = HERO_API_BASE.replace('/api', '');
+            return `${serverBase}${image.startsWith('/') ? '' : '/'}${image}`;
+        }
+
+        async function loadBestSellingProducts() {
+            try {
+                const response = await fetch(`${HERO_API_BASE}/products/bestsellers`);
+                if (!response.ok) return;
+
+                const products = await response.json();
+                if (!Array.isArray(products) || products.length === 0) return;
+
+                heroProducts = products.map(product => ({
+                    id: product._id,
+                    name: product.name,
+                    badge: 'BESTSELLER',
+                    category: product.category || 'Popular',
+                    sub: product.brand || product.size || product.category || '',
+                    price: Number(product.price) || 0,
+                    image: getHeroImagePath(product.image),
+                    desc: product.description || 'A customer favorite from our skincare collection.'
+                }));
+
+                const dotsContainer = document.getElementById('heroDots');
+                dotsContainer.innerHTML = heroProducts.map((_, index) =>
+                    `<span class="showcase-dot${index === 0 ? ' active' : ''}" data-index="${index}"></span>`
+                ).join('');
+                bindHeroDotEvents();
+                currentHeroIdx = 0;
+                resetAutoTimer();
+                updateHeroProduct(0, 1);
+            } catch (error) {
+                console.error('Unable to load homepage bestsellers:', error);
+            }
+        }
 
         // Mouse tilt effect on the 3D card
         if (cardWrap) {
@@ -510,7 +555,9 @@
             }, 6500);
         }
 
+        const HERO_API_BASE = "https://cosmetics-website.fly.dev/api";
         resetAutoTimer();
+        loadBestSellingProducts();
     </script>
 </body>
 </html>
