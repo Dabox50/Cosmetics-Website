@@ -9,7 +9,7 @@ if (MAINTENANCE_MODE && !window.location.pathname.includes('inventory.html')) {
                 <p style="color: #2c2c2c; font-size: 1.2rem; max-width: 600px; line-height: 1.6;">We are currently updating our collections to bring you the best in luxury skincare. Please check back shortly!</p>
                 <div style="margin-top: 30px; display: flex; gap: 15px;">
                     <a href="https://wa.me/+2348189085285" style="padding: 12px 25px; background: #25d366; color: white; text-decoration: none; border-radius: 30px; font-weight: bold; font-family: 'Montserrat', sans-serif;">WhatsApp Us</a>
-                    <a href="https://instagram.com/shayors_cosmetics" style="padding: 12px 25px; background: #e4405f; color: white; text-decoration: none; border-radius: 30px; font-weight: bold; font-family: 'Montserrat', sans-serif;">Instagram</a>
+                    <a href="https://instagram.com/shayorscosmetics?vrfl=MXdwd2FqYXM5N2xseA%3D%3D" style="padding: 12px 25px; background: #e4405f; color: white; text-decoration: none; border-radius: 30px; font-weight: bold; font-family: 'Montserrat', sans-serif;">Instagram</a>
                 </div>
             </div>
         `;
@@ -738,28 +738,28 @@ document.addEventListener('DOMContentLoaded', () => {
             image: './Image/WhatsApp2.jpeg',
             tag: 'NEW DROP · RESTORATIVE',
             caption: 'Royal Glow Face Cream — formulated with botanical oils & plant peptides for a flawless, lit-from-within glow. ✨',
-            url: 'https://instagram.com/shayors_cosmetics'
+            url: 'https://instagram.com/shayorscosmetics?vrfl=MXdwd2FqYXM5N2xseA%3D%3D'
         },
         {
             id: 'post-2',
             image: './Image/WhatsApp10.jpeg',
             tag: 'LIMITED EDITION · VIP SET',
             caption: 'Royale Set — Hand-crafted batch with pure glutathione & Moroccan neroli. Only 50 sets released! 💎',
-            url: 'https://instagram.com/shayors_cosmetics'
+            url: 'https://instagram.com/shayorscosmetics?vrfl=MXdwd2FqYXM5N2xseA%3D%3D'
         },
         {
             id: 'post-3',
             image: './Image/WhatsApp6.jpeg',
             tag: 'SIGNATURE SCENT · OUD',
             caption: 'Luxury Oud & Velvety Damask Rose. An intoxicating oriental aura that turns heads everywhere you step. 🌸👑',
-            url: 'https://instagram.com/shayors_cosmetics'
+            url: 'https://instagram.com/shayorscosmetics?vrfl=MXdwd2FqYXM5N2xseA%3D%3D'
         },
         {
             id: 'post-4',
             image: './Image/WhatsApp8.jpeg',
             tag: 'BODY RITUAL · SCRUB',
             caption: 'Skin Renewal Scrub — micro-polishing botanical crystals that gently buff away dead cells for baby-soft skin. ✨',
-            url: 'https://instagram.com/shayors_cosmetics'
+            url: 'https://instagram.com/shayorscosmetics?vrfl=MXdwd2FqYXM5N2xseA%3D%3D'
         }
     ];
 
@@ -855,7 +855,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         image: img,
                         tag: `${p.category || 'FEATURED'} · ₦${(p.price || 0).toLocaleString()}`,
                         caption: p.description || `${p.name} — fresh batch now available at Shayors Cosmetics. ✨`,
-                        url: 'https://instagram.com/shayors_cosmetics'
+                        url: 'https://instagram.com/shayorscosmetics?vrfl=MXdwd2FqYXM5N2xseA%3D%3D'
                     };
                 });
                 renderInstaSlides(currentInstaPosts);

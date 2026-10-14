@@ -1,4 +1,4 @@
-const CACHE_NAME = 'shayors-cosmetics-v15';
+const CACHE_NAME = 'shayors-cosmetics-v16';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
