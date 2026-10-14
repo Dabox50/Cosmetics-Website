@@ -728,4 +728,29 @@ document.addEventListener('DOMContentLoaded', () => {
             contactForm.reset();
         });
     }
+
+    // Community / Newsletter Subscription Form
+    const newsletterForms = document.querySelectorAll('.newsletter-form');
+    newsletterForms.forEach(form => {
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const emailInput = form.querySelector('input[type="email"]');
+            const email = emailInput ? emailInput.value.trim() : '';
+            if (!email) return;
+
+            try {
+                const subs = JSON.parse(localStorage.getItem('shayors_subscribers') || '[]');
+                const exists = subs.some(s => (typeof s === 'string' ? s : s.email) === email);
+                if (!exists) {
+                    subs.push({ email, subscribedAt: new Date().toISOString() });
+                    localStorage.setItem('shayors_subscribers', JSON.stringify(subs));
+                }
+            } catch (err) {
+                console.warn('Subscriber save error:', err);
+            }
+
+            showToast('✨ Welcome to the Shayors VIP Circle! You are now subscribed for exclusive beauty launches & private offers.', 'success', 5000);
+            form.reset();
+        });
+    });
 });

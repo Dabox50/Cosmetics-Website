@@ -1108,7 +1108,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create invisible iframe dedicated to receipt printing
         const iframe = document.createElement('iframe');
         iframe.id = 'receiptPrintFrame';
-        iframe.setAttribute('style', 'position:fixed;top:-9999px;left:-9999px;width:80mm;height:0;border:0;visibility:hidden;');
+        iframe.setAttribute('style', 'position:fixed;top:-9999px;left:-9999px;width:58mm;height:0;border:0;visibility:hidden;');
         document.body.appendChild(iframe);
 
         const receiptHTML = `<!DOCTYPE html>
@@ -1118,7 +1118,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <title>Receipt - Shayors Cosmetics</title>
     <style>
         @page {
-            size: 80mm auto;
+            size: 58mm auto;
             margin: 0;
         }
         * {
@@ -1127,84 +1127,101 @@ document.addEventListener('DOMContentLoaded', () => {
             padding: 0;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            color: #000000 !important;
+            font-family: 'Courier New', Courier, monospace;
         }
         html, body {
             width: 100%;
             margin: 0;
             padding: 0;
-            background: #fff;
-            color: #000;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 11px;
-            line-height: 1.35;
+            background: #ffffff !important;
+            color: #000000 !important;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.3;
+            -webkit-font-smoothing: none;
         }
         .receipt-container {
-            width: 72mm;
-            max-width: 95%;
-            margin: 0 auto;
-            padding: 4mm 2mm;
+            width: 48mm;
+            max-width: 48mm;
+            margin: 0 0 0 1.5mm;
+            padding: 2mm 1mm 4mm 1mm;
         }
         .receipt-header {
             text-align: center;
-            margin-bottom: 6px;
+            margin-bottom: 5px;
         }
         .receipt-header h2 {
             font-size: 15px;
-            font-weight: bold;
+            font-weight: 900;
             font-family: Georgia, serif;
-            margin-bottom: 3px;
-            color: #000;
+            margin-bottom: 2px;
+            color: #000000 !important;
+            letter-spacing: 0.5px;
         }
         .receipt-header p {
-            font-size: 10px;
+            font-size: 9.5px;
+            font-weight: 700;
             margin: 1px 0;
-            color: #222;
+            color: #000000 !important;
         }
         hr {
             border: 0;
-            border-top: 1px dashed #000;
-            margin: 5px 0;
+            border-top: 1.5px dashed #000000 !important;
+            margin: 4px 0;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
-            margin: 5px 0;
+            margin: 4px 0;
         }
         th {
-            border-bottom: 1px dashed #000;
-            font-size: 10px;
+            border-bottom: 1.5px dashed #000000 !important;
+            font-size: 9.5px;
             padding: 2px 1px;
             text-align: left;
-            font-weight: bold;
+            font-weight: 900;
+            color: #000000 !important;
         }
         td {
-            font-size: 10px;
+            font-size: 9.5px;
+            font-weight: 700;
             padding: 2px 1px;
             vertical-align: top;
+            color: #000000 !important;
             word-break: break-word;
             overflow-wrap: break-word;
         }
-        th:nth-child(1), td:nth-child(1) { width: 44%; text-align: left; }
-        th:nth-child(2), td:nth-child(2) { width: 12%; text-align: center; }
-        th:nth-child(3), td:nth-child(3) { width: 22%; text-align: right; }
-        th:nth-child(4), td:nth-child(4) { width: 22%; text-align: right; }
+        th:nth-child(1), td:nth-child(1) { width: 36%; text-align: left; }
+        th:nth-child(2), td:nth-child(2) { width: 10%; text-align: center; white-space: nowrap; }
+        th:nth-child(3), td:nth-child(3) { width: 27%; text-align: right; white-space: nowrap; }
+        th:nth-child(4), td:nth-child(4) { width: 27%; text-align: right; white-space: nowrap; padding-right: 2px; }
         .receipt-summary {
             text-align: right;
             margin: 5px 0;
-            font-size: 10px;
+            padding-right: 2px;
+            font-size: 9.5px;
+            color: #000000 !important;
         }
         .receipt-summary p {
             margin: 2px 0;
+            font-weight: 700;
+            color: #000000 !important;
         }
         .receipt-summary strong {
-            font-size: 11px;
+            font-size: 11.5px;
+            font-weight: 900;
+            color: #000000 !important;
+            white-space: nowrap;
         }
         .receipt-footer {
-            margin-top: 8px;
+            margin-top: 6px;
             text-align: center;
             font-style: italic;
-            font-size: 10px;
+            font-size: 9.5px;
+            font-weight: 700;
+            color: #000000 !important;
         }
     </style>
 </head>
