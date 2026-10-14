@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20261014-resp">
+    <link rel="stylesheet" href="style.css?v=20261014-insta">
     <link rel="stylesheet" href="cart.css">
     <link rel="shortcut icon" href="./Image/Shayor's Logo.png" type="image/x-icon">
     <script src="https://js.paystack.co/v1/inline.js"></script>
@@ -260,21 +260,74 @@
 
     <!-- Community / Newsletter -->
     <section id="community" class="community">
-        <div class="container3 animate-on-scroll">
-            <h2>Join the Shayors Community</h2>
-            <p>Get early access to exclusive launches, VIP offers, and luxury beauty tips.</p>
-            <form class="newsletter-form">
-                <input type="email" placeholder="Enter your email" required>
-                <button type="submit" class="btn primary">Sign Up</button>
-            </form>
-            <div class="community-social-links" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 20px; flex-wrap: wrap;">
-                <span style="font-size: 0.82rem; color: #a3cbb5; letter-spacing: 0.5px;">Follow Daily Drops:</span>
-                <a href="https://instagram.com/shayors_cosmetics" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; background: rgba(228, 64, 95, 0.15); border: 1px solid rgba(228, 64, 95, 0.4); color: #ff758f; text-decoration: none; font-size: 0.8rem; font-weight: 600;">
-                    <span>📸</span> Instagram @shayors_cosmetics
-                </a>
-                <a href="https://wa.me/+2348189085285" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; background: rgba(37, 211, 102, 0.15); border: 1px solid rgba(37, 211, 102, 0.4); color: #7affbf; text-decoration: none; font-size: 0.8rem; font-weight: 600;">
-                    <span>💬</span> WhatsApp Channel
-                </a>
+        <div class="container3 animate-on-scroll" id="communityCard">
+            <!-- Initial State: Newsletter Sign-Up Form -->
+            <div id="newsletterFormState" class="community-state">
+                <span class="community-badge">✦ THE SHAYORS VIP CIRCLE ✦</span>
+                <h2>Join the Shayors Community</h2>
+                <p>Get early access to exclusive launches, VIP offers, and luxury beauty tips.</p>
+                <form class="newsletter-form" id="newsletterForm">
+                    <input type="email" placeholder="Enter your email" required id="newsletterEmailInput">
+                    <button type="submit" class="btn primary">Sign Up</button>
+                </form>
+                <div class="community-social-links">
+                    <span class="social-label">Follow Daily Drops:</span>
+                    <a href="https://instagram.com/shayors_cosmetics" target="_blank" rel="noopener" class="social-pill ig">
+                        <span>📸</span> Instagram @shayors_cosmetics
+                    </a>
+                    <a href="https://wa.me/+2348189085285" target="_blank" rel="noopener" class="social-pill wa">
+                        <span>💬</span> WhatsApp Channel
+                    </a>
+                </div>
+            </div>
+
+            <!-- VIP Unlocked State: Animated Instagram 4-Post Showcase Carousel -->
+            <div id="newsletterSuccessState" class="community-state" style="display: none;">
+                <div class="vip-unlocked-header">
+                    <span class="vip-glow-pill">✨ VIP ACCESS UNLOCKED ✨</span>
+                    <h2>Welcome to the Circle!</h2>
+                    <p class="vip-sub">You are officially on our private VIP list. Enjoy an exclusive look at our 4 latest beauty drops & Instagram features:</p>
+                </div>
+
+                <div class="insta-showcase">
+                    <!-- Instagram Header Bar -->
+                    <div class="insta-top-bar">
+                        <div class="insta-profile">
+                            <div class="insta-avatar-ring">
+                                <img src="./Image/Shayor's Logo.png" alt="Shayors Cosmetics" class="insta-avatar">
+                            </div>
+                            <div class="insta-meta">
+                                <div class="insta-handle">
+                                    <span>shayors_cosmetics</span>
+                                    <span class="insta-verified-badge" title="Official Brand">✓</span>
+                                </div>
+                                <span class="insta-sub">Recent Drops & Client Glows</span>
+                            </div>
+                        </div>
+                        <a href="https://instagram.com/shayors_cosmetics" target="_blank" rel="noopener" class="insta-follow-btn">Follow</a>
+                    </div>
+
+                    <!-- Slide Stage -->
+                    <div class="insta-stage" id="instaStage">
+                        <div class="insta-slides-wrapper" id="instaSlidesWrapper">
+                            <!-- Populated dynamically via script.js -->
+                        </div>
+
+                        <!-- Navigation Arrows -->
+                        <button type="button" class="insta-nav-btn prev" id="instaPrevBtn" aria-label="Previous Post">‹</button>
+                        <button type="button" class="insta-nav-btn next" id="instaNextBtn" aria-label="Next Post">›</button>
+                    </div>
+
+                    <!-- Slide Footer Controls -->
+                    <div class="insta-footer-controls">
+                        <div class="insta-dots" id="instaDots"></div>
+                        <a href="https://instagram.com/shayors_cosmetics" target="_blank" rel="noopener" class="insta-view-all-link">
+                            <span>Open Instagram Feed</span> ↗
+                        </a>
+                    </div>
+                </div>
+
+                <button type="button" class="newsletter-reset-btn" onclick="resetNewsletterState()">Sign up with a different email</button>
             </div>
         </div>
     </section>
@@ -359,7 +412,7 @@
     </div>
 
     <!-- Core App Logic -->
-    <script src="script.js?v=20261014-news"></script>
+    <script src="script.js?v=20261014-insta"></script>
 
     <!-- Interactive 3D Hero Product Stage Controller -->
     <script>

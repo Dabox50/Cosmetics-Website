@@ -690,6 +690,422 @@ section {
     border-radius: var(--radius-pill);
 }
 
+/* Community Card States & Transitions */
+.community-state {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.community-badge {
+    color: #34e89a;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.community-social-links {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+}
+
+.community-social-links .social-label {
+    font-size: 0.82rem;
+    color: #a3cbb5;
+    letter-spacing: 0.5px;
+}
+
+.social-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 16px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.social-pill.ig {
+    background: rgba(228, 64, 95, 0.15);
+    border: 1px solid rgba(228, 64, 95, 0.4);
+    color: #ff758f;
+}
+
+.social-pill.ig:hover {
+    background: rgba(228, 64, 95, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(228, 64, 95, 0.3);
+}
+
+.social-pill.wa {
+    background: rgba(37, 211, 102, 0.15);
+    border: 1px solid rgba(37, 211, 102, 0.4);
+    color: #7affbf;
+}
+
+.social-pill.wa:hover {
+    background: rgba(37, 211, 102, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+}
+
+/* VIP Unlocked State */
+.vip-unlocked-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.vip-glow-pill {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 30px;
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(52, 232, 154, 0.2) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.6);
+    color: #ffd700;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.25);
+    animation: glowPulse 2.5s infinite alternate;
+}
+
+@keyframes glowPulse {
+    0% { box-shadow: 0 0 8px rgba(212, 175, 55, 0.2); }
+    100% { box-shadow: 0 0 20px rgba(52, 232, 154, 0.45); }
+}
+
+.vip-sub {
+    color: #b7ded0;
+    font-size: 0.95rem;
+    max-width: 580px;
+    margin: 8px auto 0;
+    line-height: 1.5;
+}
+
+/* Luxury Instagram Showcase Box */
+.insta-showcase {
+    width: 100%;
+    max-width: 480px;
+    background: linear-gradient(145deg, rgba(9, 28, 19, 0.95) 0%, rgba(3, 16, 10, 0.98) 100%);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 22px;
+    padding: 18px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(52, 232, 154, 0.15);
+    overflow: hidden;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.insta-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(52, 232, 154, 0.18);
+    margin-bottom: 12px;
+}
+
+.insta-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+}
+
+.insta-avatar-ring {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    padding: 2.5px;
+    background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.insta-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #020c07;
+    border: 2px solid #05140d;
+}
+
+.insta-meta {
+    display: flex;
+    flex-direction: column;
+}
+
+.insta-handle {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.insta-verified-badge {
+    background: #0095f6;
+    color: #ffffff;
+    font-size: 0.6rem;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.insta-sub {
+    font-size: 0.72rem;
+    color: #8ed2b2;
+}
+
+.insta-follow-btn {
+    background: linear-gradient(135deg, #e1306c 0%, #fd1d1d 50%, #f77737 100%);
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.76rem;
+    font-weight: 700;
+    padding: 6px 16px;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(225, 48, 108, 0.4);
+    transition: transform 0.2s ease;
+}
+
+.insta-follow-btn:hover {
+    transform: scale(1.05);
+}
+
+/* Slide Stage */
+.insta-stage {
+    position: relative;
+    width: 100%;
+    height: 310px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #020c07;
+    border: 1px solid rgba(52, 232, 154, 0.25);
+}
+
+.insta-slides-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.insta-slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform: scale(0.96);
+    pointer-events: none;
+}
+
+.insta-slide.active {
+    opacity: 1;
+    visibility: visible;
+    transform: scale(1);
+    pointer-events: auto;
+    z-index: 2;
+}
+
+.insta-slide img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.insta-slide-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(2, 14, 8, 0.96) 0%, rgba(2, 14, 8, 0.75) 60%, transparent 100%);
+    padding: 24px 14px 14px;
+    color: #ffffff;
+    text-align: left;
+    box-sizing: border-box;
+}
+
+.insta-slide-tag {
+    font-size: 0.65rem;
+    color: #d4af37;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    margin-bottom: 4px;
+    display: block;
+    text-transform: uppercase;
+}
+
+.insta-slide-caption {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    color: #e5f9ef;
+    margin-bottom: 8px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.insta-slide-link {
+    font-size: 0.74rem;
+    color: #34e89a;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    transition: color 0.2s ease;
+}
+
+.insta-slide-link:hover {
+    color: #d4af37;
+}
+
+/* Nav Buttons */
+.insta-nav-btn {
+    position: absolute;
+    top: 45%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(2, 16, 10, 0.75);
+    border: 1px solid rgba(52, 232, 154, 0.4);
+    color: #7affbf;
+    font-size: 1.1rem;
+    cursor: pointer;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(6px);
+}
+
+.insta-nav-btn:hover {
+    background: #34e89a;
+    color: #02160c;
+    transform: translateY(-50%) scale(1.1);
+}
+
+.insta-nav-btn.prev {
+    left: 8px;
+}
+
+.insta-nav-btn.next {
+    right: 8px;
+}
+
+/* Slide Footer */
+.insta-footer-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.insta-dots {
+    display: flex;
+    gap: 7px;
+    align-items: center;
+}
+
+.insta-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(52, 232, 154, 0.3);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.insta-dot.active {
+    width: 22px;
+    border-radius: 10px;
+    background: #34e89a;
+    box-shadow: 0 0 10px rgba(52, 232, 154, 0.6);
+}
+
+.insta-view-all-link {
+    color: #d4af37;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.insta-view-all-link:hover {
+    color: #ffffff;
+}
+
+.newsletter-reset-btn {
+    background: transparent;
+    border: none;
+    color: #7affbf;
+    font-size: 0.76rem;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-top: 14px;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.newsletter-reset-btn:hover {
+    opacity: 1;
+}
+
+/* Mobile Responsiveness for Instagram Showcase down to 310px */
+@media screen and (max-width: 500px) {
+    .insta-showcase {
+        padding: 12px;
+        border-radius: 16px;
+    }
+
+    .insta-stage {
+        height: 240px;
+        border-radius: 12px;
+    }
+
+    .insta-slide-overlay {
+        padding: 16px 10px 10px;
+    }
+
+    .insta-slide-caption {
+        font-size: 0.75rem;
+        -webkit-line-clamp: 2;
+    }
+
+    .insta-footer-controls {
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+    }
+}
+
 /* ==========================================================================
    Footer
    ========================================================================== */

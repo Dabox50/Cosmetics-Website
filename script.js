@@ -729,7 +729,217 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Community / Newsletter Subscription Form
+    // ==========================================================================
+    // Community / VIP Instagram Showcase Carousel
+    // ==========================================================================
+    const DEFAULT_INSTA_POSTS = [
+        {
+            id: 'post-1',
+            image: './Image/WhatsApp2.jpeg',
+            tag: 'NEW DROP · RESTORATIVE',
+            caption: 'Royal Glow Face Cream — formulated with botanical oils & plant peptides for a flawless, lit-from-within glow. ✨',
+            url: 'https://instagram.com/shayors_cosmetics'
+        },
+        {
+            id: 'post-2',
+            image: './Image/WhatsApp10.jpeg',
+            tag: 'LIMITED EDITION · VIP SET',
+            caption: 'Royale Set — Hand-crafted batch with pure glutathione & Moroccan neroli. Only 50 sets released! 💎',
+            url: 'https://instagram.com/shayors_cosmetics'
+        },
+        {
+            id: 'post-3',
+            image: './Image/WhatsApp6.jpeg',
+            tag: 'SIGNATURE SCENT · OUD',
+            caption: 'Luxury Oud & Velvety Damask Rose. An intoxicating oriental aura that turns heads everywhere you step. 🌸👑',
+            url: 'https://instagram.com/shayors_cosmetics'
+        },
+        {
+            id: 'post-4',
+            image: './Image/WhatsApp8.jpeg',
+            tag: 'BODY RITUAL · SCRUB',
+            caption: 'Skin Renewal Scrub — micro-polishing botanical crystals that gently buff away dead cells for baby-soft skin. ✨',
+            url: 'https://instagram.com/shayors_cosmetics'
+        }
+    ];
+
+    let currentInstaPosts = [...DEFAULT_INSTA_POSTS];
+    let currentInstaIndex = 0;
+    let instaTimer = null;
+
+    function renderInstaSlides(posts) {
+        const wrapper = document.getElementById('instaSlidesWrapper');
+        const dotsContainer = document.getElementById('instaDots');
+        if (!wrapper || !dotsContainer) return;
+
+        wrapper.innerHTML = posts.map((post, idx) => `
+            <div class="insta-slide ${idx === 0 ? 'active' : ''}" data-index="${idx}">
+                <img src="${post.image}" alt="${post.tag}">
+                <div class="insta-slide-overlay">
+                    <span class="insta-slide-tag">${post.tag}</span>
+                    <p class="insta-slide-caption">${post.caption}</p>
+                    <a href="${post.url}" target="_blank" rel="noopener" class="insta-slide-link">
+                        <span>View on Instagram</span> ↗
+                    </a>
+                </div>
+            </div>
+        `).join('');
+
+        dotsContainer.innerHTML = posts.map((_, idx) => `
+            <span class="insta-dot ${idx === 0 ? 'active' : ''}" data-index="${idx}"></span>
+        `).join('');
+
+        // Attach dot click listeners
+        dotsContainer.querySelectorAll('.insta-dot').forEach(dot => {
+            dot.addEventListener('click', (e) => {
+                const idx = parseInt(e.target.getAttribute('data-index'), 10);
+                if (!isNaN(idx)) {
+                    goToInstaSlide(idx);
+                    resetInstaTimer();
+                }
+            });
+        });
+    }
+
+    function goToInstaSlide(index) {
+        const slides = document.querySelectorAll('.insta-slide');
+        const dots = document.querySelectorAll('.insta-dot');
+        if (!slides.length) return;
+
+        currentInstaIndex = (index + slides.length) % slides.length;
+
+        slides.forEach((slide, idx) => {
+            slide.classList.toggle('active', idx === currentInstaIndex);
+        });
+
+        dots.forEach((dot, idx) => {
+            dot.classList.toggle('active', idx === currentInstaIndex);
+        });
+    }
+
+    function startInstaAutoPlay() {
+        stopInstaAutoPlay();
+        instaTimer = setInterval(() => {
+            goToInstaSlide(currentInstaIndex + 1);
+        }, 4200);
+    }
+
+    function stopInstaAutoPlay() {
+        if (instaTimer) {
+            clearInterval(instaTimer);
+            instaTimer = null;
+        }
+    }
+
+    function resetInstaTimer() {
+        stopInstaAutoPlay();
+        startInstaAutoPlay();
+    }
+
+    // Attempt to pull latest 4 drops from live product API to keep posts automatically updated
+    async function refreshLatestPostsFromCatalog() {
+        try {
+            const apiBase = typeof HERO_API_BASE !== 'undefined' ? HERO_API_BASE : 'https://cosmetics-website.fly.dev/api';
+            const res = await fetch(`${apiBase}/products?limit=4`, { cache: 'no-store' });
+            if (!res.ok) return;
+            const data = await res.json();
+            const productList = Array.isArray(data) ? data : (data.products || []);
+            if (productList.length >= 2) {
+                currentInstaPosts = productList.slice(0, 4).map((p, idx) => {
+                    let img = p.image || p.imageUrl || './Image/WhatsApp2.jpeg';
+                    if (!img.startsWith('data:') && !img.startsWith('http') && !img.includes('Image/')) {
+                        img = `${apiBase.replace('/api', '')}/${img.replace(/^\//, '')}`;
+                    }
+                    return {
+                        id: p._id || `api-post-${idx}`,
+                        image: img,
+                        tag: `${p.category || 'FEATURED'} · ₦${(p.price || 0).toLocaleString()}`,
+                        caption: p.description || `${p.name} — fresh batch now available at Shayors Cosmetics. ✨`,
+                        url: 'https://instagram.com/shayors_cosmetics'
+                    };
+                });
+                renderInstaSlides(currentInstaPosts);
+            }
+        } catch (err) {
+            console.log("Using curated Instagram drops fallback:", err.message);
+        }
+    }
+
+    function activateVipShowcase() {
+        const formState = document.getElementById('newsletterFormState');
+        const successState = document.getElementById('newsletterSuccessState');
+        if (!formState || !successState) return;
+
+        formState.style.opacity = '0';
+        formState.style.transform = 'scale(0.95)';
+
+        setTimeout(() => {
+            formState.style.display = 'none';
+            successState.style.display = 'flex';
+            successState.style.opacity = '0';
+            successState.style.transform = 'scale(0.95)';
+
+            // Render slides and start auto-play
+            renderInstaSlides(currentInstaPosts);
+            refreshLatestPostsFromCatalog();
+
+            requestAnimationFrame(() => {
+                successState.style.opacity = '1';
+                successState.style.transform = 'scale(1)';
+                startInstaAutoPlay();
+            });
+        }, 300);
+    }
+
+    window.resetNewsletterState = function() {
+        stopInstaAutoPlay();
+        const formState = document.getElementById('newsletterFormState');
+        const successState = document.getElementById('newsletterSuccessState');
+        if (!formState || !successState) return;
+
+        successState.style.opacity = '0';
+        successState.style.transform = 'scale(0.95)';
+
+        setTimeout(() => {
+            successState.style.display = 'none';
+            formState.style.display = 'flex';
+            formState.style.opacity = '0';
+            formState.style.transform = 'scale(0.95)';
+
+            requestAnimationFrame(() => {
+                formState.style.opacity = '1';
+                formState.style.transform = 'scale(1)';
+            });
+        }, 300);
+    };
+
+    // Nav Arrows & Stage Hover Listeners
+    const prevBtn = document.getElementById('instaPrevBtn');
+    const nextBtn = document.getElementById('instaNextBtn');
+    const stage = document.getElementById('instaStage');
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+            goToInstaSlide(currentInstaIndex - 1);
+            resetInstaTimer();
+        });
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+            goToInstaSlide(currentInstaIndex + 1);
+            resetInstaTimer();
+        });
+    }
+
+    if (stage) {
+        stage.addEventListener('mouseenter', stopInstaAutoPlay);
+        stage.addEventListener('mouseleave', startInstaAutoPlay);
+        stage.addEventListener('touchstart', stopInstaAutoPlay, { passive: true });
+        stage.addEventListener('touchend', startInstaAutoPlay, { passive: true });
+    }
+
+    // Community / Newsletter Subscription Form Listener
     const newsletterForms = document.querySelectorAll('.newsletter-form');
     newsletterForms.forEach(form => {
         form.addEventListener('submit', (e) => {
@@ -745,12 +955,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     subs.push({ email, subscribedAt: new Date().toISOString() });
                     localStorage.setItem('shayors_subscribers', JSON.stringify(subs));
                 }
+                localStorage.setItem('shayors_vip_subscribed', 'true');
             } catch (err) {
                 console.warn('Subscriber save error:', err);
             }
 
-            showToast('✨ Welcome to the Shayors VIP Circle! You are now subscribed for exclusive beauty launches & private offers.', 'success', 5000);
+            showToast('✨ Welcome to the Shayors VIP Circle! Revealing our 4 latest beauty drops...', 'success', 5000);
             form.reset();
+
+            // Trigger the animated Instagram showcase
+            activateVipShowcase();
         });
     });
+
+    // Check if user was already subscribed on previous visits
+    try {
+        if (localStorage.getItem('shayors_vip_subscribed') === 'true') {
+            const formState = document.getElementById('newsletterFormState');
+            const successState = document.getElementById('newsletterSuccessState');
+            if (formState && successState) {
+                formState.style.display = 'none';
+                successState.style.display = 'flex';
+                renderInstaSlides(currentInstaPosts);
+                refreshLatestPostsFromCatalog();
+                startInstaAutoPlay();
+            }
+        }
+    } catch (e) {
+        // LocalStorage blocked
+    }
 });
