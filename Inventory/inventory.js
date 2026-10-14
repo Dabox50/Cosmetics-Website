@@ -1241,17 +1241,50 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.printInvoiceDirectly = function(id) {
-        const sale = sales.find(s => s.apiId === id || s.id === id);
-        if (!sale) return;
-        renderInvoice(sale, false);
-        setTimeout(() => {
-            document.body.classList.add('printing-invoice');
-            window.print();
-            window.addEventListener('afterprint', function handler() {
+        const sale = (id && typeof id === 'object') ? id : sales.find(s => s.apiId === id || s.id === id);
+        if (!sale) {
+            showToast('Could not find order details to print.', 'error');
+            return;
+        }
+
+        // Clean up any old invoice print iframe
+        const oldFrame = document.getElementById('invoicePrintFrame');
+        if (oldFrame) oldFrame.remove();
+
+        // Create invisible iframe dedicated to invoice printing
+        const iframe = document.createElement('iframe');
+        iframe.id = 'invoicePrintFrame';
+        iframe.setAttribute('style', 'position:fixed;top:-9999px;left:-9999px;width:210mm;height:0;border:0;visibility:hidden;');
+        document.body.appendChild(iframe);
+
+        const invoiceDocHtml = buildInvoiceDocument(sale);
+        const frameDoc = iframe.contentWindow || iframe.contentDocument;
+        const targetDoc = frameDoc.document || frameDoc;
+        targetDoc.open();
+        targetDoc.write(invoiceDocHtml);
+        targetDoc.close();
+
+        const triggerPrint = () => {
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } catch (err) {
+                console.error("Iframe invoice print error, falling back to window.print:", err);
+                renderInvoice(sale, false);
+                document.body.classList.add('printing-invoice');
+                window.print();
                 document.body.classList.remove('printing-invoice');
-                window.removeEventListener('afterprint', handler);
-            });
-        }, 500);
+            }
+        };
+
+        const images = Array.from(targetDoc.images || []);
+        if (images.length === 0) {
+            setTimeout(triggerPrint, 300);
+        } else {
+            Promise.all(images.map(img => img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })))
+                .then(() => setTimeout(triggerPrint, 300))
+                .catch(() => setTimeout(triggerPrint, 300));
+        }
     };
 
     // 0. Admin Authentication
@@ -1419,24 +1452,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
 
                 if (response.ok) {
+                    // Always persist in both localStorage and sessionStorage so iOS/Android devices don't drop auth on app switch
+                    localStorage.setItem('shayorsAdminToken', data.token);
+                    localStorage.setItem('shayorsStaffEmail', data.email);
+                    localStorage.setItem('shayorsIsAdmin', !data.isStaff);
                     sessionStorage.setItem('shayorsAdminToken', data.token);
                     sessionStorage.setItem('shayorsStaffEmail', data.email);
                     sessionStorage.setItem('shayorsIsAdmin', !data.isStaff);
                     
-                    // Store staff role explicitly (important for iOS)
                     if (data.isStaff && data.role) {
+                        localStorage.setItem('shayorsStaffRole', data.role);
                         sessionStorage.setItem('shayorsStaffRole', data.role);
                     }
-                    
-                    if (remember) {
-                        localStorage.setItem('shayorsAdminToken', data.token);
-                        localStorage.setItem('shayorsStaffEmail', data.email);
-                        localStorage.setItem('shayorsIsAdmin', !data.isStaff);
-                        if (data.isStaff && data.role) {
-                            localStorage.setItem('shayorsStaffRole', data.role);
-                        }
-                        if (!data.isStaff) localStorage.setItem('inventoryLoggedIn', 'true');
-                    }
+                    if (!data.isStaff) localStorage.setItem('inventoryLoggedIn', 'true');
                     
                     toggleAuthVisibility(true);
                     
@@ -1601,14 +1629,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.logoutAdmin = function() {
         if (confirm("Are you sure you want to logout?")) {
-            sessionStorage.removeItem('shayorsAdminToken');
-            sessionStorage.removeItem('shayorsStaffEmail');
-            sessionStorage.removeItem('shayorsIsAdmin');
+            sessionStorage.clear();
             localStorage.removeItem('shayorsAdminToken');
             localStorage.removeItem('shayorsStaffEmail');
             localStorage.removeItem('shayorsIsAdmin');
+            localStorage.removeItem('shayorsStaffRole');
+            localStorage.removeItem('shayorsStaff');
             localStorage.removeItem('inventoryLoggedIn');
-            window.location.reload();
+            // Force bust bfcache / browser cache on reload for iOS & Android
+            window.location.href = window.location.pathname + '?logout=' + Date.now();
         }
     };
 
@@ -2930,8 +2959,9 @@ document.addEventListener('DOMContentLoaded', () => {
         window.open(`https://wa.me/2348189085285?text=${msg}`); 
     }
 
-    window.renderInvoice = function(sale, shouldScroll = true) {
-        const container = document.getElementById('invoiceContainer');
+    window.renderInvoice = function(sale, shouldScroll = true, targetElement = null) {
+        const container = targetElement || document.getElementById('invoiceContainer');
+        if (!container) return;
         const dateStr = new Date(sale.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
         const invoiceNo = `INV-${(sale.apiId || sale.id).toString().slice(-6).toUpperCase()}`;
 
@@ -3078,8 +3108,11 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.downloadInvoice = async function(id) {
-        const sale = sales.find(s => s.apiId === id || s.id === id);
-        if (!sale) return;
+        const sale = (id && typeof id === 'object') ? id : sales.find(s => s.apiId === id || s.id === id);
+        if (!sale) {
+            showToast('Could not find order details to download invoice.', 'error');
+            return;
+        }
         
         // Mark as Paid if not already
         if (sale.status !== 'Paid') {
@@ -3088,10 +3121,10 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.setItem('shayorsSales', JSON.stringify(sales));
             
             // Remove from debtors
-            await removeDebtorByOrderInfo(sale.customer, id, sale.platform);
+            await removeDebtorByOrderInfo(sale.customer, sale.id || id, sale.platform);
             
             // Sync to backend if it has an apiId
-            const apiId = sale.apiId || (sale.id.length > 20 ? sale.id : null);
+            const apiId = sale.apiId || (sale.id && sale.id.length > 20 ? sale.id : null);
             if (apiId) {
                 const token = getAdminToken();
                 let endpoint = '';
@@ -3115,9 +3148,20 @@ document.addEventListener('DOMContentLoaded', () => {
             renderSalesHistory();
         }
 
-        // Render it first WITHOUT scrolling to avoid capturing blank area during scroll
+        showToast('Preparing invoice...', 'info', 2500);
+
+        // Render into off-screen container with real layout width (not display:none)
         renderInvoice(sale, false);
-        const invoiceNo = `INV-${(sale.apiId || sale.id).toString().slice(-6).toUpperCase()}`;
+        const invoiceNo = `INV-${(sale.apiId || sale.id || '000000').toString().slice(-6).toUpperCase()}`;
+
+        const template = document.getElementById('invoice-template');
+        if (!template) {
+            window.printInvoiceDirectly(sale);
+            return;
+        }
+
+        const images = Array.from(template.querySelectorAll('img'));
+        await Promise.all(images.map(img => img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })));
 
         const opt = {
             margin: [0.2, 0.2],
@@ -3128,17 +3172,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 useCORS: true, 
                 letterRendering: true,
                 width: 750,
-                scrollY: 0 // Crucial: forces capture to ignore current page scroll
+                scrollY: 0
             },
             jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
         };
 
-        const template = document.getElementById('invoice-template');
-        
-        // Use a slight timeout to ensure innerHTML is fully rendered before capture
-        setTimeout(() => {
-            html2pdf().from(template).set(opt).save();
-        }, 500);
+        try {
+            if (!window.html2pdf) throw new Error('PDF generator unavailable');
+            await html2pdf().from(template).set(opt).save();
+            showToast('Invoice PDF downloaded!', 'success');
+        } catch (err) {
+            console.warn("html2pdf save failed, falling back to direct print for PDF saving:", err);
+            window.printInvoiceDirectly(sale);
+        }
     };
 
     async function syncStatusToSalesAndOrders(invoiceNo, status) {
@@ -3343,48 +3389,65 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSalesHistory();
     };
 
+    window.closeInvoiceModal = function() {
+        const modal = document.getElementById('invoiceModal');
+        if (modal) modal.classList.add('hidden');
+    };
+
     window.viewOrder = async function(id) {
-        const invoiceWindow = window.open('', '_blank');
-        if (!invoiceWindow) {
-            showToast('Please allow pop-ups to view the invoice in a new tab.', 'warning');
-            return;
-        }
-
         // Try local first
-        const localSale = sales.find(s => s.apiId === id || s.id === id);
-        
-        if (localSale) {
-            window.openInvoiceWindow(localSale, invoiceWindow);
+        let targetSale = sales.find(s => s.apiId === id || s.id === id);
+
+        if (!targetSale) {
+            try {
+                showToast('Loading invoice...', 'info', 1500);
+                const response = await fetch(`${API_BASE}/orders/${id}`, {
+                    headers: { 'Authorization': `Bearer ${getAdminToken()}` }
+                });
+                if (response.ok) {
+                    const order = await response.json();
+                    targetSale = {
+                        id: order._id,
+                        apiId: order._id,
+                        date: order.createdAt,
+                        customer: order.customerName,
+                        total: order.totalAmount,
+                        amountPaid: order.totalAmount,
+                        items: (order.items || []).map(i => ({
+                            name: i.productName || i.name,
+                            qty: i.quantity || i.qty || 1,
+                            price: i.price,
+                            total: (i.price || 0) * (i.quantity || i.qty || 1)
+                        }))
+                    };
+                }
+            } catch (e) {
+                console.error("Failed to fetch order:", e);
+            }
+        }
+
+        if (!targetSale) {
+            showToast('Could not load invoice data.', 'error');
             return;
         }
 
-        try {
-            const response = await fetch(`${API_BASE}/orders/${id}`, {
-                headers: { 'Authorization': `Bearer ${getAdminToken()}` }
-            });
-            if (!response.ok) {
-                throw new Error(`Invoice request failed (${response.status}).`);
-            }
+        const modal = document.getElementById('invoiceModal');
+        const modalBody = document.getElementById('invoiceModalBody');
+        const printBtn = document.getElementById('modalPrintInvoiceBtn');
+        const downloadBtn = document.getElementById('modalDownloadInvoiceBtn');
 
-            const order = await response.json();
-            const mappedSale = {
-                id: order._id,
-                apiId: order._id,
-                date: order.createdAt,
-                customer: order.customerName,
-                total: order.totalAmount,
-                items: order.items.map(i => ({
-                    name: i.productName,
-                    qty: i.quantity,
-                    price: i.price,
-                    total: i.price * i.quantity
-                }))
-            };
-            window.openInvoiceWindow(mappedSale, invoiceWindow);
-        } catch (e) { 
-            console.error(e);
-            if (!invoiceWindow.closed) invoiceWindow.close();
-            showToast(e.message || 'Could not load the invoice. Please try again.', 'error');
+        if (modal && modalBody) {
+            renderInvoice(targetSale, false, modalBody);
+            if (printBtn) {
+                printBtn.onclick = () => window.printInvoiceDirectly(targetSale);
+            }
+            if (downloadBtn) {
+                downloadBtn.onclick = () => window.downloadInvoice(targetSale.id || targetSale.apiId);
+            }
+            modal.classList.remove('hidden');
+        } else {
+            // Fallback to direct print
+            window.printInvoiceDirectly(targetSale);
         }
     };
 

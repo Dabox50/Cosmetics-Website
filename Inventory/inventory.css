@@ -2911,9 +2911,10 @@ footer {
     }
 }
 
-/* Keep the receipt modal's dashboard-specific sizing when cart.css is shared. */
+/* Keep the receipt & invoice modals dashboard-specific sizing when cart.css is shared. */
 #loginModal.modal,
-#receiptModal.modal {
+#receiptModal.modal,
+#invoiceModal.modal {
     background: rgba(14, 18, 16, 0.72);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -2932,4 +2933,16 @@ footer {
     overflow-y: auto;
     border: 1px solid rgba(212, 175, 55, 0.3);
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.22);
+}
+
+#invoiceModal .modal-content {
+    background: #fff !important;
+    color: #333 !important;
+    padding: 25px !important;
+    border-radius: 16px !important;
+    width: 820px !important;
+    max-width: 95vw !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3) !important;
 }
