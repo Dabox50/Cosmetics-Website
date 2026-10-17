@@ -45,31 +45,62 @@ const getBestSellingProducts = async (req, res, next) => {
 
     const unitsSoldByProduct = new Map();
     [...saleTotals, ...orderTotals].forEach(({ _id, unitsSold }) => {
-      const productId = String(_id);
-      unitsSoldByProduct.set(productId, (unitsSoldByProduct.get(productId) || 0) + unitsSold);
+      if (_id) {
+        const productId = String(_id);
+        unitsSoldByProduct.set(productId, (unitsSoldByProduct.get(productId) || 0) + unitsSold);
+      }
     });
 
     const productIds = [...unitsSoldByProduct.keys()]
       .filter(productId => mongoose.Types.ObjectId.isValid(productId));
-    if (productIds.length === 0) return res.json([]);
 
-    const products = await Product.find({ _id: { $in: productIds } })
-      .select('-ingredients -reviews')
-      .lean();
+    let topProducts = [];
+    if (productIds.length > 0) {
+      const soldProducts = await Product.find({ _id: { $in: productIds } })
+        .select('-ingredients -reviews')
+        .lean();
 
-    const bestsellers = products
-      .map(product => ({
-        ...product,
-        unitsSold: unitsSoldByProduct.get(String(product._id)) || 0
-      }))
-      .sort((a, b) => b.unitsSold - a.unitsSold || a.name.localeCompare(b.name))
-      .slice(0, 4);
+      topProducts = soldProducts
+        .map(product => ({
+          ...product,
+          unitsSold: unitsSoldByProduct.get(String(product._id)) || 0
+        }))
+        .sort((a, b) => b.unitsSold - a.unitsSold || a.name.localeCompare(b.name));
+    }
 
-    res.json(bestsellers);
+    // If fewer than 4 bestsellers from sales history, backfill with top-rated and available inventory products
+    if (topProducts.length < 4) {
+      const existingIds = topProducts.map(p => p._id);
+      const needed = 4 - topProducts.length;
+      const fillProducts = await Product.find({ _id: { $nin: existingIds }, stock: { $gt: 0 } })
+        .select('-ingredients -reviews')
+        .sort({ rating: -1, numReviews: -1, createdAt: -1 })
+        .limit(needed)
+        .lean();
+
+      let backfilled = fillProducts.map(p => ({ ...p, unitsSold: 0 }));
+
+      // If still fewer than 4 (e.g. stock <= 0), fetch any remaining products from catalog
+      if (topProducts.length + backfilled.length < 4) {
+        const allExistingIds = [...existingIds, ...backfilled.map(p => p._id)];
+        const remainingNeeded = 4 - (topProducts.length + backfilled.length);
+        const anyProducts = await Product.find({ _id: { $nin: allExistingIds } })
+          .select('-ingredients -reviews')
+          .sort({ createdAt: -1 })
+          .limit(remainingNeeded)
+          .lean();
+        backfilled = backfilled.concat(anyProducts.map(p => ({ ...p, unitsSold: 0 })));
+      }
+
+      topProducts = topProducts.concat(backfilled);
+    }
+
+    res.json(topProducts.slice(0, 4));
   } catch (error) {
     next(error);
   }
 };
+
 
 const getProductById = async (req, res, next) => {
   try {

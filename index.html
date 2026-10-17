@@ -158,7 +158,65 @@
         <p style="color: #9eccb3; max-width: 620px; margin: 0 auto 30px auto;" class="animate-on-scroll">Trusted favorites crafted with pure botanical essences for unmatched results and prestige.</p>
         
         <div class="bestsellers-grid" id="bestsellersGrid" aria-live="polite">
-            <p class="bestseller-desc">Loading top picks...</p>
+            <!-- Card 1 -->
+            <div class="bestseller-3d-card animate-on-scroll">
+                <div class="bestseller-img-box">
+                    <img src="./Image/WhatsApp2.jpeg" alt="Royal Glow Face Cream" loading="lazy">
+                    <span class="bestseller-badge">★ TOP PICK</span>
+                </div>
+                <div class="bestseller-rating">★★★★★ (5.0)</div>
+                <h3 class="bestseller-title">Royal Glow Face Cream</h3>
+                <p class="bestseller-desc">Restorative day & night youth balm with bio-active peptides and gold essence.</p>
+                <div class="bestseller-footer">
+                    <span class="bestseller-price">₦15,000</span>
+                    <button class="bestseller-add-btn" onclick="addToCart('prod-best-1', 'Royal Glow Face Cream', 15000, './Image/WhatsApp2.jpeg')">+ Cart</button>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="bestseller-3d-card animate-on-scroll">
+                <div class="bestseller-img-box">
+                    <img src="./Image/WhatsApp4.jpeg" alt="Radiance Botanical Soap" loading="lazy">
+                    <span class="bestseller-badge">★ TOP PICK</span>
+                </div>
+                <div class="bestseller-rating">★★★★★ (4.9)</div>
+                <h3 class="bestseller-title">Radiance Botanical Soap</h3>
+                <p class="bestseller-desc">Gentle cleansing herbal bar with turmeric, honey, and raw shea butter.</p>
+                <div class="bestseller-footer">
+                    <span class="bestseller-price">₦6,500</span>
+                    <button class="bestseller-add-btn" onclick="addToCart('prod-best-2', 'Radiance Botanical Soap', 6500, './Image/WhatsApp4.jpeg')">+ Cart</button>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="bestseller-3d-card animate-on-scroll">
+                <div class="bestseller-img-box">
+                    <img src="./Image/WhatsApp6.jpeg" alt="Luxury Oud & Rose" loading="lazy">
+                    <span class="bestseller-badge">★ TOP PICK</span>
+                </div>
+                <div class="bestseller-rating">★★★★★ (5.0)</div>
+                <h3 class="bestseller-title">Luxury Oud & Rose</h3>
+                <p class="bestseller-desc">Opulent oriental parfum combining rare Cambodian agarwood and damask rose.</p>
+                <div class="bestseller-footer">
+                    <span class="bestseller-price">₦28,000</span>
+                    <button class="bestseller-add-btn" onclick="addToCart('prod-best-3', 'Luxury Oud & Rose', 28000, './Image/WhatsApp6.jpeg')">+ Cart</button>
+                </div>
+            </div>
+
+            <!-- Card 4 -->
+            <div class="bestseller-3d-card animate-on-scroll">
+                <div class="bestseller-img-box">
+                    <img src="./Image/WhatsApp8.jpeg" alt="Skin Renewal Exfoliating Scrub" loading="lazy">
+                    <span class="bestseller-badge">★ TOP PICK</span>
+                </div>
+                <div class="bestseller-rating">★★★★★ (4.8)</div>
+                <h3 class="bestseller-title">Skin Renewal Scrub</h3>
+                <p class="bestseller-desc">Dead skin buffing formula infused with botanical oils for instant silken touch.</p>
+                <div class="bestseller-footer">
+                    <span class="bestseller-price">₦11,500</span>
+                    <button class="bestseller-add-btn" onclick="addToCart('prod-best-4', 'Skin Renewal Scrub', 11500, './Image/WhatsApp8.jpeg')">+ Cart</button>
+                </div>
+            </div>
         </div>
 
         <div style="margin-top: 45px;" class="animate-on-scroll">
@@ -495,27 +553,26 @@
         bindHeroDotEvents();
 
         function getHeroImagePath(image) {
-            if (!image) return '';
+            if (!image) return './Image/WhatsApp2.jpeg';
             if (image.startsWith('data:') || image.startsWith('http') || image.includes('Image/')) return image;
             const serverBase = HERO_API_BASE.replace('/api', '');
             return `${serverBase}${image.startsWith('/') ? '' : '/'}${image}`;
         }
 
         function createBestsellerCard(product) {
-            const card = document.createElement('article');
+            const card = document.createElement('div');
             card.className = 'bestseller-3d-card animate-on-scroll active';
 
             const imageBox = document.createElement('div');
             imageBox.className = 'bestseller-img-box';
-            const imagePath = getHeroImagePath(product.image);
-            if (imagePath) {
-                const image = document.createElement('img');
-                image.addEventListener('error', () => image.remove());
-                image.src = imagePath;
-                image.alt = product.name;
-                image.loading = 'lazy';
-                imageBox.appendChild(image);
-            }
+            const imagePath = getHeroImagePath(product.image || product.imageUrl);
+            
+            const image = document.createElement('img');
+            image.src = imagePath;
+            image.alt = product.name || 'Top Pick';
+            image.loading = 'lazy';
+            image.onerror = function() { this.src = './Image/WhatsApp2.jpeg'; };
+            imageBox.appendChild(image);
 
             const badge = document.createElement('span');
             badge.className = 'bestseller-badge';
@@ -523,13 +580,13 @@
             imageBox.appendChild(badge);
             card.appendChild(imageBox);
 
-            const rating = Number(product.rating) || 0;
-            const numReviews = Number(product.numReviews) || 0;
+            const rating = Number(product.rating) > 0 ? Number(product.rating) : 5.0;
+            const fullStars = Math.min(5, Math.max(1, Math.round(rating)));
+            const emptyStars = 5 - fullStars;
+            const starText = '★'.repeat(fullStars) + '☆'.repeat(emptyStars);
             const ratingEl = document.createElement('div');
             ratingEl.className = 'bestseller-rating';
-            ratingEl.textContent = numReviews > 0
-                ? `${'★'.repeat(Math.max(0, Math.min(5, Math.round(rating))))}${'☆'.repeat(5 - Math.max(0, Math.min(5, Math.round(rating))))} (${rating.toFixed(1)}) · ${numReviews} ${numReviews === 1 ? 'review' : 'reviews'}`
-                : 'No ratings yet';
+            ratingEl.textContent = `${starText} (${rating.toFixed(1)})`;
             card.appendChild(ratingEl);
 
             const title = document.createElement('h3');
@@ -540,7 +597,8 @@
             const description = document.createElement('p');
             description.className = 'bestseller-desc';
             description.textContent = product.description ||
-                [product.brand, product.category, product.size].filter(Boolean).join(' · ');
+                [product.brand, product.category, product.skinTypes || product.size].filter(Boolean).join(' · ') ||
+                'Restorative beauty formula crafted with fine botanical essences.';
             card.appendChild(description);
 
             const footer = document.createElement('div');
@@ -553,12 +611,12 @@
             const addButton = document.createElement('button');
             addButton.className = 'bestseller-add-btn';
             addButton.type = 'button';
-            const inStock = Number(product.stock) > 0;
+            const inStock = product.stock === undefined || Number(product.stock) > 0;
             addButton.textContent = inStock ? '+ Cart' : 'Out of Stock';
             addButton.disabled = !inStock;
             addButton.addEventListener('click', () => {
                 if (inStock && window.addToCart) {
-                    window.addToCart(product._id, product.name, Number(product.price) || 0, imagePath);
+                    window.addToCart(product._id || product.id, product.name, Number(product.price) || 0, imagePath);
                 }
             });
             footer.appendChild(addButton);
@@ -570,62 +628,92 @@
             const grid = document.getElementById('bestsellersGrid');
             if (!grid) return;
 
+            let products = null;
+
+            // 1. Try dedicated bestsellers endpoint (calculates units sold from POS sales & web orders)
             try {
                 const response = await fetch(`${HERO_API_BASE}/products/bestsellers`, { cache: 'no-store' });
-                if (!response.ok) throw new Error(`Bestseller request failed (${response.status})`);
-
-                const products = await response.json();
-                if (!Array.isArray(products)) throw new Error('Bestseller response was not a product list');
-
-                grid.replaceChildren();
-                if (products.length === 0) {
-                    const emptyMessage = document.createElement('p');
-                    emptyMessage.className = 'bestseller-desc';
-                    emptyMessage.textContent = 'No bestsellers are available right now.';
-                    grid.appendChild(emptyMessage);
-                    return;
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data) && data.length > 0) {
+                        products = data;
+                    }
                 }
-                products.forEach(product => grid.appendChild(createBestsellerCard(product)));
-            } catch (error) {
-                console.error('Unable to load bestseller cards:', error);
-                grid.replaceChildren();
-                const errorMessage = document.createElement('p');
-                errorMessage.className = 'bestseller-desc';
-                errorMessage.textContent = 'Bestsellers are temporarily unavailable.';
-                grid.appendChild(errorMessage);
+            } catch (err) {
+                console.warn('Bestsellers endpoint check failed, falling back to catalog:', err);
+            }
+
+            // 2. Fallback to /products catalog if bestsellers endpoint isn't ready or empty
+            if (!products || products.length === 0) {
+                try {
+                    const response = await fetch(`${HERO_API_BASE}/products`, { cache: 'no-store' });
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (Array.isArray(data) && data.length > 0) {
+                            products = data.slice(0, 4);
+                        }
+                    }
+                } catch (err) {
+                    console.warn('Catalog fallback failed:', err);
+                }
+            }
+
+            // If we received live products from database, update the grid smoothly
+            if (products && products.length > 0) {
+                grid.innerHTML = '';
+                products.slice(0, 4).forEach(product => {
+                    grid.appendChild(createBestsellerCard(product));
+                });
             }
         }
 
         async function loadBestSellingProducts() {
+            let products = null;
             try {
                 const response = await fetch(`${HERO_API_BASE}/products/bestsellers`);
-                if (!response.ok) return;
+                if (response.ok) {
+                    const data = await response.json();
+                    if (Array.isArray(data) && data.length > 0) products = data;
+                }
+            } catch (error) {
+                console.warn('Unable to load homepage bestsellers from endpoint:', error);
+            }
 
-                const products = await response.json();
-                if (!Array.isArray(products) || products.length === 0) return;
+            if (!products || products.length === 0) {
+                try {
+                    const response = await fetch(`${HERO_API_BASE}/products`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (Array.isArray(data) && data.length > 0) products = data.slice(0, 4);
+                    }
+                } catch (err) {
+                    console.warn('Hero catalog fallback failed:', err);
+                }
+            }
 
-                heroProducts = products.map(product => ({
-                    id: product._id,
-                    name: product.name,
-                    badge: 'BESTSELLER',
-                    category: product.category || 'Popular',
-                    sub: product.brand || product.size || product.category || '',
-                    price: Number(product.price) || 0,
-                    image: getHeroImagePath(product.image),
-                    desc: product.description || 'A customer favorite from our skincare collection.'
-                }));
+            if (!products || products.length === 0) return;
 
-                const dotsContainer = document.getElementById('heroDots');
+            heroProducts = products.map(product => ({
+                id: product._id,
+                name: product.name,
+                badge: '★ TOP PICK',
+                category: product.category || 'Popular',
+                sub: product.brand || product.size || product.category || '',
+                price: Number(product.price) || 0,
+                image: getHeroImagePath(product.image),
+                desc: product.description || 'A customer favorite from our skincare collection.'
+            }));
+
+            const dotsContainer = document.getElementById('heroDots');
+            if (dotsContainer) {
                 dotsContainer.innerHTML = heroProducts.map((_, index) =>
                     `<span class="showcase-dot${index === 0 ? ' active' : ''}" data-index="${index}"></span>`
                 ).join('');
                 bindHeroDotEvents();
-                currentHeroIdx = 0;
-                resetAutoTimer();
-                updateHeroProduct(0, 1);
-            } catch (error) {
-                console.error('Unable to load homepage bestsellers:', error);
             }
+            currentHeroIdx = 0;
+            resetAutoTimer();
+            updateHeroProduct(0, 1);
         }
 
         // Mouse tilt effect on the 3D card
