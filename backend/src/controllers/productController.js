@@ -29,7 +29,15 @@ const getBestSellingProducts = async (req, res, next) => {
         { $group: { _id: '$items.product', unitsSold: { $sum: '$items.quantity' } } }
       ]),
       Order.aggregate([
-        { $match: { paymentStatus: 'paid', orderStatus: { $ne: 'cancelled' } } },
+        {
+          $match: {
+            orderStatus: { $nin: ['cancelled'] },
+            $or: [
+              { paymentStatus: 'paid' },
+              { orderStatus: { $in: ['confirmed', 'processing', 'shipped', 'delivered', 'completed'] } }
+            ]
+          }
+        },
         { $unwind: '$items' },
         { $group: { _id: '$items.productId', unitsSold: { $sum: '$items.quantity' } } }
       ])
@@ -45,7 +53,7 @@ const getBestSellingProducts = async (req, res, next) => {
       .filter(productId => mongoose.Types.ObjectId.isValid(productId));
     if (productIds.length === 0) return res.json([]);
 
-    const products = await Product.find({ _id: { $in: productIds }, stock: { $gt: 0 } })
+    const products = await Product.find({ _id: { $in: productIds } })
       .select('-ingredients -reviews')
       .lean();
 
@@ -54,7 +62,7 @@ const getBestSellingProducts = async (req, res, next) => {
         ...product,
         unitsSold: unitsSoldByProduct.get(String(product._id)) || 0
       }))
-      .sort((a, b) => b.unitsSold - a.unitsSold)
+      .sort((a, b) => b.unitsSold - a.unitsSold || a.name.localeCompare(b.name))
       .slice(0, 4);
 
     res.json(bestsellers);

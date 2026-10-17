@@ -61,8 +61,16 @@ app.get('/api/health/db', (req, res) => {
 // Manual Reconnect for troubleshooting
 app.post('/api/health/reconnect', async (req, res) => {
   console.log('🔄 Manual DB Reconnect Triggered');
-  await connectDB(1);
-  res.json({ message: 'Reconnect triggered', state: mongoose.connection.readyState });
+  try {
+    await connectDB();
+    res.json({ message: 'Database reconnected', state: mongoose.connection.readyState });
+  } catch (error) {
+    res.status(503).json({
+      message: 'Database reconnect failed; automatic retries are continuing.',
+      state: mongoose.connection.readyState,
+      details: getLastError()
+    });
+  }
 });
 
 // --- 3. DATABASE GUARD (Prevents 500/503 crashes with logging) ---

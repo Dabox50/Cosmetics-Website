@@ -74,10 +74,10 @@
                 <div class="hero-trust-bar">
                     <div class="hero-trust-item"><span class="icon">★</span> 4.9/5 Rating</div>
                     <div class="hero-trust-item"><span class="icon">✦</span> 100% Dermatologist Tested</div>
-                    <div class="hero-trust-item"><span class="icon">🌿</span> Well Refined</div>
+                    <div class="hero-trust-item"><span class="icon">✅</span> Quality Assured</div>
                 </div>
             </div>
-
+     
             <!-- Right Column: Interactive 3D Product Stage -->
             <div class="hero-3d-stage animate-on-scroll">
                 <div class="product-3d-card-wrap" id="hero3dCardWrap">
@@ -157,66 +157,8 @@
         <h2 class="section-title animate-on-scroll">Our Bestsellers</h2>
         <p style="color: #9eccb3; max-width: 620px; margin: 0 auto 30px auto;" class="animate-on-scroll">Trusted favorites crafted with pure botanical essences for unmatched results and prestige.</p>
         
-        <div class="bestsellers-grid">
-            <!-- Card 1 -->
-            <div class="bestseller-3d-card animate-on-scroll">
-                <div class="bestseller-img-box">
-                    <img src="./Image/WhatsApp2.jpeg" alt="Royal Glow Face Cream">
-                    <span class="bestseller-badge">★ TOP PICK</span>
-                </div>
-                <div class="bestseller-rating">★★★★★ (5.0)</div>
-                <h3 class="bestseller-title">Royal Glow Face Cream</h3>
-                <p class="bestseller-desc">Restorative day & night youth balm with bio-active peptides and gold essence.</p>
-                <div class="bestseller-footer">
-                    <span class="bestseller-price">₦15,000</span>
-                    <button class="bestseller-add-btn" onclick="addToCart('prod-best-1', 'Royal Glow Face Cream', 15000, './Image/WhatsApp2.jpeg')">+ Cart</button>
-                </div>
-            </div>
-
-            <!-- Card 2 -->
-            <div class="bestseller-3d-card animate-on-scroll">
-                <div class="bestseller-img-box">
-                    <img src="./Image/WhatsApp4.jpeg" alt="Radiance Botanical Soap">
-                    <span class="bestseller-badge">ORGANIC</span>
-                </div>
-                <div class="bestseller-rating">★★★★★ (4.9)</div>
-                <h3 class="bestseller-title">Radiance Botanical Soap</h3>
-                <p class="bestseller-desc">Gentle cleansing herbal bar with turmeric, honey, and raw shea butter.</p>
-                <div class="bestseller-footer">
-                    <span class="bestseller-price">₦6,500</span>
-                    <button class="bestseller-add-btn" onclick="addToCart('prod-best-2', 'Radiance Botanical Soap', 6500, './Image/WhatsApp4.jpeg')">+ Cart</button>
-                </div>
-            </div>
-
-            <!-- Card 3 -->
-            <div class="bestseller-3d-card animate-on-scroll">
-                <div class="bestseller-img-box">
-                    <img src="./Image/WhatsApp6.jpeg" alt="Luxury Oud & Rose">
-                    <span class="bestseller-badge">SIGNATURE</span>
-                </div>
-                <div class="bestseller-rating">★★★★★ (5.0)</div>
-                <h3 class="bestseller-title">Luxury Oud & Rose</h3>
-                <p class="bestseller-desc">Opulent oriental parfum combining rare Cambodian agarwood and damask rose.</p>
-                <div class="bestseller-footer">
-                    <span class="bestseller-price">₦28,000</span>
-                    <button class="bestseller-add-btn" onclick="addToCart('prod-best-3', 'Luxury Oud & Rose', 28000, './Image/WhatsApp6.jpeg')">+ Cart</button>
-                </div>
-            </div>
-
-            <!-- Card 4 -->
-            <div class="bestseller-3d-card animate-on-scroll">
-                <div class="bestseller-img-box">
-                    <img src="./Image/WhatsApp8.jpeg" alt="Skin Renewal Exfoliating Scrub">
-                    <span class="bestseller-badge">RENEWAL</span>
-                </div>
-                <div class="bestseller-rating">★★★★★ (4.8)</div>
-                <h3 class="bestseller-title">Skin Renewal Scrub</h3>
-                <p class="bestseller-desc">Dead skin buffing formula infused with botanical oils for instant silken touch.</p>
-                <div class="bestseller-footer">
-                    <span class="bestseller-price">₦11,500</span>
-                    <button class="bestseller-add-btn" onclick="addToCart('prod-best-4', 'Skin Renewal Scrub', 11500, './Image/WhatsApp8.jpeg')">+ Cart</button>
-                </div>
-            </div>
+        <div class="bestsellers-grid" id="bestsellersGrid" aria-live="polite">
+            <p class="bestseller-desc">Loading top picks...</p>
         </div>
 
         <div style="margin-top: 45px;" class="animate-on-scroll">
@@ -241,7 +183,7 @@
                     <span class="feature-pill">✦ Exclusively Shayors.</span>
                 </div>
                 <div class="limited-price-action">
-                    <span class="limited-price">₦45,000</span>
+                    <span class="limited-price">₦6,000</span>
                     <button class="btn primary" onclick="addToCart('prod-lim-1', 'VIP Limited Royale Set', 45000, './Image/WhatsApp10.jpeg')">Claim Limited Edition</button>
                 </div>
             </div>
@@ -553,10 +495,105 @@
         bindHeroDotEvents();
 
         function getHeroImagePath(image) {
-            if (!image) return './Image/WhatsApp2.jpeg';
+            if (!image) return '';
             if (image.startsWith('data:') || image.startsWith('http') || image.includes('Image/')) return image;
             const serverBase = HERO_API_BASE.replace('/api', '');
             return `${serverBase}${image.startsWith('/') ? '' : '/'}${image}`;
+        }
+
+        function createBestsellerCard(product) {
+            const card = document.createElement('article');
+            card.className = 'bestseller-3d-card animate-on-scroll active';
+
+            const imageBox = document.createElement('div');
+            imageBox.className = 'bestseller-img-box';
+            const imagePath = getHeroImagePath(product.image);
+            if (imagePath) {
+                const image = document.createElement('img');
+                image.addEventListener('error', () => image.remove());
+                image.src = imagePath;
+                image.alt = product.name;
+                image.loading = 'lazy';
+                imageBox.appendChild(image);
+            }
+
+            const badge = document.createElement('span');
+            badge.className = 'bestseller-badge';
+            badge.textContent = '★ TOP PICK';
+            imageBox.appendChild(badge);
+            card.appendChild(imageBox);
+
+            const rating = Number(product.rating) || 0;
+            const numReviews = Number(product.numReviews) || 0;
+            const ratingEl = document.createElement('div');
+            ratingEl.className = 'bestseller-rating';
+            ratingEl.textContent = numReviews > 0
+                ? `${'★'.repeat(Math.max(0, Math.min(5, Math.round(rating))))}${'☆'.repeat(5 - Math.max(0, Math.min(5, Math.round(rating))))} (${rating.toFixed(1)}) · ${numReviews} ${numReviews === 1 ? 'review' : 'reviews'}`
+                : 'No ratings yet';
+            card.appendChild(ratingEl);
+
+            const title = document.createElement('h3');
+            title.className = 'bestseller-title';
+            title.textContent = product.name;
+            card.appendChild(title);
+
+            const description = document.createElement('p');
+            description.className = 'bestseller-desc';
+            description.textContent = product.description ||
+                [product.brand, product.category, product.size].filter(Boolean).join(' · ');
+            card.appendChild(description);
+
+            const footer = document.createElement('div');
+            footer.className = 'bestseller-footer';
+            const price = document.createElement('span');
+            price.className = 'bestseller-price';
+            price.textContent = `₦${(Number(product.price) || 0).toLocaleString()}`;
+            footer.appendChild(price);
+
+            const addButton = document.createElement('button');
+            addButton.className = 'bestseller-add-btn';
+            addButton.type = 'button';
+            const inStock = Number(product.stock) > 0;
+            addButton.textContent = inStock ? '+ Cart' : 'Out of Stock';
+            addButton.disabled = !inStock;
+            addButton.addEventListener('click', () => {
+                if (inStock && window.addToCart) {
+                    window.addToCart(product._id, product.name, Number(product.price) || 0, imagePath);
+                }
+            });
+            footer.appendChild(addButton);
+            card.appendChild(footer);
+            return card;
+        }
+
+        async function loadBestsellerCards() {
+            const grid = document.getElementById('bestsellersGrid');
+            if (!grid) return;
+
+            try {
+                const response = await fetch(`${HERO_API_BASE}/products/bestsellers`, { cache: 'no-store' });
+                if (!response.ok) throw new Error(`Bestseller request failed (${response.status})`);
+
+                const products = await response.json();
+                if (!Array.isArray(products)) throw new Error('Bestseller response was not a product list');
+
+                grid.replaceChildren();
+                if (products.length === 0) {
+                    const emptyMessage = document.createElement('p');
+                    emptyMessage.className = 'bestseller-desc';
+                    emptyMessage.textContent = 'No bestsellers are available right now.';
+                    grid.appendChild(emptyMessage);
+                    return;
+                }
+                products.forEach(product => grid.appendChild(createBestsellerCard(product)));
+            } catch (error) {
+                console.error('Unable to load bestseller cards:', error);
+                grid.replaceChildren();
+                const errorMessage = document.createElement('p');
+                errorMessage.className = 'bestseller-desc';
+                errorMessage.textContent = 'Bestsellers are temporarily unavailable.';
+                grid.appendChild(errorMessage);
+            }
         }
 
         async function loadBestSellingProducts() {
@@ -620,6 +657,7 @@
         const HERO_API_BASE = "https://cosmetics-website.fly.dev/api";
         resetAutoTimer();
         loadBestSellingProducts();
+        loadBestsellerCards();
     </script>
 </body>
 </html>
