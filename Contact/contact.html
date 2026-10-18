@@ -96,7 +96,7 @@
                     <h2>Send Us a Message</h2>
                     <p class="form-sub">Have a question regarding skincare, custom fragrance, or order status? We respond promptly.</p>
                     
-                    <form id="contactForm" class="contact-form" onsubmit="event.preventDefault(); showToast('Thank you! Your message has been sent to our concierge team.', 'success'); this.reset();">
+                    <form id="contactForm" class="contact-form" onsubmit="handleContactSubmit(event)">
                         <div class="input-group">
                             <label for="name">Full Name</label>
                             <input type="text" id="name" placeholder="e.g. Lady Amina Adeyemi" required>
@@ -123,7 +123,7 @@
                             <label for="message">Your Message</label>
                             <textarea id="message" rows="5" placeholder="Tell us how we can assist your skin or beauty journey..." required></textarea>
                         </div>
-                        <button type="submit" class="btn primary w-100">
+                        <button type="submit" id="contactSubmitBtn" class="btn primary w-100">
                             <span>Send Message</span> ✦
                         </button>
                     </form>
@@ -142,7 +142,7 @@
                                 Adebisi Street, Itire/Ikate, Surulere,<br>
                                 Lagos 101241, Nigeria
                             </p>
-                            <a href="https://maps.google.com/?q=Surulere+Lagos+Nigeria" target="_blank" rel="noopener" class="card-link">
+                            <a href="https://maps.app.goo.gl/82gviP1Yus1cQSwQ6?g_st=iwb" target="_blank" rel="noopener" class="card-link">
                                 Get Directions on Google Maps →
                             </a>
                         </div>
@@ -226,12 +226,12 @@
     <section class="map-section">
         <div class="section-container animate-on-scroll">
             <div class="map-header">
-                <span class="map-badge">✦ BOUTIQUE LOCATION ✦</span>
-                <h2>Find Our Store in Lagos</h2>
+                <span class="map-badge">✦ OFFICE LOCATION ✦</span>
+                <h2>Find Our Office in Lagos</h2>
                 <p>Located conveniently in Surulere, Lagos with parking and premium walk-in experience.</p>
             </div>
             <div class="map-wrapper">
-                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126844.06348601633!2d3.332824!3d6.524379!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b8b2ae68280c1%3A0xdc9e87a3da577a9!2sLagos%2C%20Nigeria!5e0!3m2!1sen!2sng!4v1620000000000!5m2!1sen!2sng" width="100%" height="420" style="border:0;" allowfullscreen="" loading="lazy" title="Shayors Cosmetics Store Location"></iframe>
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3964.0!2d3.3480!3d6.5060!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x103b8c5e8a3e1c7d%3A0x1a2b3c4d5e6f7890!2sAdegbite%20Shopping%20Complex%2C%20Adebisi%20St%2C%20Surulere%2C%20Lagos!5e0!3m2!1sen!2sng!4v1620000000000!5m2!1sen!2sng" width="100%" height="420" style="border:0;" allowfullscreen="" loading="lazy" title="Shayors Cosmetics Store Location - Adegbite Shopping Complex, Surulere"></iframe>
             </div>
         </div>
     </section>
@@ -316,6 +316,43 @@
         </div>
     </div>
 
+    <script>
+    async function handleContactSubmit(e) {
+        e.preventDefault();
+        const btn = document.getElementById('contactSubmitBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<span>Sending...</span> ⏳';
+        btn.disabled = true;
+
+        const payload = {
+            name: document.getElementById('name').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            subject: document.getElementById('subject').value,
+            message: document.getElementById('message').value.trim()
+        };
+
+        try {
+            const res = await fetch('https://cosmetics-website.fly.dev/api/contact', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showToast('✅ Message sent! Our team will respond shortly.', 'success');
+                document.getElementById('contactForm').reset();
+            } else {
+                showToast(data.message || '❌ Failed to send. Please try again.', 'error');
+            }
+        } catch (err) {
+            showToast('❌ Network error. Check your connection and try again.', 'error');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    }
+    </script>
     <script src="../script.js"></script>
 </body>
 </html>

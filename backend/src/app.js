@@ -18,6 +18,7 @@ const expenseCategoryRoutes = require('./routes/expenseCategoryRoutes');
 const expenseRoutes = require('./routes/expenseRoutes');
 const costAnalysisRoutes = require('./routes/costAnalysisRoutes');
 const roleRoutes = require('./routes/roleRoutes');
+const contactRoutes = require('./routes/contactRoutes');
 
 const app = express();
 
@@ -108,6 +109,7 @@ app.use('/api/adjustments', adjustmentRoutes);
 app.use('/api/expense-categories', expenseCategoryRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/cost-analysis', costAnalysisRoutes);
+app.use('/api/contact', contactRoutes);
 
 app.get('/', (req, res) => {
   res.send('API is running...');
