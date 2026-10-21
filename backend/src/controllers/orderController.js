@@ -26,7 +26,7 @@ const sendEmailAlert = async (order) => {
     `).join('');
 
     const mailOptions = {
-      from: `"Shayors Cosmetics" <${process.env.EMAIL_USER || 'alaminlamina5@gmail.com'}>`,
+      from: `"Shayors Cosmetics" <${process.env.EMAIL_USER || 'shayorscosmestics@gmail.com'}>`,
       to: targetEmail,
       subject: `🛍️ New Order #${order._id.toString().slice(-6).toUpperCase()} - ₦${Number(order.totalAmount).toLocaleString()} (${order.customerName})`,
       html: `
@@ -108,7 +108,7 @@ const sendEmailAlert = async (order) => {
     // If customer email is valid, send them a confirmation receipt too
     if (order.customerEmail && order.customerEmail.includes('@')) {
       const customerMailOptions = {
-        from: `"Shayors Cosmetics" <${process.env.EMAIL_USER || 'alaminlamina5@gmail.com'}>`,
+        from: `"Shayors Cosmetics" <${process.env.EMAIL_USER || 'shayorscosmestics@gmail.com'}>`,
         to: order.customerEmail,
         subject: `Order Confirmation #${order._id.toString().slice(-6).toUpperCase()} - Shayors Cosmetics`,
         html: `

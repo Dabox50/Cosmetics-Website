@@ -39,11 +39,12 @@ const sendEmail = async (options) => {
     console.log('✅ SMTP connection verified');
 
     const mailOptions = {
-      from: `"Shayors Cosmetics" <${process.env.EMAIL_USER}>`,
+      from: `"Shayors Cosmetics" <${(process.env.EMAIL_USER || 'shayorscosmestics@gmail.com').trim()}>`,
       to: options.email,
       subject: options.subject,
       text: options.message || '',
       html: options.html || options.message,
+      replyTo: options.replyTo || undefined,
     };
 
     console.log('📤 Sending email to:', options.email);

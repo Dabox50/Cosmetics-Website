@@ -65,6 +65,7 @@ router.post('/', async (req, res) => {
 
     await sendEmail({
       email: recipient,
+      replyTo: email,
       subject: `📩 New Message from ${name} [${inquiryType}]`,
       message: `New message from ${name} (${email}, Phone: ${customerPhone}):\n\nInquiry Type: ${inquiryType}\n\nMessage:\n${message}`,
       html: htmlContent
