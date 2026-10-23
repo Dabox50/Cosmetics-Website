@@ -2362,3 +2362,631 @@ body.three-scene-active footer {
         padding: 11px 16px;
     }
 }
+
+
+/* ==========================================================================
+   Advertisement Hero Section (Editorial Campaign Style - Styled after Ref)
+   ========================================================================== */
+.ad-hero-section {
+    position: relative;
+    width: 100%;
+    background: radial-gradient(circle at 50% 12%, rgba(212, 175, 55, 0.16) 0%, rgba(6, 26, 16, 0.98) 55%, #021209 100%);
+    padding: 55px 20px 0 20px;
+    text-align: center;
+    overflow: hidden;
+    color: #ffffff;
+}
+
+.ad-hero-ambient-glow {
+    position: absolute;
+    top: -120px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 700px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.25) 0%, rgba(52, 232, 154, 0.12) 40%, transparent 70%);
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.ad-hero-container {
+    position: relative;
+    z-index: 2;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.ad-hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: #d4af37;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    padding: 6px 20px;
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    border-radius: 50px;
+    backdrop-filter: blur(8px);
+}
+
+.ad-hero-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 3.8rem;
+    line-height: 1.1;
+    color: #ffffff;
+    font-weight: 700;
+    margin-bottom: 12px;
+    letter-spacing: -0.5px;
+    text-shadow: 0 4px 30px rgba(0, 0, 0, 0.7);
+}
+
+.ad-hero-title-accent {
+    font-style: italic;
+    background: linear-gradient(135deg, #fceda6 0%, #d4af37 50%, #aa841c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+.ad-hero-subtitle {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.05rem;
+    color: #bde7d1;
+    max-width: 620px;
+    margin: 0 auto 26px auto;
+    line-height: 1.6;
+    font-weight: 400;
+}
+
+.ad-hero-action {
+    margin-bottom: 35px;
+}
+
+.ad-hero-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 40px;
+    background: #02140a;
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 2.2px;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 50px;
+    border: 1.5px solid #d4af37;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(212, 175, 55, 0.25);
+    transition: all 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.ad-hero-btn span {
+    font-size: 1.1rem;
+    transition: transform 0.3s ease;
+    color: #d4af37;
+}
+
+.ad-hero-btn:hover {
+    background: #d4af37;
+    color: #02160c;
+    box-shadow: 0 12px 35px rgba(212, 175, 55, 0.55);
+    transform: translateY(-2px);
+}
+
+.ad-hero-btn:hover span {
+    transform: translateX(4px);
+    color: #02160c;
+}
+
+/* Advertisement Billboard Visual Frame */
+.ad-billboard-wrap {
+    position: relative;
+    max-width: 980px;
+    margin: 0 auto;
+    border-radius: 24px;
+    padding: 10px;
+    background: linear-gradient(145deg, rgba(212, 175, 55, 0.35) 0%, rgba(52, 232, 154, 0.18) 50%, rgba(4, 20, 12, 0.85) 100%);
+    box-shadow: 0 25px 70px rgba(0, 0, 0, 0.75), 0 0 50px rgba(212, 175, 55, 0.18);
+}
+
+.ad-billboard-stage {
+    position: relative;
+    width: 100%;
+    height: 520px;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #04140c;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ad-billboard-stage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: opacity 0.45s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+    border-radius: 18px;
+}
+
+.ad-billboard-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 40px 24px 22px 24px;
+    background: linear-gradient(to top, rgba(2, 16, 10, 0.95) 0%, rgba(2, 16, 10, 0.65) 60%, transparent 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+}
+
+.ad-billboard-badge {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #d4af37;
+    background: rgba(2, 16, 10, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    padding: 4px 16px;
+    border-radius: 50px;
+    text-transform: uppercase;
+}
+
+.ad-billboard-caption {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    color: #ffffff;
+    font-weight: 600;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.8);
+}
+
+/* Nav arrows for billboard */
+.ad-nav-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(4, 20, 12, 0.85);
+    border: 1px solid rgba(212, 175, 55, 0.45);
+    color: #d4af37;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 5;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(8px);
+}
+
+.ad-nav-btn.prev {
+    left: 20px;
+}
+
+.ad-nav-btn.next {
+    right: 20px;
+}
+
+.ad-nav-btn:hover {
+    background: #d4af37;
+    color: #02160c;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.6);
+    transform: translateY(-50%) scale(1.1);
+}
+
+/* Campaign pills selector */
+.ad-campaign-pills {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+    padding-bottom: 8px;
+}
+
+.ad-pill-btn {
+    background: rgba(4, 20, 12, 0.75);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: #bde7d1;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    padding: 8px 18px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.ad-pill-btn:hover {
+    background: rgba(212, 175, 55, 0.18);
+    border-color: #d4af37;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.ad-pill-btn.active {
+    background: linear-gradient(135deg, #d4af37 0%, #aa841c 100%);
+    border-color: #d4af37;
+    color: #02160c;
+    font-weight: 700;
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+}
+
+/* Luxury Marquee Ticker Bar (exact match to reference Image 1) */
+.ad-ticker-bar {
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    margin-top: 45px;
+    background: linear-gradient(90deg, #021209 0%, #0c2718 50%, #021209 100%);
+    border-top: 1px solid rgba(212, 175, 55, 0.25);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+    padding: 13px 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.ad-ticker-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 40px;
+    animation: adTickerScroll 28s linear infinite;
+}
+
+.ad-ticker-track span {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #e6c86e;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+}
+
+@keyframes adTickerScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* Mobile Responsiveness for Advertisement Hero */
+@media (max-width: 768px) {
+    .ad-hero-section {
+        padding: 40px 14px 0 14px;
+    }
+    .ad-hero-title {
+        font-size: 2.3rem;
+        line-height: 1.15;
+    }
+    .ad-hero-subtitle {
+        font-size: 0.88rem;
+        margin-bottom: 20px;
+        padding: 0 10px;
+    }
+    .ad-hero-btn {
+        padding: 12px 30px;
+        font-size: 0.76rem;
+    }
+    .ad-billboard-wrap {
+        padding: 6px;
+        border-radius: 18px;
+    }
+    .ad-billboard-stage {
+        height: 330px;
+        border-radius: 14px;
+    }
+    .ad-billboard-caption {
+        font-size: 0.98rem;
+    }
+    .ad-nav-btn {
+        width: 34px;
+        height: 34px;
+        font-size: 1.2rem;
+    }
+    .ad-nav-btn.prev { left: 10px; }
+    .ad-nav-btn.next { right: 10px; }
+    .ad-campaign-pills {
+        gap: 6px;
+    }
+    .ad-pill-btn {
+        font-size: 0.68rem;
+        padding: 6px 12px;
+    }
+    .ad-ticker-bar {
+        margin-top: 30px;
+        padding: 10px 0;
+    }
+    .ad-ticker-track {
+        gap: 25px;
+    }
+    .ad-ticker-track span {
+        font-size: 0.72rem;
+        letter-spacing: 1.5px;
+    }
+}
+
+
+/* ==========================================================================
+   Hero Advertisement Section (Shayors Original Copy + Background-Image Format)
+   ========================================================================== */
+.hero.ad-hero .hero-split-container {
+    position: relative;
+    z-index: 3;
+}
+
+.hero.ad-hero {
+    position: relative;
+    min-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 70px 6% 30px 6%;
+    overflow: hidden;
+    background-color: #021209;
+}
+
+.hero-bg-slide {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: right center;
+    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity 1.2s ease-in-out, transform 8s ease-out;
+    transform: scale(1.03);
+    z-index: 1;
+}
+
+.hero-bg-slide.active {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.hero-inner-container {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    max-width: 1300px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    min-height: calc(85vh - 160px);
+}
+
+.hero.ad-hero .hero-text-col {
+    max-width: 650px;
+    text-align: left;
+    padding-right: 20px;
+}
+
+.hero.ad-hero .hero-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    color: #34e89a;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    padding: 7px 22px;
+    background: rgba(14, 38, 26, 0.75);
+    border: 1px solid rgba(52, 232, 154, 0.45);
+    border-radius: 50px;
+    backdrop-filter: blur(10px);
+}
+
+.hero.ad-hero h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 4.4rem;
+    line-height: 1.08;
+    color: #ffffff;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+    text-shadow: 0 4px 25px rgba(0, 0, 0, 0.85);
+}
+
+.hero.ad-hero .slogan {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.6rem;
+    font-style: italic;
+    color: #d4af37;
+    margin-bottom: 20px;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+    font-weight: 400;
+}
+
+.hero.ad-hero .description {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.05rem;
+    color: #d8f3e5;
+    line-height: 1.75;
+    margin-bottom: 32px;
+    max-width: 580px;
+    text-shadow: 0 2px 15px rgba(0, 0, 0, 0.9);
+}
+
+.hero.ad-hero .hero-btns {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+
+.hero.ad-hero .btn.primary {
+    background: linear-gradient(135deg, #dfbc45 0%, #c49d28 100%);
+    color: #02160c;
+    font-weight: 700;
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
+    border-color: #d4af37;
+}
+
+.hero.ad-hero .btn.secondary {
+    background: rgba(14, 38, 26, 0.6);
+    color: #ffffff;
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+.hero.ad-hero .btn.secondary:hover {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: #d4af37;
+    color: #d4af37;
+}
+
+.hero.ad-hero .hero-trust-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    margin-top: 36px;
+    padding-top: 24px;
+    border-top: 1px solid rgba(52, 232, 154, 0.22);
+}
+
+.hero.ad-hero .hero-trust-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #bde7d1;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.hero.ad-hero .hero-trust-item span.icon {
+    color: #d4af37;
+    font-size: 1.05rem;
+}
+
+/* Minimalist Slide Indicator Dots */
+.hero-slide-dots {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.hero-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.35);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    cursor: pointer;
+    transition: all 0.35s ease;
+}
+
+.hero-dot:hover {
+    background: rgba(212, 175, 55, 0.7);
+    transform: scale(1.2);
+}
+
+.hero-dot.active {
+    width: 28px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #d4af37, #b88f1c);
+    border-color: #d4af37;
+    box-shadow: 0 0 12px rgba(212, 175, 55, 0.6);
+}
+
+/* Bottom Marquee Ticker Bar */
+.hero-ticker-bar {
+    position: relative;
+    z-index: 3;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    background: linear-gradient(90deg, #021209 0%, #0e2b1b 50%, #021209 100%);
+    border-top: 1px solid rgba(212, 175, 55, 0.3);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+    padding: 13px 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.hero-ticker-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 40px;
+    animation: heroTickerScroll 28s linear infinite;
+}
+
+.hero-ticker-track span {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #e6c86e;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+}
+
+@keyframes heroTickerScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 900px) {
+    .hero.ad-hero {
+        padding: 45px 20px 0 20px;
+        min-height: 85vh;
+    }
+    .hero-inner-container {
+        justify-content: center;
+    }
+    .hero.ad-hero .hero-text-col {
+        text-align: center;
+        max-width: 100%;
+        padding-right: 0;
+    }
+    .hero.ad-hero h1 {
+        font-size: 2.8rem;
+    }
+    .hero.ad-hero .slogan {
+        font-size: 1.25rem;
+    }
+    .hero.ad-hero .description {
+        margin: 0 auto 28px auto;
+        font-size: 0.95rem;
+    }
+    .hero.ad-hero .hero-btns {
+        justify-content: center;
+    }
+    .hero.ad-hero .hero-trust-bar {
+        justify-content: center;
+        gap: 16px;
+    }
+    .hero-bg-slide {
+        background-position: center bottom;
+    }
+}
+
+@media (max-width: 600px) {
+    .hero.ad-hero h1 {
+        font-size: 2.2rem;
+    }
+    .hero.ad-hero .slogan {
+        font-size: 1.1rem;
+    }
+    .hero.ad-hero .btn {
+        width: 100%;
+        padding: 14px 20px;
+    }
+}

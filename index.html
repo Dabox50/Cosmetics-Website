@@ -58,15 +58,21 @@
         </div>
     </div>
 
-    <!-- Hero Section with Interactive 3D Product Stage -->
-    <header class="hero">
+    <!-- Advertisement Hero Section (Styled after Editorial Luxury Campaign) -->
+    <header class="hero ad-hero" id="heroAdSection">
+        <!-- Background Image Slides with Smooth Fade -->
+        <div class="hero-bg-slide active" style="background-image: linear-gradient(135deg, rgba(2, 16, 10, 0.88) 0%, rgba(2, 16, 10, 0.75) 50%, rgba(2, 16, 10, 0.88) 100%), url('./Image/ad-luxury-showcase.jpg');"></div>
+        <div class="hero-bg-slide" style="background-image: linear-gradient(135deg, rgba(2, 16, 10, 0.88) 0%, rgba(2, 16, 10, 0.75) 50%, rgba(2, 16, 10, 0.88) 100%), url('./Image/ad-olay.png');"></div>
+        <div class="hero-bg-slide" style="background-image: linear-gradient(135deg, rgba(2, 16, 10, 0.88) 0%, rgba(2, 16, 10, 0.75) 50%, rgba(2, 16, 10, 0.88) 100%), url('./Image/ad-gold-gel.png');"></div>
+        <div class="hero-bg-slide" style="background-image: linear-gradient(135deg, rgba(2, 16, 10, 0.88) 0%, rgba(2, 16, 10, 0.75) 50%, rgba(2, 16, 10, 0.88) 100%), url('./Image/ad-supremacy.png');"></div>
+
         <div class="hero-split-container">
             <!-- Left Column: Editorial Brand Headline -->
             <div class="hero-text-col animate-on-scroll">
-                <span class="hero-tag">✦ BEAUTY. SCENT. WELLNESS. REFINED. ✦</span>
+                <span class="hero-tag">✦ PURE LUXURY & BOTANICAL WELLNESS ✦</span>
                 <h1>Shayors Cosmetics</h1>
-                <p class="slogan">Affordable Luxury for Skin. Signature Scents for the Senses.</p>
-                <p class="description">Discover the art of elevated beauty with dermatologist tested skincare, captivating oriental fragrances, and rejuvenating spa therapies. At Shayors, we bring together beauty, indulgence, and self-care to help you look radiant, smell unforgettable, and feel your absolute best.</p>
+                <p class="slogan">Luxury for the Skin. Signature for the Senses.</p>
+                <p class="description">Masterfully formulated skincare, bespoke oriental fragrances, and revitalizing wellness therapies designed to elevate your personal radiance and self-care routine.</p>
                 <div class="hero-btns">
                     <a href="./Collection/collections.html" class="btn primary">Shop All Collections</a>
                     <a href="#bestsellers" class="btn secondary">View Bestsellers</a>
@@ -83,8 +89,8 @@
                 <div class="product-3d-card-wrap" id="hero3dCardWrap">
                     <div class="product-3d-card" id="hero3dCard">
                         <div class="card-aura-glow"></div>
-                        <span class="floating-pill-badge-left" id="heroProdCat">DERMATOLOGIST TESTED</span>
-                        <span class="floating-pill-badge" id="heroProdBadge">BESTSELLER</span>
+                        <span class="floating-pill-badge-left" id="heroProdCat">HERBAL ESSENCE</span>
+                        <span class="floating-pill-badge" id="heroProdBadge">ORGANIC FAVORITE</span>
                         
                         <div class="product-3d-img-container">
                             <img id="heroProdImg" src="./Image/WhatsApp2.jpeg" alt="Royal Glow Face Cream">
@@ -116,7 +122,31 @@
                 </div>
             </div>
         </div>
+
+        <!-- Subtle Background Slide Dots -->
+        <div class="hero-slide-dots" id="heroSlideDots">
+            <span class="hero-dot active" data-index="0" title="Full Glow Collection"></span>
+            <span class="hero-dot" data-index="1" title="Olay Dark Spot Correcting"></span>
+            <span class="hero-dot" data-index="2" title="F&W Gold Gel Douche"></span>
+            <span class="hero-dot" data-index="3" title="Supremacy Afnan Perfume"></span>
+        </div>
     </header>
+
+    <!-- Horizontal Marquee Slide Ticker Bar (Placed AFTER the Hero Tag, before Collections) -->
+    <div class="hero-ticker-bar">
+        <div class="hero-ticker-track">
+            <span>✦ Your Glow Is Our Priority</span>
+            <span>✦ 100% Original Products</span>
+            <span>✦ Dermatologist Tested</span>
+            <span>✦ Fast Nationwide Delivery</span>
+            <span>✦ Authentic Botanical Luxury</span>
+            <span>✦ Your Glow Is Our Priority</span>
+            <span>✦ 100% Original Products</span>
+            <span>✦ Dermatologist Tested</span>
+            <span>✦ Fast Nationwide Delivery</span>
+            <span>✦ Authentic Botanical Luxury</span>
+        </div>
+    </div>
 
     <!-- Our Collections -->
     <section id="collections" class="collections">
@@ -746,6 +776,60 @@
         resetAutoTimer();
         loadBestSellingProducts();
         loadBestsellerCards();
+
+        // ==========================================================================
+        // Hero Background-Image Slider Controller (No Cards, Pure Background Format)
+        // ==========================================================================
+        const heroBgSlides = document.querySelectorAll('.hero-bg-slide');
+        const heroDots = document.querySelectorAll('.hero-dot');
+        let currentSlideIdx = 0;
+        let heroSlideTimer = null;
+
+        function setHeroSlide(idx) {
+            if (!heroBgSlides.length) return;
+            currentSlideIdx = (idx + heroBgSlides.length) % heroBgSlides.length;
+
+            heroBgSlides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === currentSlideIdx);
+            });
+
+            heroDots.forEach((dot, i) => {
+                dot.classList.toggle('active', i === currentSlideIdx);
+            });
+        }
+
+        function startHeroSlideTimer() {
+            stopHeroSlideTimer();
+            heroSlideTimer = setInterval(() => {
+                setHeroSlide(currentSlideIdx + 1);
+            }, 5500);
+        }
+
+        function stopHeroSlideTimer() {
+            if (heroSlideTimer) {
+                clearInterval(heroSlideTimer);
+                heroSlideTimer = null;
+            }
+        }
+
+        heroDots.forEach((dot, idx) => {
+            dot.addEventListener('click', () => {
+                stopHeroSlideTimer();
+                setHeroSlide(idx);
+                startHeroSlideTimer();
+            });
+        });
+
+        const heroSection = document.getElementById('heroAdSection');
+        if (heroSection) {
+            heroSection.addEventListener('mouseenter', stopHeroSlideTimer);
+            heroSection.addEventListener('mouseleave', startHeroSlideTimer);
+            heroSection.addEventListener('touchstart', stopHeroSlideTimer, { passive: true });
+            heroSection.addEventListener('touchend', startHeroSlideTimer, { passive: true });
+        }
+
+        startHeroSlideTimer();
+
     </script>
 </body>
 </html>
